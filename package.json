@@ -41,7 +41,7 @@
     "access": "public"
   },
   "bugs": {
-    "url": "https://github.com/openmrs/openmrs-esm-stock-management-app/issues"
+    "url": "https://openmrs.atlassian.net/jira/software/c/projects/O3/boards/37"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.0",
