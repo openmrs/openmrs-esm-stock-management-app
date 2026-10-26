@@ -262,6 +262,7 @@
   "previousPage": "Previous page",
   "print": "Print",
   "printBinCard": "Print Bin Card",
+  "printPreviewErrorDescription": "Unable to load the print preview. Please try again.",
   "printStockCard": "Print Stock Card",
   "purchasePrice": "Purchase Price",
   "purchasePricePackagingUnit": "Purchase price packaging unit",

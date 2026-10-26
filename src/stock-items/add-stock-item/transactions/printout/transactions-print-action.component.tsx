@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { ComboButton, MenuItem } from '@carbon/react';
 import { Printer } from '@carbon/react/icons';
 import { useTranslation } from 'react-i18next';
@@ -20,73 +20,42 @@ const TransactionsPrintAction: React.FC<Props> = ({ columns, data, itemUuid, fil
 
   const { enablePrintButton } = useConfig<ConfigObject>();
 
-  const [stockCardItemFilter, setStockCardItemFilter] = useState<StockItemInventoryFilter>({
-    startIndex: 0,
-    totalCount: true,
-    v: ResourceRepresentation.Full,
-    isPatientTransaction: 'true',
-  });
+  const stockCardItemFilter = useMemo<StockItemInventoryFilter>(
+    () => ({
+      startIndex: 0,
+      totalCount: true,
+      v: ResourceRepresentation.Full,
+      isPatientTransaction: 'true',
+      stockItemUuid: itemUuid,
+    }),
+    [itemUuid],
+  );
 
-  const [stockItemFilter, setStockItemFilter] = useState<StockItemInventoryFilter>({
-    startIndex: 0,
-    v: filter?.v || ResourceRepresentation.Default,
-    limit: 10,
-    q: filter?.q,
-    totalCount: true,
-  });
+  const stockItemFilter = useMemo<StockItemInventoryFilter>(
+    () => ({
+      startIndex: 0,
+      v: filter?.v || ResourceRepresentation.Default,
+      limit: 10,
+      q: filter?.q,
+      totalCount: true,
+      stockItemUuid: itemUuid,
+    }),
+    [filter?.v, filter?.q, itemUuid],
+  );
 
   const { item: stockItem, isLoading: isStockItemLoading } = useStockItem(itemUuid);
-  const { items: stockCardData, isLoading: isStockCardLoading, error } = useStockItemTransactions(stockCardItemFilter);
+  const { items: stockCardData, isLoading: isStockCardLoading } = useStockItemTransactions(stockCardItemFilter);
   const { items: inventoryBalance } = useStockItemInventory(stockItemFilter);
 
-  const [balances, setBalances] = useState<Record<string, { quantity: number; itemName: string }>>({});
-  const [currentIndex, setCurrentIndex] = useState(0);
-
-  useEffect(() => {
-    if (stockCardData?.results?.length) {
-      setCurrentIndex(0);
-      setBalances({});
-    }
-  }, [stockCardData?.results]);
-
-  useEffect(() => {
-    const currentItem = stockCardData?.results?.[currentIndex];
-    if (currentItem?.stockItemUuid) {
-      setStockItemFilter((prev) => ({
-        ...prev,
-        stockItemUuid: currentItem.stockItemUuid,
-      }));
-    }
-  }, [currentIndex, stockCardData]);
-
-  useEffect(() => {
-    const currentItem = stockCardData?.results?.[currentIndex];
-    const stockItemUuid = currentItem?.stockItemUuid;
-
-    if (inventoryBalance?.total && stockItemUuid) {
-      setBalances((prev) => ({
-        ...prev,
-        [stockItemUuid]: {
-          quantity: Number(inventoryBalance.total),
-          itemName: currentItem.packagingUomName ?? '',
-        },
-      }));
-
-      setCurrentIndex((prev) => prev + 1);
-    }
-  }, [inventoryBalance, currentIndex, stockCardData]);
-
   const stockCardWithBalance = useMemo(() => {
+    const balance = inventoryBalance?.total ?? '';
     return (
-      stockCardData?.results?.map((transaction) => {
-        const balance = balances[transaction.stockItemUuid];
-        return {
-          ...transaction,
-          balance: `${balance?.quantity ?? ''} ${balance?.itemName ?? ''}`,
-        };
-      }) ?? []
+      stockCardData?.results?.map((transaction) => ({
+        ...transaction,
+        balance: `${balance} ${transaction.packagingUomName ?? ''}`,
+      })) ?? []
     );
-  }, [stockCardData?.results, balances]);
+  }, [stockCardData?.results, inventoryBalance?.total]);
 
   const stockCardHeaders = useMemo(
     () => [
