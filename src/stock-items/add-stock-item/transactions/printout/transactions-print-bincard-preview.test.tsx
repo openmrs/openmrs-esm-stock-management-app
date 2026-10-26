@@ -132,7 +132,7 @@ describe('TransactionsBincardPrintPreviewModal', () => {
 
   it('shows an error with a Close button when the preview fails to render', async () => {
     const user = userEvent.setup();
-    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     render(
       <TransactionsBincardPrintPreviewModal
         onClose={mockOnClose}
@@ -145,5 +145,7 @@ describe('TransactionsBincardPrintPreviewModal', () => {
     expect(screen.getByText(/unable to load the print preview/i)).toBeInTheDocument();
     await user.click(screen.getAllByRole('button', { name: /close/i }).at(-1));
     expect(mockOnClose).toHaveBeenCalled();
+
+    consoleErrorSpy.mockRestore();
   });
 });

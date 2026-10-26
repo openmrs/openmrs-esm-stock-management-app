@@ -27,8 +27,9 @@ const TransactionsPrintAction: React.FC<Props> = ({ columns, data, itemUuid, fil
       v: ResourceRepresentation.Full,
       isPatientTransaction: 'true',
       stockItemUuid: itemUuid,
+      locationUuid: filter?.locationUuid,
     }),
-    [itemUuid],
+    [filter?.locationUuid, itemUuid],
   );
 
   const stockItemFilter = useMemo<StockItemInventoryFilter>(
@@ -39,13 +40,14 @@ const TransactionsPrintAction: React.FC<Props> = ({ columns, data, itemUuid, fil
       q: filter?.q,
       totalCount: true,
       stockItemUuid: itemUuid,
+      locationUuid: filter?.locationUuid,
     }),
-    [filter?.v, filter?.q, itemUuid],
+    [filter?.v, filter?.q, filter?.locationUuid, itemUuid],
   );
 
   const { item: stockItem, isLoading: isStockItemLoading } = useStockItem(itemUuid);
   const { items: stockCardData, isLoading: isStockCardLoading } = useStockItemTransactions(stockCardItemFilter);
-  const { items: inventoryBalance } = useStockItemInventory(stockItemFilter);
+  const { items: inventoryBalance, isLoading: isInventoryLoading } = useStockItemInventory(stockItemFilter);
 
   const stockCardWithBalance = useMemo(() => {
     const balance = inventoryBalance?.total ?? '';
@@ -125,7 +127,7 @@ const TransactionsPrintAction: React.FC<Props> = ({ columns, data, itemUuid, fil
             label={t('printStockCard', 'Print Stock Card')}
             renderIcon={(props) => <Printer size={24} {...props} />}
             onClick={handleStockcardClick}
-            disabled={isStockItemLoading || isStockCardLoading}
+            disabled={isStockItemLoading || isStockCardLoading || isInventoryLoading}
           />
           <MenuItem
             label={t('printBinCard', 'Print Bin Card')}
