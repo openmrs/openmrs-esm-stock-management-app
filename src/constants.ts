@@ -162,10 +162,18 @@ export const URL_STOCK_REPORT = (uuid: string): string => `${URL_STOCK_REPORTS}/
 export const URL_BATCH_JOB_ARTIFACT = (uuid: string, download: boolean): string =>
   `${BASE_OPENMRS_APP_URL}ws/rest/v1/stockmanagement/batchjobartifact?id=${uuid}${download ? '&download=1' : ''}`;
 
-export function extractErrorMessagesFromResponse(errorObject) {
+const DEFAULT_FALLBACK_ERROR_MESSAGE =
+  'An unexpected error occurred. Please try again or contact support if the problem persists.';
+
+export function extractErrorMessagesFromResponse(errorObject, fallbackErrorMessage = DEFAULT_FALLBACK_ERROR_MESSAGE) {
   const fieldErrors = errorObject?.responseBody?.error?.fieldErrors;
   if (!fieldErrors) {
-    return [errorObject?.responseBody?.error?.message ?? errorObject?.message];
+    const message = errorObject?.responseBody?.error?.message ?? errorObject?.message;
+    // never render a null/blank message to users when the server cannot describe the failure
+    return [typeof message === 'string' && message.trim() !== '' ? message : fallbackErrorMessage];
   }
-  return Object.values(fieldErrors).flatMap((errors: Array<Error>) => errors.map((error) => error.message));
+  const messages = Object.values(fieldErrors)
+    .flatMap((errors: Array<Error>) => errors.map((error) => error.message))
+    .filter((message) => typeof message === 'string' && message.trim() !== '');
+  return messages.length > 0 ? messages : [fallbackErrorMessage];
 }
