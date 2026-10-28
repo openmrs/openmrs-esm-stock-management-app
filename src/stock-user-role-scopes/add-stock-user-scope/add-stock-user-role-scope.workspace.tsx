@@ -56,6 +56,7 @@ import { useHandleMutate } from '../../utils';
 import useSearchUser from '../../stock-operations/stock-operations-forms/hooks/useSearchUser';
 import { useDebounce } from '../../core/hooks/debounce-hook';
 import styles from './add-stock-user-role-scope.scss';
+import { getAllLocations, getAllOperationTypes, getSelectionState } from './selection.utils';
 
 const MinDate: Date = today();
 
@@ -224,6 +225,28 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
     return formModel?.operationTypes?.filter((x) => x.operationTypeUuid === operationType.uuid)?.length > 0;
   };
 
+  const operationSelection = getSelectionState(
+    stockOperations?.filter((operation) => isOperationChecked(operation)).length ?? 0,
+    stockOperations?.length ?? 0,
+  );
+  const selectedLocationsCount =
+    stockLocations?.filter((location) => findCheckedLocation(location) != null).length ?? 0;
+  const locationSelection = getSelectionState(selectedLocationsCount, stockLocations?.length ?? 0);
+
+  const onAllOperationsChanged = (event: ChangeEvent<HTMLInputElement>) => {
+    setFormModel({
+      ...formModel,
+      operationTypes: event.target.checked ? getAllOperationTypes(stockOperations ?? []) : [],
+    });
+  };
+
+  const onAllLocationsChanged = (event: ChangeEvent<HTMLInputElement>) => {
+    setFormModel({
+      ...formModel,
+      locations: event.target.checked ? getAllLocations(stockLocations ?? [], formModel?.locations ?? []) : [],
+    });
+  };
+
   const addStockUserRole = async (e) => {
     e.preventDefault();
 
@@ -363,6 +386,14 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
             </span>
           </FormGroup>
           <CheckboxGroup className={styles.checkboxGrid} legendText="">
+            <Checkbox
+              checked={operationSelection.checked}
+              indeterminate={operationSelection.indeterminate}
+              id="chk-all-stock-operations"
+              labelText={t('selectAll', 'Select all')}
+              onChange={onAllOperationsChanged}
+              value="all-stock-operations"
+            />
             {stockOperations?.length > 0 &&
               stockOperations.map((type) => {
                 return (
@@ -385,6 +416,14 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
             </span>
           </FormGroup>
           <CheckboxGroup className={styles.checkboxGrid} legendText="">
+            <Checkbox
+              checked={locationSelection.checked}
+              indeterminate={locationSelection.indeterminate}
+              id="chk-all-stock-locations"
+              labelText={t('selectAll', 'Select all')}
+              onChange={onAllLocationsChanged}
+              value="all-stock-locations"
+            />
             {stockLocations?.length > 0 &&
               stockLocations.map((type) => {
                 const checkedLocation = findCheckedLocation(type);
