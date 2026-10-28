@@ -2,6 +2,7 @@ import React from 'react';
 import { startCase } from 'lodash-es';
 import { useTranslation } from 'react-i18next';
 import { useConfig } from '@openmrs/esm-framework';
+import { type ConfigObject } from '../../../../config-schema';
 import styles from './printable-transaction-header.scss';
 
 interface PrintableTransactionHeaderProps {
@@ -10,7 +11,7 @@ interface PrintableTransactionHeaderProps {
 
 const PrintableBincardTransactionHeader: React.FC<PrintableTransactionHeaderProps> = ({ itemName }) => {
   const { t } = useTranslation();
-  const { logo } = useConfig({ externalModuleName: '@kenyaemr/esm-login-app' });
+  const { logo } = useConfig<ConfigObject>();
 
   return (
     <div className={styles.container}>
