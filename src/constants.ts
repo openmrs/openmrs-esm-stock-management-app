@@ -106,59 +106,16 @@ export const ALLOW_STOCK_ISSUE_WITHOUT_REQUISITION = false;
 export const BASE_URL_CONFIGURED = BASE_OPENMRS_APP_URL;
 export const LOGIN_URL = BASE_OPENMRS_APP_URL + 'login.htm';
 
-export const ROUTING_BASE_URL = '/';
-export const URL_STOCK_HOME = ROUTING_BASE_URL + 'home';
-
-export const URL_STOCK_OPERATIONS = ROUTING_BASE_URL + 'stock-operations';
-export const URL_STOCK_OPERATIONS_ROUTES = URL_STOCK_OPERATIONS + '/*';
-export const URL_STOCK_OPERATIONS_NEW = URL_STOCK_OPERATIONS + '/new/*';
-export const URL_STOCK_OPERATIONS_NEW_OPERATION = (name: string, requisitionUuid?: string): string =>
-  `${URL_STOCK_OPERATIONS}/new/${name}${requisitionUuid ? `?requisition=${requisitionUuid}` : ''}`;
-export const URL_STOCK_OPERATIONS_EDIT = URL_STOCK_OPERATIONS + '/:id';
-export const URL_STOCK_OPERATIONS_REDIRECT = (uuid: string, tab?: string): string =>
-  `${URL_STOCK_OPERATIONS}/redirect/${uuid}${tab ? `?tab=${tab}` : ''}`;
-export const URL_STOCK_OPERATION = (uuid: string, tab?: string): string =>
-  `${URL_STOCK_OPERATIONS}/${uuid}${tab ? `?tab=${tab}` : ''}`;
-
-export const URL_USER_ROLE_SCOPES = ROUTING_BASE_URL + 'user-role-scopes';
-export const URL_USER_ROLE_SCOPES_ROUTES = URL_USER_ROLE_SCOPES + '/*';
-export const URL_USER_ROLE_SCOPES_NEW = URL_USER_ROLE_SCOPES + '/new';
-export const URL_USER_ROLE_SCOPES_EDIT = URL_USER_ROLE_SCOPES + '/:id';
-export const URL_USER_ROLE_SCOPE = (uuid: string): string => `${URL_USER_ROLE_SCOPES}/${uuid}`;
-
-export const URL_STOCK_ITEMS = ROUTING_BASE_URL + 'stock-items';
-export const URL_STOCK_ITEMS_ROUTES = ROUTING_BASE_URL + 'stock-items/*';
-export const URL_STOCK_ITEMS_NEW = URL_STOCK_ITEMS + '/new';
-export const URL_STOCK_ITEMS_EDIT = URL_STOCK_ITEMS + '/:id';
-export const URL_STOCK_ITEM = (uuid: string, tab?: string): string =>
-  `${URL_STOCK_ITEMS}/${uuid}${tab ? `?tab=${tab}` : ''}`;
-export const URL_STOCK_ITEMS_REDIRECT = (uuid: string, tab?: string): string =>
-  `${URL_STOCK_ITEMS}/redirect/${uuid}${tab ? `?tab=${tab}` : ''}`;
 export const URL_IMPORT_ERROR_FILE = (importSessionId: string) =>
   `${BASE_OPENMRS_APP_URL}ws/rest/v1/stockmanagement/stockitemimport?id=${importSessionId}`;
 export const URL_IMPORT_TEMPLATE_FILE = `${BASE_OPENMRS_APP_URL}moduleResources/stockmanagement/templates/Import_Stock_Items.xlsx`;
 
-export const URL_STOCK_SOURCES = ROUTING_BASE_URL + 'stock-sources';
-export const URL_STOCK_SOURCES_ROUTES = URL_STOCK_SOURCES + '/*';
-
-export const URL_SIGN_IN = ROUTING_BASE_URL + 'sign-in';
-export const URL_SIGN_OUT = ROUTING_BASE_URL + 'sign-out';
-
-export const URL_ACCESS_DENIED = ROUTING_BASE_URL + 'access-denied';
-export const URL_NOT_FOUND = '/*';
-export const URL_WILDCARD = '*';
-
 export const REACT_ROUTER_PREFIX = '#';
 
-export const URL_LOCATIONS = ROUTING_BASE_URL + 'locations';
-export const URL_LOCATIONS_ROUTES = ROUTING_BASE_URL + 'locations/*';
 export const URL_LOCATIONS_NEW = () => `${BASE_OPENMRS_APP_URL}admin/locations/location.form`;
 export const URL_LOCATIONS_EDIT = (id: number) =>
   `${BASE_OPENMRS_APP_URL}admin/locations/location.form?locationId=${id}`;
 
-export const URL_STOCK_REPORTS = ROUTING_BASE_URL + 'stock-reports';
-export const URL_STOCK_REPORTS_ROUTES = ROUTING_BASE_URL + 'stock-reports/*';
-export const URL_STOCK_REPORT = (uuid: string): string => `${URL_STOCK_REPORTS}/${uuid}`;
 export const URL_BATCH_JOB_ARTIFACT = (uuid: string, download: boolean): string =>
   `${BASE_OPENMRS_APP_URL}ws/rest/v1/stockmanagement/batchjobartifact?id=${uuid}${download ? '&download=1' : ''}`;
 

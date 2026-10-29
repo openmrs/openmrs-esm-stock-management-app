@@ -1,9 +1,8 @@
 import { InlineLoading } from '@carbon/react';
-import { ConfigurableLink, showSnackbar, useConfig } from '@openmrs/esm-framework';
+import { showSnackbar, useConfig } from '@openmrs/esm-framework';
 import React, { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type ConfigObject } from '../../../config-schema';
-import { URL_STOCK_ITEM } from '../../../constants';
 import { useStockItem } from '../../../stock-items/stock-items.resource';
 
 type StockOperationItemCellProps = {
@@ -39,11 +38,7 @@ const StockOperationItemCell: React.FC<StockOperationItemCellProps> = ({ stockIt
   if (isLoading) return <InlineLoading status="active" iconDescription="Loading" />;
   if (error) return <>--</>;
 
-  return (
-    <ConfigurableLink target={'_blank'} to={window.spaBase + URL_STOCK_ITEM(stockItemUuid)}>
-      {useItemCommonNameAsDisplay ? commonName : drugName}
-    </ConfigurableLink>
-  );
+  return <>{useItemCommonNameAsDisplay ? commonName : drugName}</>;
 };
 
 export default StockOperationItemCell;
