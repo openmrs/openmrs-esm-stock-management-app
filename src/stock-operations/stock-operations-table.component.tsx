@@ -165,15 +165,10 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
           rows,
         }) => (
           <TableContainer>
-            <TableToolbar
-              style={{
-                position: 'static',
-                overflow: 'visible',
-                backgroundColor: 'color',
-              }}
-            >
+            <TableToolbar className={styles.toolbar} style={{ position: 'relative', top: 0, overflow: 'visible' }}>
               <TableToolbarContent className={styles.toolbarContent}>
                 <TableToolbarSearch
+                  className={styles.searchFilter}
                   expanded
                   labelText={t('searchStockOperations', 'Search stock operations')}
                   onChange={onInputChange}
@@ -198,17 +193,29 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
                       placeholder={DATE_PICKER_FORMAT}
                     />
                   </DatePicker>
-                  <StockOperationsFilters filterName={StockFilters.SOURCES} onFilterChange={handleOnFilterChange} />
-                  <StockOperationsFilters filterName={StockFilters.STATUS} onFilterChange={handleOnFilterChange} />
-                  <StockOperationsFilters filterName={StockFilters.OPERATION} onFilterChange={handleOnFilterChange} />
+                  <StockOperationsFilters
+                    className={styles.sourcesFilter}
+                    filterName={StockFilters.SOURCES}
+                    onFilterChange={handleOnFilterChange}
+                  />
+                  <StockOperationsFilters
+                    className={styles.statusFilter}
+                    filterName={StockFilters.STATUS}
+                    onFilterChange={handleOnFilterChange}
+                  />
+                  <StockOperationsFilters
+                    className={styles.operationFilter}
+                    filterName={StockFilters.OPERATION}
+                    onFilterChange={handleOnFilterChange}
+                  />
                 </div>
-                <TableToolbarMenu>
+                <TableToolbarMenu className={styles.refreshAction}>
                   <TableToolbarAction className={styles.toolbarMenuAction} onClick={handleRefresh}>
                     {t('refresh', 'Refresh')}
                   </TableToolbarAction>
                 </TableToolbarMenu>
 
-                <StockOperationTypesSelector />
+                <StockOperationTypesSelector className={styles.startNewAction} />
               </TableToolbarContent>
             </TableToolbar>
             <Table {...getTableProps()}>
