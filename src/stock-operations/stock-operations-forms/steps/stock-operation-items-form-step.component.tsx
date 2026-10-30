@@ -1,4 +1,4 @@
-import React, { useId, useMemo } from 'react';
+import React, { useCallback, useId, useMemo } from 'react';
 import { ArrowLeft, ArrowRight, Edit, TrashCan } from '@carbon/react/icons';
 import {
   Button,
@@ -48,6 +48,18 @@ const StockOperationItemsFormStep: React.FC<StockOperationItemsFormStepProps> = 
 
   const form = useFormContext<StockOperationItemDtoSchema>();
   const observableOperationItems = form.watch('stockOperationItems');
+
+  const handleRemoveItem = useCallback(
+    (index: number) => {
+      const items = (form.getValues('stockOperationItems') ?? []) as BaseStockOperationItemFormData[];
+      form.setValue(
+        'stockOperationItems',
+        items.filter((_, i) => i !== index) as [BaseStockOperationItemFormData, ...BaseStockOperationItemFormData[]],
+        { shouldDirty: true, shouldValidate: true },
+      );
+    },
+    [form],
+  );
   const headers = useMemo(() => {
     return [
       {
@@ -167,14 +179,14 @@ const StockOperationItemsFormStep: React.FC<StockOperationItemsFormStepProps> = 
               kind="ghost"
               renderIcon={TrashCan}
               onClick={() => {
-                onLaunchItemsForm?.(item);
+                handleRemoveItem(index);
               }}
             />
           </>
         ),
       };
     });
-  }, [observableOperationItems, onLaunchItemsForm, stockOperationType, t, uniqueId]);
+  }, [observableOperationItems, onLaunchItemsForm, handleRemoveItem, stockOperationType, t, uniqueId]);
 
   const handleNext = async () => {
     const valid = await form.trigger(['stockOperationItems']);
