@@ -3,6 +3,7 @@ import { ModalBody, ModalHeader, ModalFooter, Button } from '@carbon/react';
 import { useTranslation } from 'react-i18next';
 import { useReactToPrint } from 'react-to-print';
 import { getCoreTranslation } from '@openmrs/esm-framework';
+import PrintPreviewErrorBoundary from './print-preview-error-boundary.component';
 import TransactionsStockcardPrintout from './transactions-stockcard-printout.component';
 
 type TransactionsStockcardPrintPreviewModalProps = {
@@ -12,7 +13,7 @@ type TransactionsStockcardPrintPreviewModalProps = {
   data: any;
 };
 
-const TransactionsStockcardPrintPreviewModal: React.FC<TransactionsStockcardPrintPreviewModalProps> = ({
+const TransactionsStockcardPrintPreview: React.FC<TransactionsStockcardPrintPreviewModalProps> = ({
   onClose,
   title,
   columns,
@@ -41,6 +42,16 @@ const TransactionsStockcardPrintPreviewModal: React.FC<TransactionsStockcardPrin
         </Button>
       </ModalFooter>
     </>
+  );
+};
+
+const TransactionsStockcardPrintPreviewModal: React.FC<TransactionsStockcardPrintPreviewModalProps> = (props) => {
+  const { t } = useTranslation();
+
+  return (
+    <PrintPreviewErrorBoundary onClose={props.onClose} title={t('printStockCard', 'Print Stock Card')}>
+      <TransactionsStockcardPrintPreview {...props} />
+    </PrintPreviewErrorBoundary>
   );
 };
 
