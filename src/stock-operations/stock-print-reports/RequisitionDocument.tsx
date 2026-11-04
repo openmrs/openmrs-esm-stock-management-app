@@ -1,16 +1,15 @@
 import { formatDisplayDate } from '../../core/utils/datetimeUtils';
 import { GetHeaderSection, GetPrintTemplate } from '../../core/print/PrintTemplate';
-import {
-  CLOSE_PRINT_AFTER_PRINT,
-  STOCK_OPERATION_PRINT_DISABLE_BALANCE_ON_HAND,
-  STOCK_OPERATION_PRINT_DISABLE_COSTS,
-} from '../../constants';
+import { getConfig } from '@openmrs/esm-framework';
+import { type ConfigObject } from '../../config-schema';
+import { CLOSE_PRINT_AFTER_PRINT, moduleName } from '../../constants';
 import { printDocument } from '../../core/print/printUtils';
 import { type StockOperationPrintData } from './StockOperationReport';
 
 export const FormatRequisitionDocument = async (data: StockOperationPrintData): Promise<string> => {
   const emptyRowCount: number = Math.max(0, 28 - (data?.items?.length ?? 0));
   const headerSection = await GetHeaderSection();
+  const { printBalanceOnHand, printItemCost } = await getConfig<ConfigObject>(moduleName);
   return `
     <div>
         ${headerSection}
@@ -64,9 +63,9 @@ export const FormatRequisitionDocument = async (data: StockOperationPrintData): 
                     <td valign="middle">${p.itemCode ?? ''}</td>
                     <td valign="middle">${p.itemDescription ?? ''}</td>
                     <td valign="middle" class="center">${
-                      STOCK_OPERATION_PRINT_DISABLE_BALANCE_ON_HAND || !p.balanceOnHand
-                        ? ''
-                        : `${p.balanceOnHand?.toLocaleString()}  ${p.balanceOnHandUoM ?? ''}`
+                      printBalanceOnHand && p.balanceOnHand != null
+                        ? `${p.balanceOnHand.toLocaleString()}  ${p.balanceOnHandUoM ?? ''}`
+                        : ''
                     }</td>
                     <td valign="middle" class="center">${p.quantityRequired?.toLocaleString() ?? ''} ${
                         p.quantityRequiredUoM ?? ''
@@ -75,12 +74,12 @@ export const FormatRequisitionDocument = async (data: StockOperationPrintData): 
                         p.quantityIssuedUoM ?? ''
                       }</td>
                     <td valign="middle" class="center">${
-                      STOCK_OPERATION_PRINT_DISABLE_COSTS
-                        ? ''
-                        : `${p.unitCost?.toLocaleString() ?? ''}${p.unitCostUoM ? `/${p.unitCostUoM}` : ''}`
+                      printItemCost
+                        ? `${p.unitCost?.toLocaleString() ?? ''}${p.unitCostUoM ? `/${p.unitCostUoM}` : ''}`
+                        : ''
                     }</td>
                     <td valign="middle" class="center">${
-                      STOCK_OPERATION_PRINT_DISABLE_COSTS ? '' : `${p.totalCost?.toLocaleString() ?? ''}`
+                      printItemCost ? `${p.totalCost?.toLocaleString() ?? ''}` : ''
                     }</td>
                 </tr> 
                 `;

@@ -183,8 +183,8 @@ export function updateStockOperationBatchNumbers(item: StockOperationDTO, uuid: 
 }
 
 // get stock operation itemcosts
-export function getStockOperationItemsCost(filter: StockOperationFilter) {
-  const apiUrl = `${restBaseUrl}/stockmanagement/stockoperationitemcost?v=default&stockOperationUuid=${filter}`;
+export function getStockOperationItemsCost(stockOperationUuid: string) {
+  const apiUrl = `${restBaseUrl}/stockmanagement/stockoperationitemcost?v=default&stockOperationUuid=${stockOperationUuid}`;
   const abortController = new AbortController();
   return openmrsFetch<{ results: Array<StockOperationItemCost> }>(apiUrl, {
     method: 'GET',

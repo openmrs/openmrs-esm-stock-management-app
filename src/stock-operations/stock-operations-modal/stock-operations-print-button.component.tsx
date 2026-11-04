@@ -7,7 +7,8 @@ import { type StockItemInventory } from '../../core/api/types/stockItem/StockIte
 import { type StockOperationDTO } from '../../core/api/types/stockOperation/StockOperationDTO';
 import { type StockOperationItemCost } from '../../core/api/types/stockOperation/StockOperationItemCost';
 
-import { showSnackbar } from '@openmrs/esm-framework';
+import { showSnackbar, useConfig } from '@openmrs/esm-framework';
+import { type ConfigObject } from '../../config-schema';
 import { extractErrorMessagesFromResponse } from '../../constants';
 import { ResourceRepresentation } from '../../core/api/api';
 import { OperationType } from '../../core/api/types/stockOperation/StockOperationType';
@@ -29,6 +30,7 @@ interface StockOperationCancelButtonProps {
 
 const StockOperationPrintButton: React.FC<StockOperationCancelButtonProps> = ({ operation: _operation }) => {
   const { t } = useTranslation();
+  const { printBalanceOnHand, printItemCost } = useConfig<ConfigObject>();
   const { isLoading, items: operation, error } = useStockOperationAndItems(_operation.uuid);
   const [loading, setLoading] = useState(false);
   const onPrintStockOperation = async () => {
@@ -47,23 +49,11 @@ const StockOperationPrintButton: React.FC<StockOperationCancelButtonProps> = ({ 
         }
       }
 
-      if (
-        parentOperation ||
-        parentOperation?.operationType === 'stockissue' ||
-        parentOperation?.operationType === 'transferout'
-      ) {
-        const enableOperationPrintCosts = true;
-        if (enableOperationPrintCosts) {
-          const inventoryFilter: StockItemInventoryFilter = {};
-          if (operation?.uuid) {
-            inventoryFilter.stockOperationUuid = operation.uuid;
-          }
-          const res = await getStockOperationItemsCost(inventoryFilter);
-          itemsCost = res.data?.results;
-        }
+      if (printItemCost) {
+        const res = await getStockOperationItemsCost(operation.uuid);
+        itemsCost = res.data?.results;
       }
-      const enableBalance = true;
-      if (enableBalance && (parentOperation || parentOperation?.operationType === 'requisition')) {
+      if (printBalanceOnHand) {
         const inventoryFilter: StockItemInventoryFilter = {};
         if (operation?.uuid) {
           inventoryFilter.locationUuid = operation.atLocationUuid;

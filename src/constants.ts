@@ -85,8 +85,6 @@ export const INVENTORY_DISPENSING_ROLE_UUID = '84bdd876-4694-11ed-8109-00155dcc3
 export const INVENTORY_REPORTING_ROLE_UUID = 'a49be648-6b0a-11ed-93a2-806d973f13a9';
 export const INVENTORY_ADMINISTRATOR_ROLE_UUID = '2083fd40-3391-11ed-a667-507b9dea1806';
 
-export const STOCK_OPERATION_PRINT_DISABLE_BALANCE_ON_HAND = true;
-export const STOCK_OPERATION_PRINT_DISABLE_COSTS = true;
 export const HEALTH_CENTER_NAME = 'Health Center';
 export const PRINT_LOGO = 'moduleResources/stockmanagement/assets/print-logo.svg';
 export const PRINT_LOGO_TEXT = 'Ministry of Health';
