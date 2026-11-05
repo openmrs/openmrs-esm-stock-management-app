@@ -313,9 +313,7 @@ const PackagingUnitRow: React.FC<{
             onChange={(e, state) => onChange(state.value)}
           />
         </TableCell>
-        <TableCell>
-          <DeletePackagingUnitActionButton row={row} />
-        </TableCell>
+        <TableCell>{row?.uuid ? <DeletePackagingUnitActionButton row={row} /> : null}</TableCell>
       </TableRow>
     </>
   );

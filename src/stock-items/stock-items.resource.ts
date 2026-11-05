@@ -214,8 +214,8 @@ export function deleteStockItems(ids: string[]) {
 }
 
 // deleteStockItemPackagingUnit
-export function deleteStockItemPackagingUnit(id: string) {
-  const apiUrl = `${restBaseUrl}/stockmanagement/stockitempackaginguom/${id}`;
+export function deleteStockItemPackagingUnit(id: string, reason: string) {
+  const apiUrl = `${restBaseUrl}/stockmanagement/stockitempackaginguom/${id}?reason=${encodeURIComponent(reason)}`;
   const abortController = new AbortController();
 
   return openmrsFetch(apiUrl, {
