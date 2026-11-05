@@ -24,10 +24,16 @@ const StockOperationsModal: React.FC<StockOperationsModalProps> = ({ title, requ
   const { t } = useTranslation();
   const handleMutate = useHandleMutate();
   const [notes, setNotes] = useState('');
+  const [reasonIsInvalid, setReasonIsInvalid] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
 
   const handleClick = async (event) => {
     event.preventDefault();
+
+    if (requireReason && !notes.trim()) {
+      setReasonIsInvalid(true);
+      return;
+    }
 
     setIsApproving(true);
 
@@ -121,10 +127,14 @@ const StockOperationsModal: React.FC<StockOperationsModalProps> = ({ title, requ
                   labelText={t('notes', 'Please explain the reason:')}
                   id="nextNotes"
                   name="nextNotes"
+                  invalid={reasonIsInvalid}
                   invalidText={t('required', 'Required')}
                   maxCount={500}
                   enableCounter
-                  onChange={(e) => setNotes(e.target.value)}
+                  onChange={(e) => {
+                    setNotes(e.target.value);
+                    setReasonIsInvalid(!e.target.value.trim());
+                  }}
                 />
               </section>
             )}
