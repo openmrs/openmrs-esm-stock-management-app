@@ -183,6 +183,10 @@
       "component": "importBulkStockItemsModal"
     },
     {
+      "name": "issuing-stock-modal",
+      "component": "issuingStockModal"
+    },
+    {
       "name": "receiving-stock-modal",
       "component": "receivingStockModal"
     },
