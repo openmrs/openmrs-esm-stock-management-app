@@ -55,9 +55,9 @@ export function deleteStockRule(ids: string[]) {
 
 // Create Or Update Stock Rule
 export function createOrUpdateStockRule(item: StockRule) {
-  const isNew = item.uuid != null;
+  const isUpdate = item.uuid != null;
 
-  const apiUrl = `${restBaseUrl}/stockmanagement/stockrule${isNew ? '/' + item.uuid : ''}`;
+  const apiUrl = `${restBaseUrl}/stockmanagement/stockrule${isUpdate ? '/' + item.uuid : ''}`;
   const abortController = new AbortController();
   return openmrsFetch(apiUrl, {
     method: 'POST',
@@ -65,7 +65,19 @@ export function createOrUpdateStockRule(item: StockRule) {
       'Content-Type': 'application/json',
     },
     signal: abortController.signal,
-    // body: { ...item, sourceType: item?.sourceType?.uuid },
-    body: { ...item },
+    body: isUpdate
+      ? {
+          name: item.name,
+          description: item.description,
+          quantity: item.quantity,
+          stockItemPackagingUOMUuid: item.stockItemPackagingUOMUuid,
+          enabled: item.enabled,
+          evaluationFrequency: item.evaluationFrequency,
+          actionFrequency: item.actionFrequency,
+          alertRole: item.alertRole,
+          mailRole: item.mailRole,
+          enableDescendants: item.enableDescendants,
+        }
+      : { ...item },
   });
 }
