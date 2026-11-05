@@ -7,7 +7,11 @@ import { OperationType, type StockOperationType } from '../../core/api/types/sto
 import { launchStockoperationAddOrEditWorkSpace } from '../stock-operation.utils';
 import useFilteredOperationTypesByRoles from '../stock-operations-forms/hooks/useFilteredOperationTypesByRoles';
 
-const StockOperationTypesSelector = () => {
+interface StockOperationTypesSelectorProps {
+  className?: string;
+}
+
+const StockOperationTypesSelector: React.FC<StockOperationTypesSelectorProps> = ({ className }) => {
   const { t } = useTranslation();
   const { error, isLoading, operationTypes } = useFilteredOperationTypesByRoles();
 
@@ -27,12 +31,13 @@ const StockOperationTypesSelector = () => {
     }
   }, [error, t]);
 
-  if (isLoading) return <ButtonSkeleton />;
+  if (isLoading) return <ButtonSkeleton className={className} />;
 
   if (error) return null;
 
   return operationTypes && operationTypes.length ? (
     <OverflowMenu
+      className={className}
       renderIcon={() => (
         <>
           Start New&nbsp;&nbsp;

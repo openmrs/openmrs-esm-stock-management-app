@@ -7,12 +7,18 @@ import { StockOperationStatusTypes } from '../core/api/types/stockOperation/Stoc
 import styles from '../stock-items/stock-items-table.scss';
 
 interface StockOperationFiltersProps {
+  className?: string;
   conceptUuid?: string;
   filterName: string;
   onFilterChange: (selectedItems: any[], filterType: string) => void;
 }
 
-const StockOperationsFilters: React.FC<StockOperationFiltersProps> = ({ conceptUuid, onFilterChange, filterName }) => {
+const StockOperationsFilters: React.FC<StockOperationFiltersProps> = ({
+  conceptUuid,
+  onFilterChange,
+  filterName,
+  className,
+}) => {
   const { t } = useTranslation();
   const { items, isLoading } = useConcept(conceptUuid);
   const [isDataLoading, setIsDataLoading] = useState(false);
@@ -55,13 +61,13 @@ const StockOperationsFilters: React.FC<StockOperationFiltersProps> = ({ conceptU
   }, [filterName, isLoading, items.answers]);
 
   if (isDataLoading) {
-    return <DropdownSkeleton />;
+    return <DropdownSkeleton className={className} />;
   }
 
   return (
     <MultiSelect
       autoAlign
-      className={styles.filtersAlign}
+      className={[styles.filtersAlign, className].filter(Boolean).join(' ')}
       disabled={!dataItems.length}
       id="multiSelect"
       label={filterName}
