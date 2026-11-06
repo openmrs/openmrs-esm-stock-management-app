@@ -65,11 +65,81 @@
   max-width: none;
 }
 
-.arrowIcon {
-  margin: 0 layout.$spacing-02;
-}
-
 .tableHeader {
   @include type.type-style('body-02');
   margin: layout.$spacing-05 0;
+}
+
+.toolbarContent {
+  display: flex;
+  align-items: center;
+}
+
+.tableOverride :global(th).locationsColumn,
+.tableOverride :global(td).locationsColumn,
+.tableOverride :global(th).operationsColumn,
+.tableOverride :global(td).operationsColumn {
+  width: 12rem;
+  max-width: 12rem;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  vertical-align: top;
+}
+
+.tableOverride :global(th).actionsColumn,
+.tableOverride :global(td).actionsColumn {
+  width: 6.5rem;
+  white-space: nowrap;
+}
+
+.tableOverride :global(tr.cds--parent-row.cds--expandable-row + tr[data-child-row] td .cds--child-row-inner-container) {
+  max-block-size: none;
+}
+
+.locationChips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: layout.$spacing-02;
+  max-width: 12rem;
+}
+
+.locationChips :global(.cds--tag) {
+  max-width: 100%;
+  height: auto;
+  margin: 0;
+  white-space: normal;
+}
+
+.locationChips :global(.cds--tag__label) {
+  overflow: visible;
+  white-space: normal;
+  text-overflow: unset;
+}
+
+.moreLink {
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.expandedDetails {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-05;
+  padding: layout.$spacing-03 0;
+  max-width: 48rem;
+  white-space: normal;
+}
+
+.expandedHeading {
+  @include type.type-style('heading-compact-01');
+  margin-bottom: layout.$spacing-02;
+}
+
+.expandedDetails .locationChips {
+  max-width: none;
+}
+
+.hiddenRow {
+  display: none;
 }
