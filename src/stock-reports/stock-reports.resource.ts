@@ -1,4 +1,4 @@
-import { openmrsFetch, restBaseUrl, usePagination } from '@openmrs/esm-framework';
+import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import useSWR from 'swr';
 import { type ReportType } from './ReportType';
 import { useState } from 'react';
@@ -13,26 +13,36 @@ export function useReportTypes() {
   };
 }
 export function useGetReports(enabled = true) {
-  const apiUrl = `${restBaseUrl}/stockmanagement/batchjob?batchJobType=Report&v=default&limit=10&totalCount=true`;
-
-  const { data, error, isLoading, mutate } = useSWR<{ data: any }, Error>(enabled ? apiUrl : null, openmrsFetch, {
-    refreshInterval: 15000,
-    dedupingInterval: 10000,
-  });
-
   const pageSizes = [10, 20, 30, 40, 50];
-  const [currentPageSize, setPageSize] = useState(10);
-  const { goTo, results: paginatedItems, currentPage } = usePagination(data?.data?.results, currentPageSize);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPageSize, setCurrentPageSize] = useState(10);
+  const apiUrl = `${restBaseUrl}/stockmanagement/batchjob?batchJobType=Report&v=default&limit=${currentPageSize}&startIndex=${
+    currentPage - 1
+  }&totalCount=true`;
+
+  const { data, error, isLoading, mutate } = useSWR<{ data: { results?: any[]; totalCount?: number } }, Error>(
+    enabled ? apiUrl : null,
+    openmrsFetch,
+    {
+      refreshInterval: 15000,
+      dedupingInterval: 10000,
+    },
+  );
+
+  const goTo = (page: number) => setCurrentPage(page);
+  const setPageSize = (pageSize: number) => {
+    setCurrentPageSize(pageSize);
+    setCurrentPage(1);
+  };
+  const reports = data?.data?.results ?? [];
 
   return {
-    reports: data?.data?.results ?? [],
+    reports,
     isLoading,
     error,
-    items: paginatedItems,
-    totalItems: data?.data?.results?.length ?? 0,
+    totalItems: data?.data?.totalCount ?? reports.length,
     currentPage,
     currentPageSize,
-    paginatedItems,
     goTo,
     pageSizes,
     setPageSize,

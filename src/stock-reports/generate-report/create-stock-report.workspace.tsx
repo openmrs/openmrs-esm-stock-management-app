@@ -32,13 +32,7 @@ import {
 } from '@openmrs/esm-framework';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  getParamDefaultLimit,
-  getReportEndDateLabel,
-  getReportLimitLabel,
-  getReportStartDateLabel,
-  ReportParameter,
-} from '../ReportType';
+import { getParamDefaultLimit, isForecastReport, ReportParameter } from '../ReportType';
 import { DATE_PICKER_CONTROL_FORMAT, DATE_PICKER_FORMAT, formatForDatePicker, today } from '../../constants';
 import { BatchJobTypeReport } from '../../core/api/types/BatchJob';
 import { createBatchJob } from '../../stock-batch/stock-batch.resource';
@@ -384,8 +378,11 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
         parameters += getReportParameter(
           ReportParameter.MostLeastMoving,
           report.mostLeastMoving ?? 'MostMoving',
-          report.mostLeastMovingName?.trim() ?? 'Most Moving',
-          t('mostMoving', 'Most moving'),
+          report.mostLeastMovingName?.trim() ||
+            (report.mostLeastMoving === 'LeastMoving'
+              ? t('leastMoving', 'Least Moving')
+              : t('mostMoving', 'Most moving')),
+          t('rank', 'Rank'),
           newLine,
         );
       }
@@ -394,7 +391,9 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
           ReportParameter.Limit,
           (report.limit ?? getParamDefaultLimit(reportSystemName) ?? 20).toString(),
           (report.limit ?? getParamDefaultLimit(reportSystemName) ?? 20).toString(),
-          t(getReportLimitLabel(reportSystemName)),
+          isForecastReport(reportSystemName)
+            ? t('stockmanagement.report.edit.months', 'Months')
+            : t('stockmanagement.report.edit.limit', 'Limit'),
           newLine,
         );
       }
@@ -412,7 +411,9 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
           ReportParameter.StartDate,
           report.startDate ? JSON.stringify(report.startDate).replaceAll('"', '') : '',
           formatDisplayDate(report.startDate) ?? '',
-          t(getReportStartDateLabel(reportSystemName)),
+          isForecastReport(reportSystemName)
+            ? t('stockmanagement.report.edit.historicalstartdate', 'Historical start date')
+            : t('startDate', 'Start date'),
           newLine,
         );
       }
@@ -421,7 +422,9 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
           ReportParameter.EndDate,
           report.endDate ? JSON.stringify(report.endDate).replaceAll('"', '') : '',
           formatDisplayDate(report.endDate) ?? '',
-          t(getReportEndDateLabel(reportSystemName)),
+          isForecastReport(reportSystemName)
+            ? t('stockmanagement.report.edit.historicalenddate', 'Historical end date')
+            : t('endDate', 'End date'),
           newLine,
         );
       }
@@ -582,7 +585,11 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
               invalid={!!errors?.inventoryGroupBy?.message}
               invalidText={errors?.inventoryGroupBy?.message}
               labelText={t('inventoryBy', 'Inventory by')}
-              onChange={(e) => setValue('inventoryGroupBy', e.target.value)}
+              onChange={(e) => {
+                const selectedOption = e.target.selectedOptions[0];
+                setValue('inventoryGroupBy', e.target.value);
+                setValue('inventoryGroupByName', selectedOption?.text ?? '');
+              }}
             >
               <SelectItem value="" text={t('selectOption', 'Select an option')} />
               <SelectItem value="StockItemOnly" text={t('stockItem', 'Stock Item')} />
@@ -694,7 +701,13 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
                 <RadioButtonGroup
                   name="mostLeastMoving"
                   legendText={t('rank', 'Rank')}
-                  onChange={onChange}
+                  onChange={(value) => {
+                    onChange(value);
+                    setValue(
+                      'mostLeastMovingName',
+                      value === 'LeastMoving' ? t('leastMoving', 'Least Moving') : t('mostMoving', 'Most moving'),
+                    );
+                  }}
                   value={value}
                 >
                   <RadioButton value="MostMoving" id="mostLeastMovingMost" labelText={t('mostMoving', 'Most moving')} />

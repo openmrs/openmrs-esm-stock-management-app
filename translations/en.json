@@ -354,6 +354,16 @@
   "stockItemSearchFailed": "Stock item search failed",
   "stockItemsTableHeader": "Drugs and other stock items managed by the system.",
   "stockItemsUploadedSuccessfully": "Stock items uploaded successfully",
+  "stockmanagement": {
+    "report": {
+      "edit": {
+        "historicalenddate": "Historical end date",
+        "historicalstartdate": "Historical start date",
+        "limit": "Limit",
+        "months": "Months"
+      }
+    }
+  },
   "stockManagement": "Stock management",
   "stockOperationAdded": "Stock operation added successfully",
   "stockOperationEdited": "Stock operation edited successfully",

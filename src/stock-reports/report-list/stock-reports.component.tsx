@@ -139,7 +139,7 @@ const StockReports: React.FC = () => {
         uuid: `${batchJob?.uuid}`,
         batchJobType: batchJob?.batchJobType,
         dateRequested: formatDisplayDateTime(batchJob.dateCreated),
-        parameters: <StockReportParameters model={reports[index]} />,
+        parameters: <StockReportParameters model={batchJob} />,
         report: batchJob?.description,
         requestedBy: batchJob?.owners?.map((p, index) => (
           <div key={`${batchJob.uuid}-owner-${index}`}>{`${p.ownerFamilyName} ${p.ownerGivenName}`}</div>
@@ -294,7 +294,7 @@ const StockReports: React.FC = () => {
 
                       {row.isExpanded ? (
                         <TableExpandedRow colSpan={headers.length + 2}>
-                          <StockReportStatus model={reports[index]} />
+                          <StockReportStatus model={reports.find((report) => report.uuid === row.id)} />
                         </TableExpandedRow>
                       ) : (
                         <TableExpandedRow className={styles.hiddenRow} colSpan={headers.length + 2} />
@@ -330,8 +330,7 @@ const StockReports: React.FC = () => {
         onChange={({ pageSize, page }) => {
           if (pageSize !== currentPageSize) {
             setPageSize(pageSize);
-          }
-          if (page !== currentPage) {
+          } else if (page !== currentPage) {
             goTo(page);
           }
         }}
