@@ -14,6 +14,7 @@ import {
   Select,
   SelectItem,
   Stack,
+  TextInput,
   Toggle,
 } from '@carbon/react';
 import { Save } from '@carbon/react/icons';
@@ -68,7 +69,11 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
     ? t('editUserRoleScope', 'Edit user role scope')
     : t('addNewUserRoleScope', 'Add new user role scope');
   const currentUser = useSession();
-  const [formModel, setFormModel] = useState<UserRoleScope>({ ...model });
+  const [formModel, setFormModel] = useState<UserRoleScope>({
+    ...model,
+    enabled: model?.enabled ?? false,
+    permanent: model?.permanent ?? false,
+  });
   const isTablet = useLayoutType() === 'tablet';
 
   const [roles, setRoles] = useState<Role[]>([]);
@@ -76,6 +81,23 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
   const loggedInUserUuid = currentUser?.user?.uuid;
   const [selectedUserUuid, setSelectedUserUuid] = useState<string | null>(null);
   const { data: user } = useUser(selectedUserUuid);
+  const isEditing = Boolean(model?.uuid);
+
+  const roleOptions = useMemo(() => {
+    const stockRoles = (user?.roles?.filter((role) => stockRoleUUIDs.includes(role.uuid)) ?? roles).map(
+      (role) => role.display,
+    );
+    // A saved role stays selectable even if it is no longer one of the configured stock roles
+    return model?.role && !stockRoles.includes(model.role) ? [model.role, ...stockRoles] : stockRoles;
+  }, [user?.roles, roles, stockRoleUUIDs, model?.role]);
+
+  const activeDates = useMemo(
+    () => [formModel?.activeFrom, formModel?.activeTo].filter(Boolean).map((date) => new Date(date)),
+    [formModel?.activeFrom, formModel?.activeTo],
+  );
+  // The picker drops dates before its minimum, so an existing scope's start date has to stay in range
+  const savedActiveFrom = model?.activeFrom ? new Date(model.activeFrom) : null;
+  const minActiveDate = savedActiveFrom && savedActiveFrom < MinDate ? savedActiveFrom : MinDate;
 
   // operation types
   const {
@@ -173,6 +195,13 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
     }
   };
 
+  const onEnableDescendantsToggled = (locationUuid: string, enableDescendants: boolean): void => {
+    const locations = formModel?.locations?.map((location) =>
+      location.locationUuid === locationUuid ? { ...location, enableDescendants } : location,
+    );
+    setFormModel({ ...formModel, locations });
+  };
+
   const findCheckedLocation = (location: fhir.Location): UserRoleScopeLocation | null => {
     const result = formModel?.locations?.filter((x) => x.locationUuid === location.id);
     return result && result.length > 0 ? result[0] : null;
@@ -186,7 +215,7 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
     const filteredStockRoles = data.selectedItem?.roles
       .filter((role) => stockRoleUUIDs.includes(role.uuid))
       .filter((role) => role.uuid !== loggedInUserUuid);
-    setFormModel({ ...formModel, userUuid: data.selectedItem?.uuid });
+    setFormModel({ ...formModel, userUuid: data.selectedItem?.uuid, role: undefined });
     setRoles(filteredStockRoles ?? []);
     setSelectedUserUuid(data?.selectedItem?.uuid);
   };
@@ -213,22 +242,24 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
     e.preventDefault();
 
     // Validation: ensure required fields are present
-    if (!formModel?.userUuid) {
-      showSnackbar({
-        title: t('errorSavingUserRoleScope', 'Error Saving user role scope'),
-        kind: 'error',
-        isLowContrast: true,
-        subtitle: t('userRequired', 'User is required'),
-      });
-      return;
-    }
+    const validationError = !formModel?.userUuid
+      ? t('userRequired', 'User is required')
+      : !formModel?.role
+      ? t('roleRequired', 'Role is required')
+      : !formModel?.permanent && (!formModel?.activeFrom || !formModel?.activeTo)
+      ? t('activeDatesRequired', 'Active From and Active To are required unless the scope is permanent')
+      : !formModel?.operationTypes?.length
+      ? t('operationTypeRequired', 'Select at least one stock operation')
+      : !formModel?.locations?.length
+      ? t('selectAtLeastOneLocation', 'Select at least one location')
+      : null;
 
-    if (!formModel?.role) {
+    if (validationError) {
       showSnackbar({
         title: t('errorSavingUserRoleScope', 'Error Saving user role scope'),
         kind: 'error',
         isLowContrast: true,
-        subtitle: t('roleRequired', 'Role is required'),
+        subtitle: validationError,
       });
       return;
     }
@@ -269,26 +300,38 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
         <Stack className={styles.form} gap={5}>
           <div>
             <FormGroup legendText={t('user', 'User')}>
-              <ComboBox
-                id="userName"
-                initialSelectedItem={usersResults.find((user) => user.uuid === model?.userUuid) ?? null}
-                items={usersResults}
-                itemToString={(item) => {
-                  if (!item || typeof item !== 'object') return '';
-                  const itemWithPerson = item as { person?: { display?: string }; display?: string };
-                  return `${itemWithPerson?.person?.display ?? itemWithPerson?.display ?? ''}`;
-                }}
-                titleText={t('user', 'User')}
-                onChange={onUserChanged}
-                onInputChange={debouncedSearch}
-                placeholder={t('searchUsers', 'Search users')}
-                shouldFilterItem={() => true}
-                size="md"
-              />
+              {isEditing ? (
+                <TextInput
+                  id="userName"
+                  labelText={t('user', 'User')}
+                  readOnly
+                  size="md"
+                  value={`${model?.userFamilyName ?? ''} ${model?.userGivenName ?? ''}`.trim() || model?.userName}
+                />
+              ) : (
+                <ComboBox
+                  id="userName"
+                  items={usersResults}
+                  itemToString={(item) => {
+                    if (!item || typeof item !== 'object') return '';
+                    const itemWithPerson = item as { person?: { display?: string }; display?: string };
+                    return `${itemWithPerson?.person?.display ?? itemWithPerson?.display ?? ''}`;
+                  }}
+                  titleText={t('user', 'User')}
+                  onChange={onUserChanged}
+                  onInputChange={debouncedSearch}
+                  placeholder={t('searchUsers', 'Search users')}
+                  shouldFilterItem={() => true}
+                  size="md"
+                />
+              )}
             </FormGroup>
           </div>
           <Select
             id="select-role"
+            helperText={
+              user?.uuid && roleOptions.length === 0 ? t('noStockRoles', 'This user has no stock roles') : undefined
+            }
             labelText={t('role', 'Role')}
             name="role"
             onChange={onRoleChange}
@@ -298,8 +341,8 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
             {editMode ? (
               <SelectItem key={formModel?.role} value={formModel?.role} text={formModel?.role} />
             ) : (
-              (user?.roles ?? roles)?.map((role) => {
-                return <SelectItem key={role.display} value={role.display} text={role.display} />;
+              roleOptions.map((role) => {
+                return <SelectItem key={role} value={role} text={role} />;
               })
             )}
           </Select>
@@ -326,8 +369,9 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
                 datePickerType="range"
                 light
                 locale="en"
-                minDate={formatForDatePicker(MinDate)}
+                minDate={formatForDatePicker(minActiveDate)}
                 onChange={onActiveDatesChange}
+                value={activeDates}
               >
                 <DatePickerInput
                   id="date-picker-input-id-start"
@@ -392,14 +436,21 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
                       value={type.id}
                     />
                     {checkedLocation && (
-                      <Toggle
-                        className={styles.toggle}
-                        hideLabel
-                        id={`tg-loc-child-${type.id}`}
-                        key={`tg-loc-child-key-${type.id}`}
-                        toggled={getToggledValue(type.id)}
-                        size="sm"
-                      />
+                      <>
+                        <span className="cds--visually-hidden" id={`tg-loc-child-label-${type.id}`}>
+                          {t('applyToChildLocations', 'Apply to child locations')}
+                        </span>
+                        <Toggle
+                          aria-labelledby={`tg-loc-child-label-${type.id}`}
+                          className={styles.toggle}
+                          hideLabel
+                          id={`tg-loc-child-${type.id}`}
+                          key={`tg-loc-child-key-${type.id}`}
+                          onToggle={(checked) => onEnableDescendantsToggled(type.id, checked)}
+                          toggled={getToggledValue(type.id)}
+                          size="sm"
+                        />
+                      </>
                     )}
                   </div>
                 );
