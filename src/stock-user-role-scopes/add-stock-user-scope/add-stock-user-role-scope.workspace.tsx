@@ -48,6 +48,8 @@ import { useHandleMutate } from '../../utils';
 import useSearchUser from '../../stock-operations/stock-operations-forms/hooks/useSearchUser';
 import { useDebounce } from '../../core/hooks/debounce-hook';
 import styles from './add-stock-user-role-scope.scss';
+import { getUserName } from '../../core/utils/user-display';
+import UserOption from '../../core/components/user-option/user-option.component';
 
 const MinDate: Date = today();
 
@@ -76,6 +78,9 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
   const loggedInUserUuid = currentUser?.user?.uuid;
   const [selectedUserUuid, setSelectedUserUuid] = useState<string | null>(null);
   const { data: user } = useUser(selectedUserUuid);
+  const isEditing = Boolean(model?.userUuid);
+  const { data: savedUser } = useUser(model?.userUuid ?? null);
+  const editUser = savedUser?.uuid ? savedUser : null;
 
   // operation types
   const {
@@ -84,25 +89,24 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
   } = useStockOperationTypes();
 
   // Server-side user search (fixes O3-4518: systems with many users)
-  const { userList, setSearchString, isLoading: loadingUsers } = useSearchUser();
+  const { userList, setSearchString, isLoading: loadingUsers, hasSearchTerm } = useSearchUser();
 
   const debouncedSearch = useDebounce((query: string) => {
     setSearchString(query?.trim() || null);
-  }, 1000);
-
-  // Stabilize the items list — only update when not loading to prevent flicker
-  const [stableUserList, setStableUserList] = useState(userList ?? []);
-
-  useEffect(() => {
-    if (!loadingUsers && userList) {
-      setStableUserList(userList);
-    }
-  }, [userList, loadingUsers]);
+  }, 300);
 
   const usersResults = useMemo(
-    () => stableUserList.filter((item) => item.uuid !== loggedInUserUuid),
-    [stableUserList, loggedInUserUuid],
+    () => (userList ?? []).filter((item) => item.uuid !== loggedInUserUuid),
+    [userList, loggedInUserUuid],
   );
+
+  const userSearchHelperText = loadingUsers
+    ? t('searchingUsers', 'Searching users...')
+    : !hasSearchTerm
+    ? t('typeToSearchUsers', 'Type a name or username to search')
+    : usersResults.length === 0
+    ? t('noUsersFound', 'No users found')
+    : undefined;
 
   // get roles
   const { isLoading: loadingRoles } = useRoles({
@@ -270,14 +274,13 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
           <div>
             <FormGroup legendText={t('user', 'User')}>
               <ComboBox
+                key={isEditing ? (editUser ? editUser.uuid : 'loading-user') : 'new-scope'}
                 id="userName"
-                initialSelectedItem={usersResults.find((user) => user.uuid === model?.userUuid) ?? null}
+                initialSelectedItem={editUser}
+                helperText={userSearchHelperText}
                 items={usersResults}
-                itemToString={(item) => {
-                  if (!item || typeof item !== 'object') return '';
-                  const itemWithPerson = item as { person?: { display?: string }; display?: string };
-                  return `${itemWithPerson?.person?.display ?? itemWithPerson?.display ?? ''}`;
-                }}
+                itemToString={(item) => getUserName(item as User)}
+                itemToElement={UserOption}
                 titleText={t('user', 'User')}
                 onChange={onUserChanged}
                 onInputChange={debouncedSearch}

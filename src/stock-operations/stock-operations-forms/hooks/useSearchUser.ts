@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   type ConceptFilterCriteria,
   type UserFilterCriteria,
@@ -7,33 +7,21 @@ import {
 import { ResourceRepresentation } from '../../../core/api/api';
 
 const useSearchUser = (filter?: ConceptFilterCriteria) => {
-  const [conceptFilter, setConceptFilter] = useState<UserFilterCriteria>(
-    filter || {
-      v: ResourceRepresentation.Default,
-      limit: 10,
-      startIndex: 0,
-    },
+  const [searchString, setSearchString] = useState<string | null>(null);
+  const [limit, setLimit] = useState(filter?.limit || 10);
+  const [representation, setRepresentation] = useState<string>(filter?.v || ResourceRepresentation.Default);
+
+  // No search term means no request, so an unfiltered page of users is never loaded.
+  const userFilter = useMemo<UserFilterCriteria | null>(
+    () =>
+      searchString ? { startIndex: 0, v: representation as ResourceRepresentation, limit, q: searchString } : null,
+    [searchString, limit, representation],
   );
 
   const {
     items: { results: userList },
     isLoading,
-  } = useUsers(conceptFilter);
-
-  const [searchString, setSearchString] = useState(null);
-
-  // Drug filter type
-  const [limit, setLimit] = useState(filter?.limit || 10);
-  const [representation, setRepresentation] = useState<string>(filter?.v || ResourceRepresentation.Default);
-
-  useEffect(() => {
-    setConceptFilter({
-      startIndex: 0,
-      v: representation as ResourceRepresentation,
-      limit: limit,
-      q: searchString,
-    });
-  }, [searchString, limit, representation]);
+  } = useUsers(userFilter);
 
   return {
     userList,
@@ -41,6 +29,7 @@ const useSearchUser = (filter?: ConceptFilterCriteria) => {
     setRepresentation,
     setSearchString,
     isLoading,
+    hasSearchTerm: Boolean(searchString),
   };
 };
 

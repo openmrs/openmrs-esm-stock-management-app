@@ -41,6 +41,7 @@ describe('User Selector', () => {
   it('renders loading state', async () => {
     mockUseSearchUser.mockReturnValue({
       isLoading: true,
+      hasSearchTerm: false,
       userList: [],
       setSearchString: vi.fn(),
       setLimit: vi.fn(),
@@ -57,6 +58,7 @@ describe('User Selector', () => {
     const errorMessage = 'Error message';
     mockUseSearchUser.mockReturnValue({
       isLoading: false,
+      hasSearchTerm: false,
       userList: [],
       setSearchString: vi.fn(),
       setLimit: vi.fn(),
@@ -75,6 +77,7 @@ describe('User Selector', () => {
 
     mockUseSearchUser.mockReturnValue({
       isLoading: false,
+      hasSearchTerm: true,
       userList: [
         {
           uuid: '1',
@@ -116,6 +119,7 @@ describe('User Selector', () => {
   it('renders TextInput for other user', async () => {
     mockUseSearchUser.mockReturnValue({
       isLoading: false,
+      hasSearchTerm: false,
       userList: [],
       setSearchString: vi.fn(),
       setLimit: vi.fn(),
@@ -144,6 +148,7 @@ describe('User Selector', () => {
     const setSearchString = vi.fn();
     mockUseSearchUser.mockReturnValue({
       isLoading: false,
+      hasSearchTerm: false,
       userList: [],
       setSearchString,
       setLimit: vi.fn(),
@@ -159,5 +164,86 @@ describe('User Selector', () => {
     await user.type(combobox, 'test');
     await new Promise((resolve) => setTimeout(resolve, 2000)); // Simulate debounce
     expect(setSearchString).toHaveBeenCalledWith('test');
+  });
+
+  it('shows the username next to the person name in the list', async () => {
+    const user = userEvent.setup();
+
+    mockUseSearchUser.mockReturnValue({
+      isLoading: false,
+      hasSearchTerm: true,
+      userList: [
+        {
+          uuid: '3',
+          username: 'bokonkwo',
+          person: { display: 'Betty Okonkwo', uuid: '3' },
+          display: 'bokonkwo',
+          givenName: 'Betty',
+          familyName: 'Okonkwo',
+          firstName: 'Betty',
+          lastName: 'Okonkwo',
+          privileges: [],
+        },
+      ],
+      setSearchString: vi.fn(),
+      setLimit: vi.fn(),
+      setRepresentation: vi.fn(),
+    });
+    mockUseUser.mockReturnValue({ isLoading: false, data: null, error: null });
+
+    render(<UsersSelector />);
+
+    await user.click(screen.getByRole('combobox'));
+    expect(screen.getByText('Betty Okonkwo (bokonkwo)')).toBeInTheDocument();
+  });
+
+  it('asks the user to type before any search has run', () => {
+    mockUseSearchUser.mockReturnValue({
+      isLoading: false,
+      hasSearchTerm: false,
+      userList: [],
+      setSearchString: vi.fn(),
+      setLimit: vi.fn(),
+      setRepresentation: vi.fn(),
+    });
+    mockUseUser.mockReturnValue({ isLoading: false, data: null, error: null });
+
+    render(<UsersSelector />);
+
+    expect(screen.getByText(/type a name or username to search/i)).toBeInTheDocument();
+  });
+
+  it('keeps the server-matched user visible when the typed text is their username', async () => {
+    const user = userEvent.setup();
+
+    mockUseSearchUser.mockReturnValue({
+      isLoading: false,
+      hasSearchTerm: true,
+      userList: [
+        {
+          uuid: '3',
+          username: 'bokonkwo',
+          person: { display: 'Betty Okonkwo', uuid: '3' },
+          display: 'bokonkwo',
+          givenName: 'Betty',
+          familyName: 'Okonkwo',
+          firstName: 'Betty',
+          lastName: 'Okonkwo',
+          privileges: [],
+        },
+      ],
+      setSearchString: vi.fn(),
+      setLimit: vi.fn(),
+      setRepresentation: vi.fn(),
+    });
+    mockUseUser.mockReturnValue({ isLoading: false, data: null, error: null });
+
+    render(<UsersSelector />);
+
+    const combobox = screen.getByRole('combobox');
+    await user.click(combobox);
+    await user.type(combobox, 'bokonkwo');
+
+    expect(screen.getByText('Betty Okonkwo (bokonkwo)')).toBeInTheDocument();
   });
 });
