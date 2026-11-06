@@ -20,11 +20,11 @@ import {
   Tile,
 } from '@carbon/react';
 import { ArrowDownLeft, ArrowLeft } from '@carbon/react/icons';
-import { isDesktop, restBaseUrl, useSession } from '@openmrs/esm-framework';
+import { ErrorState, isDesktop, restBaseUrl, userHasAccess, useSession } from '@openmrs/esm-framework';
 import { formatDisplayDate } from '../core/utils/datetimeUtils';
 import { useHandleMutate } from '../utils';
 import { ResourceRepresentation } from '../core/api/api';
-import { URL_USER_ROLE_SCOPE } from '../constants';
+import { TASK_STOCKMANAGEMENT_USERROLESCOPES_MUTATE, URL_USER_ROLE_SCOPE } from '../constants';
 import AddStockUserRoleScopeActionButton from './add-stock-user-role-scope-button.component';
 import EditStockUserRoleActionsMenu from './edit-stock-user-scope/edit-stock-user-scope-action-menu.component';
 import StockUserScopeDeleteActionMenu from './delete-stock-user-scope/delete-stock-user-scope.component';
@@ -35,13 +35,14 @@ function StockUserRoleScopesItems() {
   const { t } = useTranslation();
   const handleMutate = useHandleMutate();
   const currentUser = useSession();
+  const canMutateUserRoleScopes = userHasAccess(TASK_STOCKMANAGEMENT_USERROLESCOPES_MUTATE, currentUser.user);
 
   const handleRefresh = () => {
     handleMutate(`${restBaseUrl}/stockmanagement/userrolescope`);
   };
 
   // get user scopes
-  const { items, totalItems, currentPage, pageSizes, goTo, currentPageSize, setPageSize, isLoading } =
+  const { items, totalItems, currentPage, pageSizes, goTo, currentPageSize, setPageSize, isLoading, error } =
     useStockUserRoleScopesPage({
       v: ResourceRepresentation.Default,
       totalCount: true,
@@ -141,7 +142,7 @@ function StockUserRoleScopesItems() {
         enabled: userRoleScope?.enabled ? t('yes', 'Yes') : t('no', 'No'),
         actions: (
           <div style={{ display: 'flex' }}>
-            {!isCurrentUser && (
+            {!isCurrentUser && canMutateUserRoleScopes && (
               <>
                 <EditStockUserRoleActionsMenu data={items[index]} />
                 <StockUserScopeDeleteActionMenu uuid={items[index].uuid} />
@@ -151,10 +152,14 @@ function StockUserRoleScopesItems() {
         ),
       };
     });
-  }, [currentUser.user.uuid, items, t]);
+  }, [canMutateUserRoleScopes, currentUser.user.uuid, items, t]);
 
   if (isLoading) {
     return <DataTableSkeleton role="progressbar" />;
+  }
+
+  if (error) {
+    return <ErrorState headerTitle={t('errorLoadingUserRoleScopes', 'Error loading user role scopes')} error={error} />;
   }
 
   return (
@@ -182,7 +187,7 @@ function StockUserRoleScopesItems() {
                     {t('refresh', 'Refresh')}
                   </TableToolbarAction>
                 </TableToolbarMenu>
-                <AddStockUserRoleScopeActionButton />
+                {canMutateUserRoleScopes && <AddStockUserRoleScopeActionButton />}
               </TableToolbarContent>
             </TableToolbar>
             <Table {...getTableProps()}>

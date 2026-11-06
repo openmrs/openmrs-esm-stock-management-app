@@ -11,7 +11,7 @@ export function useUserRoleScopes(filter: UserRoleScopeFilter) {
   const apiUrl = `${restBaseUrl}/stockmanagement/userrolescope${toQueryParams(filter)}`;
   const { data, error, isLoading } = useSWR<{ data: PageableResult<UserRoleScope> }, Error>(apiUrl, openmrsFetch);
   return {
-    items: data?.data || <PageableResult<UserRoleScope>>{},
+    items: data?.data || <PageableResult<UserRoleScope>>{ results: [], totalCount: 0, links: null },
     isLoading,
     error,
   };

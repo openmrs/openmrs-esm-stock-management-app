@@ -70,6 +70,7 @@
       "name": "user-scopes-db-link",
       "slot": "stock-page-dashboard-slot",
       "component": "stockUserScopesLink",
+      "privileges": "App: stockmanagement.userRoleScopes",
       "meta": {
         "name": "user-scopes",
         "slot": "user-scopes-dashboard-slot",

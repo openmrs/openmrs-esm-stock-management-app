@@ -18,7 +18,7 @@ import {
   Tile,
 } from '@carbon/react';
 import { useTranslation } from 'react-i18next';
-import { isDesktop, restBaseUrl } from '@openmrs/esm-framework';
+import { ErrorState, isDesktop, restBaseUrl } from '@openmrs/esm-framework';
 import { useHandleMutate } from '../utils';
 import { ResourceRepresentation } from '../core/api/api';
 import { type CustomTableHeader } from '../core/components/table/types';
@@ -39,11 +39,21 @@ const StockSourcesItems: React.FC = () => {
   };
 
   // get sourcess
-  const { items, totalItems, tableHeaders, currentPage, pageSizes, goTo, currentPageSize, setPageSize, isLoading } =
-    useStockSourcesPage({
-      v: ResourceRepresentation.Default,
-      totalCount: true,
-    });
+  const {
+    items,
+    totalItems,
+    tableHeaders,
+    currentPage,
+    pageSizes,
+    goTo,
+    currentPageSize,
+    setPageSize,
+    isLoading,
+    error,
+  } = useStockSourcesPage({
+    v: ResourceRepresentation.Default,
+    totalCount: true,
+  });
 
   const tableRows = useMemo(() => {
     return items?.map((entry, index) => {
@@ -78,6 +88,10 @@ const StockSourcesItems: React.FC = () => {
 
   if (isLoading) {
     return <DataTableSkeleton role="progressbar" />;
+  }
+
+  if (error) {
+    return <ErrorState headerTitle={t('errorLoadingStockSources', 'Error loading stock sources')} error={error} />;
   }
 
   return (

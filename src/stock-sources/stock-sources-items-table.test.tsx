@@ -285,6 +285,27 @@ describe('StockSourcesItems', () => {
     expect(screen.getByText(/check the filters above/i)).toBeInTheDocument();
   });
 
+  test('renders an error state instead of the empty list when loading fails', () => {
+    mockUseStockSourcesPage.mockReturnValue({
+      items: [],
+      isLoading: false,
+      totalItems: 0,
+      tableHeaders: [],
+      currentPage: 1,
+      pageSizes: [10, 20, 50],
+      goTo: vi.fn(),
+      currentPageSize: 10,
+      setPageSize: vi.fn(),
+      paginatedItems: [],
+      error: new Error('Failed to load stock sources'),
+    });
+
+    render(<StockSourcesItems />);
+
+    expect(screen.getByText(/error state/i)).toBeInTheDocument();
+    expect(screen.queryByText(/no stock sources to display/i)).not.toBeInTheDocument();
+  });
+
   test('pagination works as expected', async () => {
     const user = userEvent.setup();
 
