@@ -11,6 +11,7 @@ import { launchStockOperationsModal } from '../../stock-operation.utils';
 import { updateStockOperation } from '../../stock-operations.resource';
 import { type StockOperationDTO } from '../../../core/api/types/stockOperation/StockOperationDTO';
 import { type StockOperationType } from '../../../core/api/types/stockOperation/StockOperationType';
+import { type RecordPermission } from '../../../core/api/types/RecordPermission';
 
 vi.mock('../../stock-operation.utils', () => ({ launchStockOperationsModal: vi.fn() }));
 vi.mock('../../stock-operations.resource', () => ({
@@ -30,11 +31,15 @@ function Operation({
   approval,
   valid,
   status = 'NEW',
+  permission = { canEdit: true },
+  unsaved = false,
 }: {
   type: string;
   approval: boolean;
   valid: boolean;
   status?: StockOperationDTO['status'];
+  permission?: Partial<RecordPermission> | null;
+  unsaved?: boolean;
 }) {
   const form = useForm({
     defaultValues: { responsiblePersonUuid: valid ? 'responsible-person' : '', stockOperationItems: [] },
@@ -43,7 +48,11 @@ function Operation({
   return (
     <FormProvider {...form}>
       <StockOperationSubmissionFormStep
-        stockOperation={{ uuid: 'operation-being-edited', status, approvalRequired: approval } as StockOperationDTO}
+        stockOperation={
+          unsaved
+            ? undefined
+            : ({ uuid: 'operation-being-edited', status, approvalRequired: approval, permission } as StockOperationDTO)
+        }
         stockOperationType={{ operationType: type } as StockOperationType}
       />
     </FormProvider>
@@ -98,21 +107,32 @@ describe('operation identity after validation and save', () => {
   });
 });
 
-describe('editing by operation status', () => {
-  it.each(['NEW', 'RETURNED'] as const)('shows the save and submit buttons for a %s operation', (status) => {
+describe('editing by permission', () => {
+  it.each(['NEW', 'RETURNED'] as const)('shows the save and submit buttons for an editable %s operation', (status) => {
     render(<Operation type="receipt" approval valid status={status} />);
     expect(screen.getByRole('button', { name: 'Submit For Review' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument();
   });
 
-  it.each(['SUBMITTED', 'DISPATCHED', 'COMPLETED', 'CANCELLED', 'REJECTED'] as const)(
-    'keeps a %s operation locked',
+  it('shows the save button for a new, unsaved operation', () => {
+    render(<Operation type="receipt" approval valid unsaved />);
+    expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument();
+  });
+
+  it.each(['NEW', 'RETURNED', 'SUBMITTED', 'DISPATCHED', 'COMPLETED', 'CANCELLED', 'REJECTED'] as const)(
+    'keeps a %s operation locked when the user cannot edit it',
     (status) => {
-      render(<Operation type="receipt" approval valid status={status} />);
+      render(<Operation type="receipt" approval valid status={status} permission={{ canEdit: false }} />);
       expect(screen.queryByRole('button', { name: 'Submit For Review' })).not.toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument();
     },
   );
+
+  it('keeps an operation locked when the permission is missing', () => {
+    render(<Operation type="receipt" approval valid permission={null} />);
+    expect(screen.queryByRole('button', { name: 'Submit For Review' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument();
+  });
 
   it('resubmits a RETURNED operation for review', async () => {
     const saved = { uuid: 'saved-operation', status: 'RETURNED' };
