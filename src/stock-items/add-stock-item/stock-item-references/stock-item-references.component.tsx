@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Button,
@@ -16,10 +16,13 @@ import { TrashCan, Save } from '@carbon/react/icons';
 import { FormProvider, useForm, useFormContext } from 'react-hook-form';
 import { useStockItemReferencesHook } from './stock-item-references.resource';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { type StockItemReferenceData } from './validation-schema';
-import { createStockItemDetailsSchema } from '../../validationSchema';
+import { createStockItemReferencesSchema, type StockItemReferencesFormData } from './validation-schema';
 import { type StockItemReferenceDTO } from '../../../core/api/types/stockItem/StockItemReference';
-import { createStockItemReference, deleteStockItemReference } from '../../stock-items.resource';
+import {
+  createStockItemReference,
+  deleteStockItemReference,
+  updateStockItemReference,
+} from '../../stock-items.resource';
 import { restBaseUrl, showSnackbar } from '@openmrs/esm-framework';
 import { extractErrorMessagesFromResponse } from '../../../constants';
 import { useHandleMutate } from '../../../utils';
@@ -27,6 +30,8 @@ import ControlledTextInput from '../../../core/components/carbon/controlled-text
 import StockSourceSelector from './stock-references-selector.component';
 import { type CustomTableHeader, type CustomTableRow } from '../../../core/components/table/types';
 import styles from './stock-item-references.scss';
+
+const REFERENCES_URL = `${restBaseUrl}/stockmanagement/stockitemreference`;
 
 interface StockReferencesProps {
   isEditing?: boolean;
@@ -65,43 +70,83 @@ const StockReferences: React.FC<StockReferencesProps> = ({ stockItemUuid }) => {
     [t],
   );
 
-  const stockReferenceForm = useForm<StockItemReferenceData>({
-    defaultValues: {},
+  const stockReferenceForm = useForm<StockItemReferencesFormData>({
+    defaultValues: { codes: {}, newReference: { stockSourceUuid: '', referenceCode: '' } },
     mode: 'all',
-    resolver: zodResolver(createStockItemDetailsSchema(t)),
+    resolver: zodResolver(createStockItemReferencesSchema(t)),
   });
+  const { getValues, reset, setError, setValue, handleSubmit } = stockReferenceForm;
 
-  const handleSaveStockItemReference = () => {
-    const { getValues } = stockReferenceForm;
-    const { code, references } = getValues();
+  // Show the latest saved codes without losing what the user has typed and not saved
+  useEffect(() => {
+    if (items) {
+      reset(
+        {
+          codes: Object.fromEntries(items.map((item) => [item.uuid, item.referenceCode ?? ''])),
+          newReference: getValues('newReference'),
+        },
+        { keepDirtyValues: true },
+      );
+    }
+  }, [items, getValues, reset]);
 
-    const payload: StockItemReferenceDTO = {
-      referenceCode: code,
-      stockItemUuid: stockItemUuid,
-      stockSourceUuid: references,
-    };
-
-    createStockItemReference(payload).then(
-      () => {
-        handleMutate(`${restBaseUrl}/stockmanagement/stockitemreference`);
-
-        showSnackbar({
-          title: t('saveReferenceTitle', 'Stock Item Reference'),
-          subtitle: t('saveStockItemReferenceMessage', 'Stock Item Reference saved successfully'),
-          kind: 'success',
-        });
-      },
-      (error) => {
-        handleMutate(`${restBaseUrl}/stockmanagement/stockitemreference`);
-
-        const err = extractErrorMessagesFromResponse(error);
-        showSnackbar({
-          title: t('saveStockItemReferenceErrorTitle', 'Stock Item Reference'),
-          subtitle: t('saveStockItemReferenceErrorMessage', 'Error saving stock item reference' + err.join(',')),
-          kind: 'error',
-        });
-      },
+  const handleSaveStockItemReference = async ({ codes, newReference }: StockItemReferencesFormData) => {
+    const changedReferences = (items ?? []).filter(
+      (item) => codes[item.uuid] !== undefined && codes[item.uuid] !== (item.referenceCode ?? ''),
     );
+    const hasNewReference = !!newReference.stockSourceUuid;
+
+    if (changedReferences.length === 0 && !hasNewReference) {
+      setError('newReference.stockSourceUuid', { message: t('sourceRequired', 'Source is required') });
+      setError('newReference.referenceCode', { message: t('codeRequired', 'Code is required') });
+      return;
+    }
+
+    const updates = changedReferences.map((item) =>
+      updateStockItemReference(
+        {
+          referenceCode: codes[item.uuid],
+          stockItemUuid: item.stockItemUuid ?? stockItemUuid,
+          stockSourceUuid: item.stockSourceUuid,
+        },
+        item.uuid,
+      ),
+    );
+    const creation = hasNewReference
+      ? createStockItemReference({
+          referenceCode: newReference.referenceCode,
+          stockItemUuid,
+          stockSourceUuid: newReference.stockSourceUuid,
+        })
+      : null;
+
+    const results = await Promise.allSettled([...updates, ...(creation ? [creation] : [])]);
+    const failures = results.filter((result): result is PromiseRejectedResult => result.status === 'rejected');
+
+    if (results.length > failures.length) {
+      handleMutate(REFERENCES_URL);
+    }
+
+    const creationFailed = !!creation && results[results.length - 1].status === 'rejected';
+    if (creation && !creationFailed) {
+      setValue('newReference', { stockSourceUuid: '', referenceCode: '' });
+    }
+
+    if (failures.length === 0) {
+      showSnackbar({
+        title: t('saveReferenceTitle', 'Stock Item Reference'),
+        subtitle: t('saveStockItemReferenceMessage', 'Stock Item Reference saved successfully'),
+        kind: 'success',
+      });
+    } else {
+      showSnackbar({
+        title: t('saveStockItemReferenceErrorTitle', 'Stock Item Reference'),
+        subtitle: t('saveStockItemReferenceError', 'Error saving stock item reference: {{reason}}', {
+          reason: failures.flatMap((failure) => extractErrorMessagesFromResponse(failure.reason)).join(', '),
+        }),
+        kind: 'error',
+      });
+    }
   };
 
   if (isLoading) return <DataTableSkeleton showHeader={false} rowCount={5} columnCount={5} zebra />;
@@ -142,10 +187,10 @@ const StockReferences: React.FC<StockReferencesProps> = ({ stockItemUuid }) => {
                 </TableRow>
               </TableHead>
               <TableBody className={styles.referencesTableBody}>
-                {items?.map((row: StockItemReferenceDTO, index) => (
-                  <StockReferencesRow row={row} key={`${index}-${row?.uuid}`} />
+                {items?.map((row: StockItemReferenceDTO) => (
+                  <StockReferencesRow row={row} key={row.uuid} />
                 ))}
-                <StockReferencesRow row={{}} key="bottom-row" isEditing />
+                <NewStockReferenceRow />
               </TableBody>
             </Table>
           </TableContainer>
@@ -156,7 +201,8 @@ const StockReferences: React.FC<StockReferencesProps> = ({ stockItemUuid }) => {
         name="save"
         type="submit"
         className="submitButton"
-        onClick={handleSaveStockItemReference}
+        disabled={stockReferenceForm.formState.isSubmitting}
+        onClick={handleSubmit(handleSaveStockItemReference)}
         kind="primary"
         renderIcon={Save}
       >
@@ -167,19 +213,22 @@ const StockReferences: React.FC<StockReferencesProps> = ({ stockItemUuid }) => {
 };
 export default StockReferences;
 
-const StockReferencesRow: React.FC<{
-  isEditing?: boolean;
-  row: StockItemReferenceDTO;
-  key?: string;
-}> = ({ isEditing, row, key }) => {
+const StockReferencesRow: React.FC<{ row: StockItemReferenceDTO }> = ({ row }) => {
   const { t } = useTranslation();
-
-  const { control } = useFormContext();
+  const handleMutate = useHandleMutate();
+  const {
+    control,
+    formState: { errors },
+    unregister,
+  } = useFormContext();
+  const codeError = errors.codes?.[row.uuid];
 
   const handleDelete = (e) => {
     e.preventDefault();
     deleteStockItemReference(row.uuid).then(
       () => {
+        unregister(`codes.${row.uuid}`);
+        handleMutate(REFERENCES_URL);
         showSnackbar({
           title: t('deleteStockItemReference', 'Delete stock item reference'),
           kind: 'success',
@@ -199,29 +248,19 @@ const StockReferencesRow: React.FC<{
 
   return (
     <TableRow>
-      <TableCell>
-        {isEditing ? (
-          <StockSourceSelector
-            row={row}
-            name="references"
-            controllerName={'references'}
-            control={control}
-            placeholder={t('filter', 'Filter...')}
-          />
-        ) : (
-          (!isEditing || !row.uuid.startsWith('new-item')) && row?.stockSourceName
-        )}
-      </TableCell>
+      <TableCell>{row?.stockSourceName}</TableCell>
       <TableCell>
         <div className={styles.referencesTableCell}>
           <ControlledTextInput
-            id={`${row.uuid}-${key}`}
-            name="code"
+            id={`reference-code-${row.uuid}`}
+            name={`codes.${row.uuid}`}
             control={control}
             size={'md'}
-            value={row?.referenceCode ?? ''}
-            controllerName="code"
-            labelText={''}
+            controllerName={`codes.${row.uuid}`}
+            hideLabel
+            invalid={!!codeError}
+            invalidText={codeError?.message as string}
+            labelText={t('code', 'Code')}
           />
           <Button
             type="button"
@@ -231,6 +270,47 @@ const StockReferencesRow: React.FC<{
             kind="ghost"
             renderIcon={TrashCan}
             onClick={(e) => handleDelete(e)}
+          />
+        </div>
+      </TableCell>
+    </TableRow>
+  );
+};
+
+const NewStockReferenceRow: React.FC = () => {
+  const { t } = useTranslation();
+  const {
+    control,
+    formState: { errors },
+  } = useFormContext();
+  const newReferenceErrors = errors.newReference as
+    | { stockSourceUuid?: { message?: string }; referenceCode?: { message?: string } }
+    | undefined;
+
+  return (
+    <TableRow>
+      <TableCell>
+        <StockSourceSelector
+          name="new-reference-source"
+          controllerName="newReference.stockSourceUuid"
+          control={control}
+          invalid={!!newReferenceErrors?.stockSourceUuid}
+          invalidText={newReferenceErrors?.stockSourceUuid?.message}
+          placeholder={t('filter', 'Filter...')}
+        />
+      </TableCell>
+      <TableCell>
+        <div className={styles.referencesTableCell}>
+          <ControlledTextInput
+            id="new-reference-code"
+            name="newReference.referenceCode"
+            control={control}
+            size={'md'}
+            controllerName="newReference.referenceCode"
+            hideLabel
+            invalid={!!newReferenceErrors?.referenceCode}
+            invalidText={newReferenceErrors?.referenceCode?.message}
+            labelText={t('code', 'Code')}
           />
         </div>
       </TableCell>
