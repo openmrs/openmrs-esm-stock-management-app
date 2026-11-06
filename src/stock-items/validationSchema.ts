@@ -50,6 +50,15 @@ export const createStockItemDetailsSchema = (t: TFunction) =>
       },
     )
     .refine(
+      ({ isDrug, conceptUuid }) => {
+        return isDrug ? true : !!conceptUuid;
+      },
+      {
+        message: t('conceptRequired', 'Item required'),
+        path: ['conceptUuid'],
+      },
+    )
+    .refine(
       ({ isDrug, dispensingUnitUuid }) => {
         return isDrug ? !!dispensingUnitUuid : true;
       },

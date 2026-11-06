@@ -1,9 +1,9 @@
 import React from 'react';
 import { vi, describe, it, expect, beforeEach, type Mock } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { type FieldValues, useForm } from 'react-hook-form';
-import { type Concept } from '../../../core/api/types/concept/Concept';
+import { useConfig } from '@openmrs/esm-framework';
 import { useConcepts } from '../../../stock-lookups/stock-lookups.resource';
 import ConceptsSelector from './concepts-selector.component';
 
@@ -12,18 +12,23 @@ vi.mock('../../../stock-lookups/stock-lookups.resource', () => ({
 }));
 
 const mockUseConcepts = vi.mocked(useConcepts);
+const mockUseConfig = vi.mocked(useConfig);
 
-const mockConcepts: Array<Partial<Concept>> = [
-  { uuid: 'concept-1', display: 'Bandage' },
-  { uuid: 'concept-2', display: 'Syringe' },
-  { uuid: 'concept-3', display: 'Gloves' },
-] as Array<Partial<Concept>>;
+const conceptSetUuid = 'concept-set-uuid';
+const gloves = { uuid: 'gloves-uuid', display: 'Gloves', conceptClass: { name: 'Medical supply' } };
+const syringe = { uuid: 'syringe-uuid', display: 'Syringe', conceptClass: { name: 'Medical supply' } };
+const diagnosis = { uuid: 'diagnosis-uuid', display: 'Glove allergy', conceptClass: { name: 'Diagnosis' } };
+
+const mockResults = (results: Array<object>, isLoading = false) =>
+  mockUseConcepts.mockReturnValue({ items: { results }, isLoading } as ReturnType<typeof useConcepts>);
 
 function ConceptsSelectorWrapper({
   defaultConceptUuid = '',
+  initialConceptName,
   onConceptUuidChange,
 }: {
   defaultConceptUuid?: string;
+  initialConceptName?: string;
   onConceptUuidChange?: Mock;
 }) {
   const methods = useForm<FieldValues>({ defaultValues: { conceptUuid: defaultConceptUuid } });
@@ -34,71 +39,103 @@ function ConceptsSelectorWrapper({
       control={methods.control}
       title="Please Specify"
       placeholder="Choose an item"
+      initialConceptName={initialConceptName}
       onConceptUuidChange={onConceptUuidChange}
     />
   );
 }
 
-beforeEach(() => {
-  mockUseConcepts.mockReturnValue({
-    items: { results: mockConcepts },
-    isLoading: false,
-  } as ReturnType<typeof useConcepts>);
-});
-
 describe('ConceptsSelector', () => {
-  it('renders the combobox with concepts', async () => {
+  beforeEach(() => {
+    mockUseConfig.mockReturnValue({ nonDrugItemsConceptSetUUID: '' });
+    mockResults([]);
+  });
+
+  it('does not search until something is typed', () => {
+    render(<ConceptsSelectorWrapper />);
+
+    expect(mockUseConcepts).toHaveBeenLastCalledWith(expect.objectContaining({ q: '' }), false);
+  });
+
+  it('searches the server within the configured concept set', async () => {
     const user = userEvent.setup();
+    mockUseConfig.mockReturnValue({ nonDrugItemsConceptSetUUID: conceptSetUuid });
     render(<ConceptsSelectorWrapper />);
 
-    expect(screen.getByText('Please Specify')).toBeInTheDocument();
-    const input = screen.getByRole('combobox');
-    await user.click(input);
+    await user.type(screen.getByRole('combobox'), 'syringe');
 
-    expect(screen.getByText('Bandage')).toBeInTheDocument();
-    expect(screen.getByText('Syringe')).toBeInTheDocument();
-    expect(screen.getByText('Gloves')).toBeInTheDocument();
+    expect(mockUseConcepts).toHaveBeenLastCalledWith(
+      expect.objectContaining({ q: 'syringe', memberOf: conceptSetUuid }),
+      true,
+    );
   });
 
-  it('shows a skeleton while loading', () => {
-    mockUseConcepts.mockReturnValue({
-      items: { results: [] },
-      isLoading: true,
-    } as ReturnType<typeof useConcepts>);
-
+  it('keeps every result from the configured concept set, whatever its class', async () => {
+    const user = userEvent.setup();
+    mockUseConfig.mockReturnValue({ nonDrugItemsConceptSetUUID: conceptSetUuid });
+    mockResults([gloves, diagnosis]);
     render(<ConceptsSelectorWrapper />);
-    expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+
+    await user.type(screen.getByRole('combobox'), 'glove');
+
+    expect(screen.getByRole('option', { name: 'Gloves' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Glove allergy' })).toBeInTheDocument();
   });
 
-  it('displays the selected concept when editing with a pre-set value', () => {
-    render(<ConceptsSelectorWrapper defaultConceptUuid="concept-2" />);
+  it('only keeps Medical supply concepts when no concept set is configured', async () => {
+    const user = userEvent.setup();
+    mockResults([gloves, diagnosis]);
+    render(<ConceptsSelectorWrapper />);
 
-    const input = screen.getByRole('combobox');
-    expect(input).toHaveValue('Syringe');
+    await user.type(screen.getByRole('combobox'), 'glove');
+
+    const lastFilter = mockUseConcepts.mock.lastCall[0];
+    expect(lastFilter).toMatchObject({ q: 'glove' });
+    expect(lastFilter).not.toHaveProperty('memberOf');
+    expect(screen.getByRole('option', { name: 'Gloves' })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: 'Glove allergy' })).not.toBeInTheDocument();
   });
 
-  it('calls onConceptUuidChange when a concept is selected', async () => {
+  it('keeps the field usable and shows a searching indicator while loading', () => {
+    mockResults([], true);
+    render(<ConceptsSelectorWrapper />);
+
+    expect(screen.getByRole('combobox')).toBeInTheDocument();
+    expect(screen.getAllByText('Searching...').length).toBeGreaterThan(0);
+  });
+
+  it('calls onConceptUuidChange and keeps the selection when later results do not include it', async () => {
     const user = userEvent.setup();
     const onConceptUuidChange = vi.fn();
-
+    mockResults([gloves]);
     render(<ConceptsSelectorWrapper onConceptUuidChange={onConceptUuidChange} />);
 
     const input = screen.getByRole('combobox');
-    await user.click(input);
-    await user.click(screen.getByText('Gloves'));
+    await user.type(input, 'glove');
+    await user.click(screen.getByRole('option', { name: 'Gloves' }));
 
-    expect(onConceptUuidChange).toHaveBeenCalledWith(expect.objectContaining({ uuid: 'concept-3' }));
+    expect(onConceptUuidChange).toHaveBeenCalledWith(expect.objectContaining({ uuid: 'gloves-uuid' }));
+
+    mockResults([syringe]);
+    await user.click(input);
+
+    expect(input).toHaveValue('Gloves');
   });
 
-  it('clears the form value when the selection is cleared', async () => {
+  it('displays the saved concept when editing', () => {
+    render(<ConceptsSelectorWrapper defaultConceptUuid="syringe-uuid" initialConceptName="Syringe" />);
+
+    expect(screen.getByRole('combobox')).toHaveValue('Syringe');
+  });
+
+  it('clears the selection', async () => {
     const user = userEvent.setup();
-    render(<ConceptsSelectorWrapper defaultConceptUuid="concept-1" />);
+    render(<ConceptsSelectorWrapper defaultConceptUuid="syringe-uuid" initialConceptName="Syringe" />);
 
     const input = screen.getByRole('combobox');
-    expect(input).toHaveValue('Bandage');
+    expect(input).toHaveValue('Syringe');
 
-    const clearButton = screen.getByRole('button', { name: /clear/i });
-    await user.click(clearButton);
+    await user.click(screen.getByRole('button', { name: /clear/i }));
 
     expect(input).toHaveValue('');
   });

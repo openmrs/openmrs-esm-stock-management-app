@@ -6,8 +6,29 @@ const mockT = ((key: string, defaultValue?: string) => defaultValue || key) as a
 describe('createStockItemDetailsSchema', () => {
   const base = {
     isDrug: false,
+    conceptUuid: 'concept-uuid',
     hasExpiration: false,
   };
+
+  it('requires a concept for non-drug items', () => {
+    const schema = createStockItemDetailsSchema(mockT);
+    const result = schema.safeParse({ ...base, conceptUuid: '' });
+    expect(result.success).toBe(false);
+    if (result.success === false) {
+      expect(result.error.issues.map((issue) => issue.path.join('.'))).toContain('conceptUuid');
+    }
+  });
+
+  it('does not require a concept for drug items', () => {
+    const schema = createStockItemDetailsSchema(mockT);
+    const result = schema.safeParse({
+      isDrug: true,
+      drugUuid: 'drug-uuid',
+      dispensingUnitUuid: 'unit-uuid',
+      hasExpiration: false,
+    });
+    expect(result.success).toBe(true);
+  });
 
   it('allows reorder level without unit when reorder level is null or undefined', () => {
     const schema = createStockItemDetailsSchema(mockT);

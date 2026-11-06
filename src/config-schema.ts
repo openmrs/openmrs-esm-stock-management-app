@@ -43,6 +43,12 @@ export const configSchema = {
     _description:
       "The name of the location tag for the main store. The source or destination of a new stock operation is prefilled when this is the only tag the operation type allows on that side. It needs to match a tag in the backend's operation type location scopes",
   },
+  nonDrugItemsConceptSetUUID: {
+    _type: Type.ConceptUuid,
+    _description:
+      'UUID of the concept set that non-drug stock items are chosen from. If empty, the search keeps concepts of class Medical supply',
+    _default: '',
+  },
   packingUnitsUUID: {
     _type: Type.ConceptUuid,
     _description: 'UUID for the packaging unit',
@@ -119,6 +125,7 @@ export type ConfigObject = {
     name: string;
   };
   mainStoreLocationTag: string;
+  nonDrugItemsConceptSetUUID: string;
   packingUnitsUUID: string;
   printBalanceOnHand: boolean;
   printItemCost: boolean;
