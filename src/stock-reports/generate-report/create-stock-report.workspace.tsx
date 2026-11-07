@@ -534,7 +534,6 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
               render={({ field: { onChange, value } }) => (
                 <DatePicker
                   datePickerType="single"
-                  maxDate={formatForDatePicker(today())}
                   locale="en"
                   dateFormat={DATE_PICKER_CONTROL_FORMAT}
                   onChange={onChange}
@@ -558,7 +557,6 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
               render={({ field: { onChange, value } }) => (
                 <DatePicker
                   datePickerType="single"
-                  maxDate={formatForDatePicker(today())}
                   locale="en"
                   dateFormat={DATE_PICKER_CONTROL_FORMAT}
                   onChange={onChange}
@@ -739,7 +737,7 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
                         if (isChecked) {
                           onChange(['All']);
                         } else {
-                          onChange(value.filter((item) => item !== 'All'));
+                         onChange((value ?? []).filter((item) => item !== 'All'));
                         }
                       }}
                       labelText={t('all', 'All')}
@@ -751,8 +749,8 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
                         const isChecked = event.target.checked;
                         onChange(
                           isChecked
-                            ? [...value.filter((item) => item !== 'All'), 'Full']
-                            : value.filter((item) => item !== 'Full'),
+                            ? [...(value ?? []).filter((item) => item !== 'All'), 'Full']
+                            : (value ?? []).filter((item) => item !== 'Full'),
                         );
                       }}
                       labelText={t('fullFulfillment', 'Full Fulfillment')}
@@ -764,8 +762,8 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
                         const isChecked = event.target.checked;
                         onChange(
                           isChecked
-                            ? [...value.filter((item) => item !== 'All'), 'Partial']
-                            : value.filter((item) => item !== 'Partial'),
+                            ? [...(value ?? []).filter((item) => item !== 'All'), 'Partial']
+                            : (value ?? []).filter((item) => item !== 'Partial'),
                         );
                       }}
                       labelText={t('partialFulfillment', 'Partial Fulfillment')}
@@ -777,8 +775,8 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
                         const isChecked = event.target.checked;
                         onChange(
                           isChecked
-                            ? [...value.filter((item) => item !== 'All'), 'None']
-                            : value.filter((item) => item !== 'None'),
+                           ? [...(value ?? []).filter((item) => item !== 'All'), 'None']
+                           : (value ?? []).filter((item) => item !== 'None'),
                         );
                       }}
                       labelText={t('noneFulfillment', 'Non Fulfillment')}
