@@ -145,6 +145,36 @@ describe('StockSourcesAddOrUpdate', () => {
     await user.click(screen.getByText(/save/i));
   });
 
+  it('does not change the source being edited until it is saved', async () => {
+    const user = userEvent.setup();
+    const model = { uuid: '123', name: 'SMV Donor', acronym: 'SMV' } as StockSource;
+
+    render(<StockSourcesAddOrUpdate {...mockWorkspace2Props({ model })} />);
+
+    await user.type(screen.getByLabelText(/full name/i), ' DISCARDED');
+    await user.type(screen.getByLabelText(/acronym\/code/i), 'X');
+
+    expect(screen.getByLabelText(/full name/i)).toHaveValue('SMV Donor DISCARDED');
+    expect(screen.getByLabelText(/acronym\/code/i)).toHaveValue('SMVX');
+    expect(model.name).toBe('SMV Donor');
+    expect(model.acronym).toBe('SMV');
+  });
+
+  it('saves the edited values of an existing source', async () => {
+    const user = userEvent.setup();
+    mockCreateOrUpdateStockSource.mockResolvedValue({ ok: true } as unknown as FetchResponse);
+    const model = { uuid: '123', name: 'SMV Donor', acronym: 'SMV' } as StockSource;
+
+    render(<StockSourcesAddOrUpdate {...mockWorkspace2Props({ model })} />);
+
+    await user.type(screen.getByLabelText(/full name/i), ' 2');
+    await user.click(screen.getByText(/save/i));
+
+    expect(mockCreateOrUpdateStockSource).toHaveBeenLastCalledWith(
+      expect.objectContaining({ uuid: '123', name: 'SMV Donor 2', acronym: 'SMV' }),
+    );
+  });
+
   it('closes workspace when cancel button is clicked', async () => {
     const user = userEvent.setup();
     render(<StockSourcesAddOrUpdate {...mockWorkspace2Props({})} />);

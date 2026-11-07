@@ -39,16 +39,10 @@ const StockSourcesAddOrUpdate: React.FC<Workspace2DefinitionProps<AddStockSource
   const [formModel, setFormModel] = useState<StockSource>({ ...model });
 
   const onNameChanged = (evt: React.ChangeEvent<HTMLInputElement>): void => {
-    if (model) {
-      model.name = evt.target.value;
-    }
     setFormModel({ ...formModel, name: evt.target.value });
   };
 
   const onAcronymChanged = (evt: React.ChangeEvent<HTMLInputElement>): void => {
-    if (model) {
-      model.acronym = evt.target.value;
-    }
     setFormModel({ ...formModel, acronym: evt.target.value });
   };
 
@@ -106,7 +100,7 @@ const StockSourcesAddOrUpdate: React.FC<Workspace2DefinitionProps<AddStockSource
               placeholder="e.g National Medical Stores"
               size="md"
               type="text"
-              value={model?.name}
+              value={formModel.name ?? ''}
             />
           </FormGroup>
           <FormGroup legendText={''}>
@@ -117,7 +111,7 @@ const StockSourcesAddOrUpdate: React.FC<Workspace2DefinitionProps<AddStockSource
               placeholder="e.g NMS"
               size="md"
               type="text"
-              value={model?.acronym}
+              value={formModel.acronym ?? ''}
             />
           </FormGroup>
           <Select
