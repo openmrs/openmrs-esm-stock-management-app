@@ -48,7 +48,7 @@ describe('StockSourcesItems', () => {
         uuid: '1',
         display: 'Source Types',
         answers: [
-          { uuid: '1', display: 'All' },
+          { uuid: '1', display: 'Donation' },
           { uuid: '2', display: 'Internal' },
           { uuid: '3', display: 'External' },
         ] as Concept[],
@@ -191,98 +191,125 @@ describe('StockSourcesItems', () => {
     expect(screen.getByText(/internal/i)).toBeInTheDocument();
   });
 
-  test('filters data based on source type', async () => {
-    const user = userEvent.setup();
+  describe('source type filter', () => {
+    const sources = [
+      { uuid: '1234', name: 'Source A', acronym: 'SA', sourceType: { display: 'Internal' } },
+      { uuid: '5678', name: 'Source B', acronym: 'SB', sourceType: { display: 'External' } },
+    ] as unknown as StockSource[];
 
-    const mockItems = [
-      {
-        uuid: '1234',
-        name: 'Source A',
-        acronym: 'SA',
-        sourceType: { display: 'Internal' },
-      },
-      {
-        uuid: '5678',
-        name: 'Source B',
-        acronym: 'SB',
-        sourceType: { display: 'External' },
-      },
-    ];
+    const mockPage = (overrides = {}) => {
+      const goTo = vi.fn();
+      mockUseStockSourcesPage.mockReturnValue({
+        items: sources,
+        isLoading: false,
+        totalItems: 2,
+        tableHeaders: [
+          { id: 0, key: 'name', header: 'Name' },
+          { id: 1, key: 'sourceType', header: 'Source type' },
+        ],
+        currentPage: 1,
+        pageSizes: [10, 20, 50],
+        goTo,
+        currentPageSize: 10,
+        setPageSize: vi.fn(),
+        paginatedItems: sources,
+        error: null,
+        ...overrides,
+      });
+      return goTo;
+    };
 
-    mockUseStockSourcesPage.mockReturnValue({
-      items: mockItems as unknown as StockSource[],
-      isLoading: false,
-      totalItems: 2,
-      tableHeaders: [
-        { id: 0, key: 'name', header: 'Name' },
-        { id: 1, key: 'sourceType', header: 'Source type' },
-      ],
-      currentPage: 1,
-      pageSizes: [10, 20, 50],
-      goTo: vi.fn(),
-      currentPageSize: 10,
-      setPageSize: vi.fn(),
-      paginatedItems: mockItems as unknown as StockSource[],
-      error: null,
+    const getFilter = () => screen.getByRole('combobox', { name: /select source type/i });
+
+    const selectSourceType = async (user: ReturnType<typeof userEvent.setup>, name: string) => {
+      await user.click(getFilter());
+      await user.click(screen.getByRole('option', { name }));
+    };
+
+    test('selects all source types by default and shows every source', () => {
+      mockPage();
+
+      render(<StockSourcesItems />);
+
+      expect(getFilter()).toHaveTextContent('All source types');
+      expect(mockUseStockSourcesPage).toHaveBeenLastCalledWith(expect.objectContaining({ sourceTypeUuid: undefined }));
+      expect(screen.getByText('Source A')).toBeInTheDocument();
+      expect(screen.getByText('Source B')).toBeInTheDocument();
     });
 
-    // Mock the concept data for the filter
-    mockUseConcept.mockReturnValue({
-      items: {
-        uuid: '1',
-        display: 'Source Types',
-        answers: [
-          { uuid: '1', display: 'All' },
-          { uuid: '2', display: 'Internal' },
-          { uuid: '3', display: 'External' },
-        ] as Concept[],
-      } as Concept,
-      isLoading: false,
-      error: null,
+    test("sends the selected source type's UUID to the server and returns to the first page", async () => {
+      const user = userEvent.setup();
+      const goTo = mockPage();
+      render(<StockSourcesItems />);
+
+      await selectSourceType(user, 'Internal');
+
+      expect(mockUseStockSourcesPage).toHaveBeenLastCalledWith(expect.objectContaining({ sourceTypeUuid: '2' }));
+      expect(goTo).toHaveBeenCalledWith(1);
+      expect(getFilter()).toHaveTextContent('Internal');
     });
 
-    render(<StockSourcesItems />);
+    test('clears the source type when all source types is chosen again', async () => {
+      const user = userEvent.setup();
+      mockPage();
+      render(<StockSourcesItems />);
 
-    // Initial state - both sources should be visible
-    expect(screen.getByText(/source a/i)).toBeInTheDocument();
-    expect(screen.getByText(/source b/i)).toBeInTheDocument();
+      await selectSourceType(user, 'Internal');
+      await selectSourceType(user, 'All source types');
 
-    // Find and click the source type filter dropdown
-    const filterDropdown = screen.getByRole('combobox', { name: /select source type/i });
-    await user.click(filterDropdown);
-
-    // Select "Internal" from the dropdown
-    const internalOption = screen.getByRole('option', { name: /internal/i });
-    await user.click(internalOption);
-
-    // Wait for Source B to disappear
-    await waitFor(() => {
-      expect(screen.queryByText(/source b/i)).not.toBeInTheDocument();
+      expect(mockUseStockSourcesPage).toHaveBeenLastCalledWith(expect.objectContaining({ sourceTypeUuid: undefined }));
+      expect(getFilter()).toHaveTextContent('All source types');
     });
 
-    // Verify Source A is still visible
-    expect(screen.getByText(/source a/i)).toBeInTheDocument();
-  });
+    test('keeps the filter and search while a selected source type loads', async () => {
+      const user = userEvent.setup();
+      mockPage();
+      render(<StockSourcesItems />);
+      await user.type(screen.getByRole('searchbox'), 'Source');
 
-  test('renders a message when no stock sources are available', () => {
-    mockUseStockSourcesPage.mockReturnValue({
-      items: [],
-      isLoading: false,
-      totalItems: 0,
-      tableHeaders: [],
-      currentPage: 1,
-      pageSizes: [10, 20, 50],
-      goTo: vi.fn(),
-      currentPageSize: 10,
-      setPageSize: vi.fn(),
-      paginatedItems: [],
-      error: null,
+      mockPage({ items: [], isLoading: true });
+      await selectSourceType(user, 'Internal');
+
+      expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+      expect(getFilter()).toHaveTextContent('Internal');
+      expect(screen.getByRole('searchbox')).toHaveValue('Source');
+      expect(screen.queryByText(/no stock sources to display/i)).not.toBeInTheDocument();
     });
 
-    render(<StockSourcesItems />);
+    test('does not show the empty state while a selected source type is still loading', async () => {
+      const user = userEvent.setup();
+      mockPage({ items: [], totalItems: 0 });
+      const { rerender } = render(<StockSourcesItems />);
+      await selectSourceType(user, 'Internal');
+      expect(screen.getByText(/no stock sources to display/i)).toBeInTheDocument();
 
-    expect(screen.getByText(/no stock sources to display/i)).toBeInTheDocument();
-    expect(screen.getByText(/check the filters above/i)).toBeInTheDocument();
+      mockPage({ items: [], totalItems: 0, isLoading: true });
+      rerender(<StockSourcesItems />);
+
+      expect(screen.queryByText(/no stock sources to display/i)).not.toBeInTheDocument();
+      expect(screen.getByText('Loading...')).toBeInTheDocument();
+    });
+
+    test('only suggests checking the filters when a filter or search is active', async () => {
+      const user = userEvent.setup();
+      mockPage({ items: [], totalItems: 0 });
+      render(<StockSourcesItems />);
+
+      expect(screen.getByText(/no stock sources to display/i)).toBeInTheDocument();
+      expect(screen.queryByText(/check the filters above/i)).not.toBeInTheDocument();
+
+      await selectSourceType(user, 'Internal');
+      expect(screen.getByText(/check the filters above/i)).toBeInTheDocument();
+
+      await selectSourceType(user, 'All source types');
+      expect(screen.queryByText(/check the filters above/i)).not.toBeInTheDocument();
+
+      await user.type(screen.getByRole('searchbox'), 'Missing');
+      expect(screen.getByText(/check the filters above/i)).toBeInTheDocument();
+
+      await user.clear(screen.getByRole('searchbox'));
+      expect(screen.queryByText(/check the filters above/i)).not.toBeInTheDocument();
+    });
   });
 
   test('pagination works as expected', async () => {

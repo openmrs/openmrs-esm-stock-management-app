@@ -7,8 +7,9 @@ import { useConcept } from '../../stock-lookups/stock-lookups.resource';
 import styles from './stock-sources-filter.scss';
 
 const StockSourcesFilter: React.FC<{
-  onFilterChange: (selectedSourceType: string) => void;
-}> = ({ onFilterChange }) => {
+  selectedSourceTypeUuid: string;
+  onFilterChange: (selectedSourceTypeUuid: string) => void;
+}> = ({ selectedSourceTypeUuid, onFilterChange }) => {
   const { t } = useTranslation();
   const { stockSourceTypeUUID } = useConfig<ConfigObject>();
   const { items, isLoading, error } = useConcept(stockSourceTypeUUID);
@@ -30,15 +31,18 @@ const StockSourcesFilter: React.FC<{
     return null;
   }
 
+  const allSourceTypes = { uuid: '', display: t('allSourceTypes', 'All source types') };
+  const sourceTypes = [allSourceTypes, ...(items?.answers ?? [])];
+
   return (
     <div className={styles.filterContainer}>
       <Dropdown
         id="stockSourcesFilter"
-        initialSelectedItem={items?.answers?.[0]}
-        items={[...(items?.answers || [])]}
+        items={sourceTypes}
         itemToString={(item) => (item ? item.display : t('notSet', 'Not Set'))}
         label=""
-        onChange={({ selectedItem }) => onFilterChange(selectedItem?.display)}
+        onChange={({ selectedItem }) => onFilterChange(selectedItem?.uuid ?? '')}
+        selectedItem={sourceTypes.find((sourceType) => sourceType.uuid === selectedSourceTypeUuid) ?? allSourceTypes}
         size="sm"
         titleText={t('selectSourceType', 'Select source type')}
         type="inline"
