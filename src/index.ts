@@ -40,6 +40,14 @@ export const deleteUserScopeModal = getAsyncLifecycle(
   },
 );
 
+export const deleteStockRuleModal = getAsyncLifecycle(
+  () => import('./stock-items/add-stock-item/stock-item-rules/delete-stock-rule.modal'),
+  {
+    featureName: 'delete-stock-rule-modal',
+    moduleName,
+  },
+);
+
 export const deletePackagingUnitModal = getAsyncLifecycle(
   () => import('./stock-items/add-stock-item/packaging-units/packaging-units-delete.modal'),
   {

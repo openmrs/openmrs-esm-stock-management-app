@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   DataTable,
@@ -27,7 +27,7 @@ import { useStockItemRules } from './stock-item-rules.resource';
 import AddStockRuleActionButton from './add-stock-rule-button.component';
 import EditStockRuleActionsMenu from './edit-stock-rule.component';
 import StockRulesDeleteActionMenu from './stock-rules-delete.component';
-import StockRulesFilter from './stock-rules-filter.component';
+import StockRulesFilter, { type StockRuleStatusFilter } from './stock-rules-filter.component';
 import styles from '../../stock-items-table.scss';
 
 interface StockItemRulesProps {
@@ -40,11 +40,14 @@ interface StockItemRulesProps {
 const StockItemRules: React.FC<StockItemRulesProps> = ({ stockItemUuid, model, canEdit = true }) => {
   const { t } = useTranslation();
   const handleMutate = useHandleMutate();
+  const [selectedLocationUuid, setSelectedLocationUuid] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState<StockRuleStatusFilter>('all');
   const { isLoading, items, tableHeaders, currentPage, currentPageSize, pageSizes, totalItems, setPageSize, goTo } =
     useStockItemRules({
       v: ResourceRepresentation.Default,
       totalCount: true,
       stockItemUuid: stockItemUuid,
+      locationUuid: selectedLocationUuid || undefined,
     });
 
   const handleRefresh = () => {
@@ -52,7 +55,9 @@ const StockItemRules: React.FC<StockItemRulesProps> = ({ stockItemUuid, model, c
   };
 
   const tableRows = useMemo(() => {
-    return items?.map((stockRule, index) => ({
+    const rules =
+      selectedStatus === 'all' ? items : items?.filter((rule) => rule.enabled === (selectedStatus === 'enabled'));
+    return rules?.map((stockRule, index) => ({
       ...stockRule,
       id: `${stockRule?.id}-${index}`,
       key: `key-${stockRule?.uuid}`,
@@ -69,20 +74,21 @@ const StockItemRules: React.FC<StockItemRulesProps> = ({ stockItemUuid, model, c
       enabled: stockRule.enabled ? 'Yes' : 'No',
       actions: (
         <>
-          <EditStockRuleActionsMenu data={items[index]} stockItemUuid={items[index].stockItemUuid} />
-          <StockRulesDeleteActionMenu uuid={items[index].uuid} />
+          <EditStockRuleActionsMenu data={stockRule} stockItemUuid={stockRule.stockItemUuid} />
+          <StockRulesDeleteActionMenu uuid={stockRule.uuid} name={stockRule.name} />
         </>
       ),
     }));
-  }, [items]);
+  }, [items, selectedStatus]);
 
-  if (isLoading) {
+  // Keep the table mounted while a location filter loads, so the filters keep their values
+  if (isLoading && !selectedLocationUuid) {
     return <DataTableSkeleton role="progressbar" />;
   }
 
   return (
     <div className={styles.tableOverride}>
-      <DataTable rows={tableRows} headers={tableHeaders} isSortable useZebraStyles>
+      <DataTable rows={tableRows ?? []} headers={tableHeaders} isSortable useZebraStyles>
         {({ rows, headers, getHeaderProps, getTableProps, getRowProps, onInputChange }) => (
           <TableContainer>
             <TableToolbar
@@ -100,7 +106,19 @@ const StockItemRules: React.FC<StockItemRulesProps> = ({ stockItemUuid, model, c
                     alignItems: 'center',
                   }}
                 >
-                  <StockRulesFilter stockItemUuid={stockItemUuid} />
+                  <StockRulesFilter
+                    stockItemUuid={stockItemUuid}
+                    selectedLocationUuid={selectedLocationUuid}
+                    selectedStatus={selectedStatus}
+                    onLocationChange={(locationUuid) => {
+                      setSelectedLocationUuid(locationUuid);
+                      goTo(1);
+                    }}
+                    onStatusChange={(status) => {
+                      setSelectedStatus(status);
+                      goTo(1);
+                    }}
+                  />
                 </div>
                 <TableToolbarMenu>
                   <TableToolbarAction className={styles.toolbarMenuAction} onClick={handleRefresh}>

@@ -3,14 +3,18 @@ import { Button, InlineLoading } from '@carbon/react';
 import { useTranslation } from 'react-i18next';
 import { TrashCan } from '@carbon/react/icons';
 import { deleteStockRule } from '../../stock-items.resource';
-import { showModal, showSnackbar } from '@openmrs/esm-framework';
+import { restBaseUrl, showModal, showSnackbar } from '@openmrs/esm-framework';
+import { extractErrorMessagesFromResponse } from '../../../constants';
+import { useHandleMutate } from '../../../utils';
 
 interface StockRulesDeleteActionMenuProps {
   uuid: string;
+  name?: string;
 }
 
-const StockRulesDeleteActionMenu: React.FC<StockRulesDeleteActionMenuProps> = ({ uuid }) => {
+const StockRulesDeleteActionMenu: React.FC<StockRulesDeleteActionMenuProps> = ({ uuid, name }) => {
   const { t } = useTranslation();
+  const handleMutate = useHandleMutate();
 
   const [deletingRule, setDeletingRule] = useState(false);
 
@@ -18,11 +22,15 @@ const StockRulesDeleteActionMenu: React.FC<StockRulesDeleteActionMenuProps> = ({
     const close = showModal('delete-stock-rule-modal', {
       close: () => close(),
       uuid: uuid,
+      // `name` is taken: the framework passes the modal's own name to every modal
+      ruleName: name,
       onConfirmation: () => {
+        setDeletingRule(true);
         deleteStockRule(uuid)
           .then(
             () => {
               setDeletingRule(false);
+              handleMutate(`${restBaseUrl}/stockmanagement/stockrule`);
               showSnackbar({
                 isLowContrast: true,
                 title: t('deletingRule', 'Delete Rule'),
@@ -36,7 +44,7 @@ const StockRulesDeleteActionMenu: React.FC<StockRulesDeleteActionMenuProps> = ({
                 title: t('errorDeletingRule', 'Error deleting a rule'),
                 kind: 'error',
                 isLowContrast: true,
-                subtitle: error?.message,
+                subtitle: extractErrorMessagesFromResponse(error).join(', '),
               });
             },
           )
@@ -44,7 +52,7 @@ const StockRulesDeleteActionMenu: React.FC<StockRulesDeleteActionMenuProps> = ({
         close();
       },
     });
-  }, [t, uuid]);
+  }, [t, uuid, name, handleMutate]);
 
   const deleteButton = (
     <Button

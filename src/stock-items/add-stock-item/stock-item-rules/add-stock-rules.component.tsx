@@ -1,4 +1,4 @@
-import React, { type ChangeEvent, useCallback, useEffect, useState } from 'react';
+import React, { type ChangeEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import classNames from 'classnames';
 import { useTranslation } from 'react-i18next';
 import {
@@ -21,6 +21,8 @@ import {
   type Workspace2DefinitionProps,
 } from '@openmrs/esm-framework';
 import { createOrUpdateStockRule } from './stock-rules.resource';
+import { createStockRuleSchema, getStockRuleFieldErrors, type StockRuleFieldErrors } from './stock-rule.schema';
+import { extractErrorMessagesFromResponse } from '../../../constants';
 import { ResourceRepresentation } from '../../../core/api/api';
 import { type StockItemInventoryFilter, useStockItemPackagingUOMs } from '../../stock-items.resource';
 import { type StockRule } from '../../../core/api/types/stockItem/StockRule';
@@ -68,6 +70,10 @@ const StockRulesAddOrUpdate: React.FC<Workspace2DefinitionProps<AddStockRuleProp
     enabled: true,
     ...model,
   });
+  const stockRuleSchema = useMemo(() => createStockRuleSchema(t), [t]);
+  const [submitted, setSubmitted] = useState(false);
+  // Errors show once the user has tried to save, and then update as they correct the form
+  const fieldErrors: StockRuleFieldErrors = submitted ? getStockRuleFieldErrors(stockRuleSchema, formModel) : {};
 
   useEffect(() => {
     if (model != null && Object.keys(model).length != 0) {
@@ -146,6 +152,10 @@ const StockRulesAddOrUpdate: React.FC<Workspace2DefinitionProps<AddStockRuleProp
   const onFormSubmit = useCallback(
     (event) => {
       event.preventDefault();
+      setSubmitted(true);
+      if (Object.keys(getStockRuleFieldErrors(stockRuleSchema, formModel)).length > 0) {
+        return;
+      }
       if (model) {
         formModel.uuid = model.uuid;
       }
@@ -169,13 +179,13 @@ const StockRulesAddOrUpdate: React.FC<Workspace2DefinitionProps<AddStockRuleProp
               title: t('errorAddingRule', 'Error adding a rule'),
               kind: 'error',
               isLowContrast: true,
-              subtitle: error?.message,
+              subtitle: extractErrorMessagesFromResponse(error).join(', '),
             });
           },
         )
         .catch();
     },
-    [formModel, model, t, stockItemUuid, closeWorkspace, handleMutate],
+    [formModel, model, t, stockItemUuid, closeWorkspace, handleMutate, stockRuleSchema],
   );
 
   return (
@@ -190,6 +200,8 @@ const StockRulesAddOrUpdate: React.FC<Workspace2DefinitionProps<AddStockRuleProp
                   className="select-field"
                   labelText={t('location', 'Location')}
                   id="location"
+                  invalid={!!fieldErrors.locationUuid}
+                  invalidText={fieldErrors.locationUuid}
                   value={formModel?.locationUuid ? formModel.locationUuid : ''}
                   onChange={onLocationChange}
                 >
@@ -203,6 +215,8 @@ const StockRulesAddOrUpdate: React.FC<Workspace2DefinitionProps<AddStockRuleProp
               <section className={styles.section}>
                 <TextInput
                   id="name"
+                  invalid={!!fieldErrors.name}
+                  invalidText={fieldErrors.name}
                   type="text"
                   labelText={t('ruleName', 'Rule name')}
                   size="md"
@@ -218,6 +232,8 @@ const StockRulesAddOrUpdate: React.FC<Workspace2DefinitionProps<AddStockRuleProp
                   className="select-field"
                   labelText={t('quantityUnit', 'Quantity unit')}
                   id="quantityUnit"
+                  invalid={!!fieldErrors.stockItemPackagingUOMUuid}
+                  invalidText={fieldErrors.stockItemPackagingUOMUuid}
                   value={formModel?.stockItemPackagingUOMUuid ? formModel.stockItemPackagingUOMUuid : ''}
                   onChange={onQuantityUnitChange}
                 >
@@ -237,6 +253,8 @@ const StockRulesAddOrUpdate: React.FC<Workspace2DefinitionProps<AddStockRuleProp
               <section className={styles.section}>
                 <TextInput
                   id="quantity"
+                  invalid={!!fieldErrors.quantity}
+                  invalidText={fieldErrors.quantity}
                   type="number"
                   labelText={t('quantityThreshold', 'Quantity threshold')}
                   size="md"
@@ -255,6 +273,8 @@ const StockRulesAddOrUpdate: React.FC<Workspace2DefinitionProps<AddStockRuleProp
                 className="select-field"
                 labelText={t('alertRole', 'Alert role')}
                 id="alertRole"
+                invalid={!!fieldErrors.alertRole}
+                invalidText={fieldErrors.alertRole}
                 value={formModel?.alertRole ? formModel.alertRole : ''}
                 onChange={onAlertRoleChange}
               >
@@ -270,6 +290,8 @@ const StockRulesAddOrUpdate: React.FC<Workspace2DefinitionProps<AddStockRuleProp
                 className="select-field"
                 labelText={t('mailRole', 'Mail role')}
                 id="mailRole"
+                invalid={!!fieldErrors.mailRole}
+                invalidText={fieldErrors.mailRole}
                 value={formModel?.mailRole ? formModel.mailRole : ''}
                 onChange={onMailRoleChange}
               >
@@ -282,6 +304,8 @@ const StockRulesAddOrUpdate: React.FC<Workspace2DefinitionProps<AddStockRuleProp
             <section className={styles.section}>
               <TextInput
                 id="evaluationFrequency"
+                invalid={!!fieldErrors.evaluationFrequency}
+                invalidText={fieldErrors.evaluationFrequency}
                 type="number"
                 labelText={t('evaluationFrequency', 'Frequency Check (Minutes)')}
                 size="md"
@@ -291,6 +315,8 @@ const StockRulesAddOrUpdate: React.FC<Workspace2DefinitionProps<AddStockRuleProp
               />
               <TextInput
                 id="actionFrequency"
+                invalid={!!fieldErrors.actionFrequency}
+                invalidText={fieldErrors.actionFrequency}
                 type="number"
                 labelText={t('actionFrequency', 'Notification Frequency (Minutes)')}
                 size="md"
