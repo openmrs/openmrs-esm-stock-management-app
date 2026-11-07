@@ -1,17 +1,14 @@
-import { ClickableTile } from '@carbon/react';
 import React from 'react';
-import styles from './item.scss';
-import { Report } from '@carbon/react/icons';
+import { useTranslation } from 'react-i18next';
+import { ConfigurableLink } from '@openmrs/esm-framework';
 
 const Item = () => {
-  // items
-  const openmrsSpaBase = window['getOpenmrsSpaBase']();
+  const { t } = useTranslation();
 
   return (
-    <ClickableTile className={styles.customTile} id="menu-item" href={`${openmrsSpaBase}stock-management`}>
-      <div className="customTileTitle">{<Report size={24} />}</div>
-      <div>Stock Management</div>
-    </ClickableTile>
+    <ConfigurableLink to={'${openmrsSpaBase}/stock-management'}>
+      {t('stockManagement', 'Stock management')}
+    </ConfigurableLink>
   );
 };
 export default Item;
