@@ -31,17 +31,37 @@
   color: $text-02;
 }
 
+// The date pickers have labels above their inputs while the other filters label themselves inline, so the
+// toolbar grows to fit its tallest control and lines everything up along the bottom edge
 .toolbarContent {
   display: flex;
-  align-items: center;
-  height: layout.$spacing-09;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: layout.$spacing-03;
+  height: auto;
   margin-top: layout.$spacing-05;
+  // Carbon moves the toolbar content with a transform, which would detach it from the table header
+  transform: none;
+}
+
+.search {
+  flex: 1 1 12rem;
+  max-width: 24rem;
+  margin-right: auto;
 }
 
 .container {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: layout.$spacing-03;
+
+  // The filters' shared class adds a bottom margin, which would lift them above the date inputs
+  :global(.cds--multi-select__wrapper),
+  :global(.cds--list-box__wrapper) {
+    margin-bottom: 0;
+  }
 }
 
 .filterContainer {
@@ -100,10 +120,6 @@
 
 .dataTableSkeleton {
   margin-top: layout.$spacing-09;
-}
-
-.datePicker {
-  margin-bottom: layout.$spacing-05;
 }
 
 .arrowIcon {

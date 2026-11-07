@@ -165,15 +165,11 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
           rows,
         }) => (
           <TableContainer>
-            <TableToolbar
-              style={{
-                position: 'static',
-                overflow: 'visible',
-                backgroundColor: 'color',
-              }}
-            >
+            {/* TableToolbar doesn't accept a className, and a global rule positions toolbars absolutely over the table */}
+            <TableToolbar style={{ position: 'static', overflow: 'visible' }}>
               <TableToolbarContent className={styles.toolbarContent}>
                 <TableToolbarSearch
+                  className={styles.search}
                   expanded
                   labelText={t('searchStockOperations', 'Search stock operations')}
                   onChange={onInputChange}
