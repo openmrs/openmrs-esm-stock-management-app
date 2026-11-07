@@ -30,7 +30,9 @@ const StockItemCategorySelector = <T,>(props: StockItemCategorySelectorProps<T>)
     isLoading,
   } = useConcept(stockItemCategoryUUID);
 
-  const filteredCategories = props.itemType ? categories?.filter((c) => c.display === props?.itemType) : categories;
+  // Every answer of the configured category concept is offered. Matching answers to the item type by their display
+  // name only worked on dictionaries whose answers were literally named after the item types.
+  const filteredCategories = categories;
 
   const {
     field: { onChange, value, ref },

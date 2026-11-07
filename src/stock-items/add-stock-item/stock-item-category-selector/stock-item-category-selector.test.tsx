@@ -80,19 +80,27 @@ describe('StockItemCategorySelector', () => {
     expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
   });
 
-  it('filters categories by itemType', async () => {
+  it('lists every category whatever the item type, as on the RefApp whose answers are Medication and Non-drug', async () => {
     const user = userEvent.setup();
-    render(<CategorySelectorWrapper itemType="Drugs" />);
+    mockUseConcept.mockReturnValue({
+      items: {
+        answers: [
+          { uuid: 'medication', display: 'Medication' },
+          { uuid: 'non-drug', display: 'Non-drug' },
+        ],
+      },
+      isLoading: false,
+    } as ReturnType<typeof useConcept>);
+    render(<CategorySelectorWrapper itemType="Pharmaceuticals" />);
 
-    const input = screen.getByRole('combobox');
-    await user.click(input);
+    await user.click(screen.getByRole('combobox'));
 
-    expect(screen.getByText('Drugs')).toBeInTheDocument();
-    expect(screen.queryByText('Non Drugs')).not.toBeInTheDocument();
+    expect(screen.getByText('Medication')).toBeInTheDocument();
+    expect(screen.getByText('Non-drug')).toBeInTheDocument();
   });
 
-  it('does not clear categoryUuid on initial render when value is in the filtered list', () => {
-    render(<CategorySelectorWrapper defaultCategoryUuid="cat-drugs" itemType="Drugs" />);
+  it('shows the saved category', () => {
+    render(<CategorySelectorWrapper defaultCategoryUuid="cat-drugs" itemType="Pharmaceuticals" />);
 
     const input = screen.getByRole('combobox');
     expect(input).toHaveValue('Drugs');
@@ -109,18 +117,16 @@ describe('StockItemCategorySelector', () => {
     // only clear on itemType change, not on initial render
   });
 
-  it('clears categoryUuid when itemType changes and value is not in new filtered list', async () => {
-    const { rerender } = render(<CategorySelectorWrapper defaultCategoryUuid="cat-drugs" itemType="Drugs" />);
+  it('keeps the category when the item type changes, since every category is still offered', async () => {
+    const { rerender } = render(<CategorySelectorWrapper defaultCategoryUuid="cat-drugs" itemType="Pharmaceuticals" />);
 
-    // Verify initial state
     const input = screen.getByRole('combobox');
     expect(input).toHaveValue('Drugs');
 
-    // Switch to Non Drugs — cat-drugs is not in the "Non Drugs" filter
-    rerender(<CategorySelectorWrapper defaultCategoryUuid="cat-drugs" itemType="Non Drugs" />);
+    rerender(<CategorySelectorWrapper defaultCategoryUuid="cat-drugs" itemType="Non Pharmaceuticals" />);
 
     await waitFor(() => {
-      expect(input).toHaveValue('');
+      expect(input).toHaveValue('Drugs');
     });
   });
 
