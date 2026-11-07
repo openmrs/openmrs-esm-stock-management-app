@@ -20,8 +20,16 @@ const AddEditStockItem: React.FC<Workspace2DefinitionProps<AddStockItemProps>> =
   workspaceProps,
   closeWorkspace,
 }) => {
-  const { stockItem } = workspaceProps ?? {};
+  const { stockItem: initialStockItem } = workspaceProps ?? {};
   const { t } = useTranslation();
+  // Holds the item as last saved, so the Details tab does not fall back to the values it opened with
+  const [stockItem, setStockItem] = useState(initialStockItem);
+  const [previousInitialStockItem, setPreviousInitialStockItem] = useState(initialStockItem);
+  if (initialStockItem !== previousInitialStockItem) {
+    // The workspace was given a different item: start from it
+    setPreviousInitialStockItem(initialStockItem);
+    setStockItem(initialStockItem);
+  }
   const [selectedTab, setSelectedTab] = useState(0);
   const isEditing = Boolean(stockItem);
 
@@ -37,6 +45,7 @@ const AddEditStockItem: React.FC<Workspace2DefinitionProps<AddStockItemProps>> =
           key={stockItem?.uuid}
           handleTabChange={handleTabChange}
           stockItem={stockItem}
+          onStockItemSaved={setStockItem}
           onCloseWorkspace={closeWorkspace}
         />
       ),
