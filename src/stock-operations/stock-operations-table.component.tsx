@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   DataTable,
   DataTableSkeleton,
@@ -32,6 +32,7 @@ import { DATE_PICKER_CONTROL_FORMAT, DATE_PICKER_FORMAT, StockFilters } from '..
 import { formatDisplayDate } from '../core/utils/datetimeUtils';
 import { useHandleMutate } from '../utils';
 import { ResourceRepresentation } from '../core/api/api';
+import { useDebounce } from '../core/hooks/debounce-hook';
 import { useStockOperationPages } from './stock-operations-table.resource';
 import EditStockOperationActionMenu from './edit-stock-operation/edit-stock-operation-action-menu.component';
 import StockOperationTypesSelector from './stock-operation-types-selector/stock-operation-types-selector.component';
@@ -57,6 +58,16 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
   const [selectedSources, setSelectedSources] = useState<string[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<string[]>([]);
   const [selectedOperations, setSelectedOperations] = useState<string[]>([]);
+  const [searchInput, setSearchInput] = useState('');
+  const [searchString, setSearchString] = useState('');
+
+  const debouncedSearch = useDebounce((query: string) => {
+    setSearchString(query);
+  }, 500);
+
+  useEffect(() => {
+    debouncedSearch(searchInput);
+  }, [searchInput, debouncedSearch]);
 
   const { items, tableHeaders, currentPage, pageSizes, totalItems, goTo, currentPageSize, setPageSize, isLoading } =
     useStockOperationPages({
@@ -67,10 +78,16 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
       status: selectedStatus.join(','),
       sourceTypeUuid: selectedSources.join(','),
       operationTypeUuid: selectedOperations.join(','),
+      q: searchString || undefined,
     });
 
   const filterApplied =
-    selectedFromDate || selectedToDate || selectedSources.length || selectedStatus.length || selectedOperations.length;
+    searchString ||
+    selectedFromDate ||
+    selectedToDate ||
+    selectedSources.length ||
+    selectedStatus.length ||
+    selectedOperations.length;
 
   const handleOnFilterChange = useCallback((selectedItems, filterType) => {
     if (filterType === StockFilters.SOURCES) {
@@ -156,16 +173,7 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
         {t('stockOperationsTableHeader', 'Stock operations to track movement of stock.')}
       </h2>
       <DataTable headers={tableHeaders} isSortable rows={tableRows} useZebraStyles>
-        {({
-          expandRow,
-          getExpandedRowProps,
-          getHeaderProps,
-          getRowProps,
-          getTableProps,
-          headers,
-          onInputChange,
-          rows,
-        }) => (
+        {({ expandRow, getExpandedRowProps, getHeaderProps, getRowProps, getTableProps, headers, rows }) => (
           <TableContainer>
             <TableToolbar
               style={{
@@ -178,7 +186,9 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
                 <TableToolbarSearch
                   expanded
                   labelText={t('searchStockOperations', 'Search stock operations')}
-                  onChange={onInputChange}
+                  onChange={(e) =>
+                    setSearchInput(typeof e === 'string' ? e : (e as React.ChangeEvent<HTMLInputElement>).target.value)
+                  }
                   placeholder={t('searchStockOperations', 'Search stock operations')}
                 />
                 <div className={styles.container}>

@@ -1,15 +1,21 @@
 import { type StockOperationFilter, useStockOperations } from './stock-operations.resource';
-import { useMemo, useState } from 'react';
-import { usePagination } from '@openmrs/esm-framework';
+import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 export function useStockOperationPages(filter: StockOperationFilter) {
-  const { items, isLoading, error } = useStockOperations(filter);
-
   const pageSizes = [10, 20, 30, 40, 50];
   const [currentPageSize, setPageSize] = useState(10);
+  const [pageState, setPageState] = useState({ page: 1, key: '' });
 
-  const { goTo, results: paginatedItems, currentPage } = usePagination(items.results, currentPageSize);
+  const filterKey = JSON.stringify({ ...filter, pageSize: currentPageSize });
+  const currentPage = pageState.key === filterKey ? pageState.page : 1;
+  const goTo = useCallback((page: number) => setPageState({ page, key: filterKey }), [filterKey]);
+
+  const { items, isLoading, error } = useStockOperations({
+    ...filter,
+    limit: currentPageSize,
+    startIndex: currentPage - 1,
+  });
 
   const { t } = useTranslation();
 
@@ -61,11 +67,10 @@ export function useStockOperationPages(filter: StockOperationFilter) {
   );
 
   return {
-    items: paginatedItems,
+    items: items.results ?? [],
     totalItems: items?.totalCount,
     currentPage,
     currentPageSize,
-    paginatedItems,
     goTo,
     pageSizes,
     isLoading,
