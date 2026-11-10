@@ -161,6 +161,8 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
     [items],
   );
 
+  const itemsById = useMemo(() => new Map((items ?? []).map((op) => [op.uuid, op])), [items]);
+
   if (isLoading && !filterApplied) {
     return (
       <DataTableSkeleton className={styles.dataTableSkeleton} showHeader={false} rowCount={5} columnCount={5} zebra />
@@ -250,9 +252,10 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {rows?.map((row: any, index) => {
+                {rows?.map((row: any) => {
                   const props = getRowProps({ row });
                   const expandedRowProps = getExpandedRowProps({ row });
+                  const operation = itemsById.get(row.id);
                   return (
                     <React.Fragment key={row.id}>
                       <TableExpandRow className={isDesktop ? styles.desktopRow : styles.tabletRow} {...props}>
@@ -271,9 +274,9 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
                           </TableCell>
                         ))}
                       </TableExpandRow>
-                      {row.isExpanded ? (
+                      {row.isExpanded && operation ? (
                         <TableExpandedRow colSpan={headers.length + 2}>
-                          <StockOperationExpandedRow model={items[index]} />
+                          <StockOperationExpandedRow model={operation} />
                         </TableExpandedRow>
                       ) : (
                         <TableExpandedRow className={styles.hiddenRow} colSpan={headers.length + 2} />
