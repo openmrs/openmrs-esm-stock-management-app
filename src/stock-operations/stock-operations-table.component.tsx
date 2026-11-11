@@ -163,7 +163,7 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
 
   const itemsById = useMemo(() => new Map((items ?? []).map((op) => [op.uuid, op])), [items]);
 
-  if (isLoading && !filterApplied) {
+  if (isLoading && !filterApplied && !items.length) {
     return (
       <DataTableSkeleton className={styles.dataTableSkeleton} showHeader={false} rowCount={5} columnCount={5} zebra />
     );
@@ -296,7 +296,7 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
                 </Tile>
               </div>
             ) : null}
-            {Boolean(filterApplied && isLoading) && (
+            {isLoading && (
               <div className={styles.rowLoadingContainer}>
                 <InlineLoading description={t('loadingPlaceholder', 'Loading...')} />
               </div>

@@ -1,21 +1,33 @@
 import { type StockOperationFilter, useStockOperations } from './stock-operations.resource';
-import { useCallback, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 export function useStockOperationPages(filter: StockOperationFilter) {
   const pageSizes = [10, 20, 30, 40, 50];
   const [currentPageSize, setPageSize] = useState(10);
-  const [pageState, setPageState] = useState({ page: 1, key: '' });
+  const [currentPage, goTo] = useState(1);
 
   const filterKey = JSON.stringify({ ...filter, pageSize: currentPageSize });
-  const currentPage = pageState.key === filterKey ? pageState.page : 1;
-  const goTo = useCallback((page: number) => setPageState({ page, key: filterKey }), [filterKey]);
+  const [lastFilterKey, setLastFilterKey] = useState(filterKey);
+  if (lastFilterKey !== filterKey) {
+    setLastFilterKey(filterKey);
+    goTo(1);
+  }
 
   const { items, isLoading, error } = useStockOperations({
     ...filter,
     limit: currentPageSize,
     startIndex: currentPage - 1,
   });
+
+  const totalCount = items?.totalCount;
+
+  useEffect(() => {
+    const lastPage = Math.max(1, Math.ceil((totalCount ?? 0) / currentPageSize));
+    if (totalCount != null && currentPage > lastPage) {
+      goTo(lastPage);
+    }
+  }, [currentPage, currentPageSize, totalCount]);
 
   const { t } = useTranslation();
 
@@ -68,7 +80,7 @@ export function useStockOperationPages(filter: StockOperationFilter) {
 
   return {
     items: items.results ?? [],
-    totalItems: items?.totalCount,
+    totalItems: totalCount,
     currentPage,
     currentPageSize,
     goTo,

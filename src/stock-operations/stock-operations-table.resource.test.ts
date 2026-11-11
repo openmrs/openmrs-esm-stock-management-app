@@ -61,4 +61,31 @@ describe('useStockOperationPages', () => {
     expect(result.current.currentPage).toBe(1);
     expect(mockUseStockOperations).toHaveBeenLastCalledWith(expect.objectContaining({ limit: 20, startIndex: 0 }));
   });
+
+  it('does not restore an old page when a filter is cleared', () => {
+    const { result, rerender } = renderHook(({ q }) => useStockOperationPages({ q }), {
+      initialProps: { q: undefined as string | undefined },
+    });
+
+    act(() => result.current.goTo(3));
+    rerender({ q: 'RCPT-0049' });
+    rerender({ q: undefined });
+
+    expect(result.current.currentPage).toBe(1);
+    expect(mockUseStockOperations).toHaveBeenLastCalledWith(expect.objectContaining({ startIndex: 0 }));
+  });
+
+  it('moves back to the last page when the server total shrinks', () => {
+    const { result, rerender } = renderHook(() => useStockOperationPages({}));
+
+    act(() => result.current.goTo(6));
+    mockUseStockOperations.mockReturnValue({
+      items: { results: [], totalCount: 49 },
+      isLoading: false,
+      error: undefined,
+    } as any);
+    rerender();
+
+    expect(result.current.currentPage).toBe(5);
+  });
 });
