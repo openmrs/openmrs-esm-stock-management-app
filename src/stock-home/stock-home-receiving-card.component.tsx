@@ -5,6 +5,7 @@ import { Delivery } from '@carbon/react/icons';
 import { showModal } from '@openmrs/esm-framework';
 import { ResourceRepresentation } from '../core/api/api';
 import { useStockReceiving } from './stock-home-receiving.resource';
+import StockOperationStatusTag from '../stock-operations/stock-operation-status-tag/stock-operation-status-tag.component';
 import styles from './stock-home-detail-card.scss';
 
 const StockHomeReceivingCard = () => {
@@ -40,9 +41,12 @@ const StockHomeReceivingCard = () => {
               <Delivery size={40} color={'#0F62FE'} />
             </div>
             <div className={styles.cardText}>
-              <p>
-                {item?.status} · {item?.sourceName} · {item?.destinationName}
-              </p>
+              <div className={styles.statusLine}>
+                <StockOperationStatusTag status={item?.status} />
+                <span>
+                  {item?.sourceName} · {item?.destinationName}
+                </span>
+              </div>
               <p>
                 <strong>{stock?.stockItemName}</strong> {stock?.stockItemPackagingUOMName}, {stock?.quantity}
               </p>

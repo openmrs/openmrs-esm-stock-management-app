@@ -5,6 +5,7 @@ import { ResourceRepresentation } from '../core/api/api';
 import { DocumentImport, View } from '@carbon/react/icons';
 import { showModal } from '@openmrs/esm-framework';
 import { useStockIssuing } from './stock-home-issuing.resource';
+import StockOperationStatusTag from '../stock-operations/stock-operation-status-tag/stock-operation-status-tag.component';
 import styles from './stock-home-detail-card.scss';
 
 const StockHomeIssuingCard = () => {
@@ -59,9 +60,12 @@ const StockHomeIssuingCard = () => {
             <DocumentImport size={40} color={'#198038'} />
           </div>
           <div className={styles.cardText}>
-            <p>
-              {item?.status} · {item?.sourceName} · {item?.destinationName}
-            </p>
+            <div className={styles.statusLine}>
+              <StockOperationStatusTag status={item?.status} />
+              <span>
+                {item?.sourceName} · {item?.destinationName}
+              </span>
+            </div>
             <p>
               <strong>{item?.stockItemName}</strong> {item?.stockItemPackagingUOMName}, {item?.quantity}
             </p>
