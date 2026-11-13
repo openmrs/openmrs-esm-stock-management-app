@@ -66,3 +66,10 @@ export const ParseDate = (value: string | null | undefined) => {
   }
   return date;
 };
+export const getDatePickerLocale = (locale?: string | null) => {
+  const lang = locale?.split(/[-_]/)[0]?.toLowerCase();
+  if (!lang) {
+    return undefined;
+  }
+  return lang === 'vi' ? 'vn' : lang;
+};
