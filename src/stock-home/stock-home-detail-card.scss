@@ -203,3 +203,12 @@
   font-size: layout.$spacing-05;
   color: colors.$gray-70;
 }
+
+.statusLine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: layout.$spacing-03;
+  font-size: layout.$spacing-05;
+  color: colors.$gray-70;
+}
