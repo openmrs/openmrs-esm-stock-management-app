@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { usePagination } from '@openmrs/esm-framework';
 import { useStockSources } from './stock-sources.resource';
@@ -6,11 +6,28 @@ import { type StockOperationFilter } from '../stock-operations/stock-operations.
 
 export default function useStockSourcesPage(filter: StockOperationFilter) {
   const { t } = useTranslation();
-  const { items, isLoading, error } = useStockSources(filter);
-
   const pageSizes = [10, 20, 30, 40, 50];
   const [currentPageSize, setPageSize] = useState(10);
-  const { goTo, results: paginatedItems, currentPage } = usePagination(items.results, currentPageSize);
+  const [serverPage, setServerPage] = useState(1);
+
+  // A request filtered by source type is a search, which the backend pages (50 by default) while
+  // counting every match, so it's paged on the server. Without a filter it returns every source and
+  // ignores limit and startIndex, so that list is paged here.
+  const isPagedOnServer = Boolean(filter.sourceTypeUuid);
+  const { items, isLoading, error } = useStockSources(
+    isPagedOnServer ? { ...filter, limit: currentPageSize, startIndex: serverPage - 1 } : filter,
+  );
+
+  const clientPages = usePagination(isPagedOnServer ? [] : items.results, currentPageSize);
+  const paginatedItems = isPagedOnServer ? items.results ?? [] : clientPages.results;
+  const currentPage = isPagedOnServer ? serverPage : clientPages.currentPage;
+  const goTo = useCallback(
+    (page: number) => {
+      setServerPage(page);
+      clientPages.goTo(page);
+    },
+    [clientPages],
+  );
 
   const tableHeaders = useMemo(
     () => [
