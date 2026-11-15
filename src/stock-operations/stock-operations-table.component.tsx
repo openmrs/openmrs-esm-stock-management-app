@@ -1,11 +1,11 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import {
+  Button,
   DataTable,
   DataTableSkeleton,
   DatePicker,
   DatePickerInput,
   InlineLoading,
-  Link,
   Pagination,
   Table,
   TableBody,
@@ -252,7 +252,15 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
                               <span>
                                 <span>{cell.value.commonNames}</span>
                                 {cell.value.more > 0 && (
-                                  <Link onClick={() => expandRow(row.id)}>{`...(${cell.value.more} more)`}</Link>
+                                  // Expands the row to list every item
+                                  <Button
+                                    aria-expanded={Boolean(row.isExpanded)}
+                                    kind="ghost"
+                                    onClick={() => expandRow(row.id)}
+                                    size="sm"
+                                  >
+                                    {t('moreItems', '...({{number}} more)', { number: cell.value.more })}
+                                  </Button>
                                 )}
                               </span>
                             ) : (

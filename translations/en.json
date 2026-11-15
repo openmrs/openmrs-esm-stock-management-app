@@ -202,6 +202,7 @@
   "manageStock": "Manage Stock",
   "maxReorderLevelRatio": "Max reorder level ratio",
   "months": "Months",
+  "moreItems": "...({{number}} more)",
   "mostMoving": "Most moving",
   "name": "Name",
   "newOperationTitle": "New: {{operationName}}",

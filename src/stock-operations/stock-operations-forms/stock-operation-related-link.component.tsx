@@ -1,4 +1,5 @@
 import React, { useCallback } from 'react';
+import { Button } from '@carbon/react';
 import { useStockOperationTypes } from '../../stock-lookups/stock-lookups.resource';
 import { launchStockoperationAddOrEditWorkSpace } from '../stock-operation.utils';
 import { useStockOperationAndItems } from '../stock-operations.resource';
@@ -33,9 +34,9 @@ const StockOperationRelatedLink: React.FC<StockOperationRelatedLinkProps> = ({
 
   if (isLoading || error || stockOperationError || isStockOperationLoading) return null;
   return (
-    <span onClick={handleEdit} style={{ cursor: 'pointer', textDecoration: 'underline' }}>
+    <Button kind="ghost" onClick={handleEdit} size="sm">
       {operationNumber}
-    </span>
+    </Button>
   );
 };
 

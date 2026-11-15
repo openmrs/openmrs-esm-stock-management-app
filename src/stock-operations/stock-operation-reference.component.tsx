@@ -1,4 +1,4 @@
-import { InlineLoading } from '@carbon/react';
+import { Button, InlineLoading } from '@carbon/react';
 import { showSnackbar } from '@openmrs/esm-framework';
 import React, { useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -54,9 +54,9 @@ const StockOperationReference = ({ operationNumber, operationUuid }: StockOperat
   }
 
   return (
-    <a onClick={handleEdit} style={{ cursor: 'pointer' }}>
+    <Button kind="ghost" onClick={handleEdit} size="sm">
       {operationNumber}
-    </a>
+    </Button>
   );
 };
 
