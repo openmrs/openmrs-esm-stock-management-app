@@ -14,6 +14,7 @@ import {
   Select,
   SelectItem,
   Stack,
+  TextInput,
   Toggle,
 } from '@carbon/react';
 import { Save } from '@carbon/react/icons';
@@ -56,6 +57,9 @@ interface AddStockUserRoleScopeProps {
   editMode?: boolean;
 }
 
+// In the order the fields appear on the form
+type ValidatedField = 'user' | 'role' | 'activeFrom' | 'activeTo' | 'operationTypes' | 'locations';
+
 const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRoleScopeProps>> = ({
   workspaceProps,
   closeWorkspace,
@@ -68,14 +72,36 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
     ? t('editUserRoleScope', 'Edit user role scope')
     : t('addNewUserRoleScope', 'Add new user role scope');
   const currentUser = useSession();
-  const [formModel, setFormModel] = useState<UserRoleScope>({ ...model });
+  const [formModel, setFormModel] = useState<UserRoleScope>({
+    ...model,
+    enabled: model?.enabled ?? false,
+    permanent: model?.permanent ?? false,
+  });
   const isTablet = useLayoutType() === 'tablet';
 
   const [roles, setRoles] = useState<Role[]>([]);
+  const [showErrors, setShowErrors] = useState(false);
 
   const loggedInUserUuid = currentUser?.user?.uuid;
   const [selectedUserUuid, setSelectedUserUuid] = useState<string | null>(null);
   const { data: user } = useUser(selectedUserUuid);
+  const isEditing = Boolean(model?.uuid);
+
+  const roleOptions = useMemo(() => {
+    const stockRoles = (user?.roles?.filter((role) => stockRoleUUIDs.includes(role.uuid)) ?? roles).map(
+      (role) => role.display,
+    );
+    // A saved role stays selectable even if it is no longer one of the configured stock roles
+    return model?.role && !stockRoles.includes(model.role) ? [model.role, ...stockRoles] : stockRoles;
+  }, [user?.roles, roles, stockRoleUUIDs, model?.role]);
+
+  const activeDates = useMemo(
+    () => [formModel?.activeFrom, formModel?.activeTo].filter(Boolean).map((date) => new Date(date)),
+    [formModel?.activeFrom, formModel?.activeTo],
+  );
+  // The picker drops dates before its minimum, so an existing scope's start date has to stay in range
+  const savedActiveFrom = model?.activeFrom ? new Date(model.activeFrom) : null;
+  const minActiveDate = savedActiveFrom && savedActiveFrom < MinDate ? savedActiveFrom : MinDate;
 
   // operation types
   const {
@@ -173,6 +199,13 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
     }
   };
 
+  const onEnableDescendantsToggled = (locationUuid: string, enableDescendants: boolean): void => {
+    const locations = formModel?.locations?.map((location) =>
+      location.locationUuid === locationUuid ? { ...location, enableDescendants } : location,
+    );
+    setFormModel({ ...formModel, locations });
+  };
+
   const findCheckedLocation = (location: fhir.Location): UserRoleScopeLocation | null => {
     const result = formModel?.locations?.filter((x) => x.locationUuid === location.id);
     return result && result.length > 0 ? result[0] : null;
@@ -186,7 +219,7 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
     const filteredStockRoles = data.selectedItem?.roles
       .filter((role) => stockRoleUUIDs.includes(role.uuid))
       .filter((role) => role.uuid !== loggedInUserUuid);
-    setFormModel({ ...formModel, userUuid: data.selectedItem?.uuid });
+    setFormModel({ ...formModel, userUuid: data.selectedItem?.uuid, role: '' });
     setRoles(filteredStockRoles ?? []);
     setSelectedUserUuid(data?.selectedItem?.uuid);
   };
@@ -209,27 +242,38 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
     return formModel?.operationTypes?.filter((x) => x.operationTypeUuid === operationType.uuid)?.length > 0;
   };
 
+  // Each field's error, checked against the form as it is now, so an error goes once its field is fixed
+  const validationErrors: Partial<Record<ValidatedField, string>> = Object.fromEntries(
+    Object.entries({
+      user: !formModel?.userUuid && t('userRequired', 'User is required'),
+      role: !formModel?.role && t('roleRequired', 'Role is required'),
+      activeFrom: !formModel?.permanent && !formModel?.activeFrom && t('activeFromRequired', 'Active From is required'),
+      activeTo: !formModel?.permanent && !formModel?.activeTo && t('activeToRequired', 'Active To is required'),
+      operationTypes:
+        !formModel?.operationTypes?.length && t('operationTypeRequired', 'Select at least one stock operation'),
+      locations: !formModel?.locations?.length && t('selectAtLeastOneLocation', 'Select at least one location'),
+    }).filter(([, error]) => error),
+  );
+  // Errors show on the fields after the first save attempt
+  const errors = showErrors ? validationErrors : {};
+
   const addStockUserRole = async (e) => {
     e.preventDefault();
 
-    // Validation: ensure required fields are present
-    if (!formModel?.userUuid) {
-      showSnackbar({
-        title: t('errorSavingUserRoleScope', 'Error Saving user role scope'),
-        kind: 'error',
-        isLowContrast: true,
-        subtitle: t('userRequired', 'User is required'),
-      });
-      return;
-    }
-
-    if (!formModel?.role) {
-      showSnackbar({
-        title: t('errorSavingUserRoleScope', 'Error Saving user role scope'),
-        kind: 'error',
-        isLowContrast: true,
-        subtitle: t('roleRequired', 'Role is required'),
-      });
+    const invalidFields = Object.keys(validationErrors) as Array<ValidatedField>;
+    if (invalidFields.length) {
+      setShowErrors(true);
+      // The form can be longer than the screen, so take the user to the first field to fix
+      const fieldIds: Record<ValidatedField, string | undefined> = {
+        user: 'userName',
+        role: 'select-role',
+        activeFrom: 'date-picker-input-id-start',
+        activeTo: 'date-picker-input-id-finish',
+        operationTypes: stockOperations?.[0]?.uuid,
+        locations: stockLocations?.[0] && `chk-loc-child-${stockLocations[0].id}`,
+      };
+      const firstInvalidField = invalidFields.find((field) => fieldIds[field]);
+      document.getElementById(fieldIds[firstInvalidField])?.focus();
       return;
     }
 
@@ -269,26 +313,42 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
         <Stack className={styles.form} gap={5}>
           <div>
             <FormGroup legendText={t('user', 'User')}>
-              <ComboBox
-                id="userName"
-                initialSelectedItem={usersResults.find((user) => user.uuid === model?.userUuid) ?? null}
-                items={usersResults}
-                itemToString={(item) => {
-                  if (!item || typeof item !== 'object') return '';
-                  const itemWithPerson = item as { person?: { display?: string }; display?: string };
-                  return `${itemWithPerson?.person?.display ?? itemWithPerson?.display ?? ''}`;
-                }}
-                titleText={t('user', 'User')}
-                onChange={onUserChanged}
-                onInputChange={debouncedSearch}
-                placeholder={t('searchUsers', 'Search users')}
-                shouldFilterItem={() => true}
-                size="md"
-              />
+              {isEditing ? (
+                <TextInput
+                  id="userName"
+                  labelText={t('user', 'User')}
+                  readOnly
+                  size="md"
+                  value={`${model?.userFamilyName ?? ''} ${model?.userGivenName ?? ''}`.trim() || model?.userName}
+                />
+              ) : (
+                <ComboBox
+                  id="userName"
+                  items={usersResults}
+                  itemToString={(item) => {
+                    if (!item || typeof item !== 'object') return '';
+                    const itemWithPerson = item as { person?: { display?: string }; display?: string };
+                    return `${itemWithPerson?.person?.display ?? itemWithPerson?.display ?? ''}`;
+                  }}
+                  titleText={t('user', 'User')}
+                  invalid={!!errors.user}
+                  invalidText={errors.user}
+                  onChange={onUserChanged}
+                  onInputChange={debouncedSearch}
+                  placeholder={t('searchUsers', 'Search users')}
+                  shouldFilterItem={() => true}
+                  size="md"
+                />
+              )}
             </FormGroup>
           </div>
           <Select
             id="select-role"
+            helperText={
+              user?.uuid && roleOptions.length === 0 ? t('noStockRoles', 'This user has no stock roles') : undefined
+            }
+            invalid={!!errors.role}
+            invalidText={errors.role}
             labelText={t('role', 'Role')}
             name="role"
             onChange={onRoleChange}
@@ -298,8 +358,8 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
             {editMode ? (
               <SelectItem key={formModel?.role} value={formModel?.role} text={formModel?.role} />
             ) : (
-              (user?.roles ?? roles)?.map((role) => {
-                return <SelectItem key={role.display} value={role.display} text={role.display} />;
+              roleOptions.map((role) => {
+                return <SelectItem key={role} value={role} text={role} />;
               })
             )}
           </Select>
@@ -324,18 +384,23 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
               <DatePicker
                 dateFormat={DATE_PICKER_CONTROL_FORMAT}
                 datePickerType="range"
+                // The picker sets its inputs' invalid state
+                invalid={!!(errors.activeFrom || errors.activeTo)}
                 light
                 locale="en"
-                minDate={formatForDatePicker(MinDate)}
+                minDate={formatForDatePicker(minActiveDate)}
                 onChange={onActiveDatesChange}
+                value={activeDates}
               >
                 <DatePickerInput
                   id="date-picker-input-id-start"
+                  invalidText={errors.activeFrom}
                   labelText={t('activeFrom', 'Active From')}
                   placeholder={DATE_PICKER_FORMAT}
                 />
                 <DatePickerInput
                   id="date-picker-input-id-finish"
+                  invalidText={errors.activeTo}
                   labelText={t('activeTo', 'Active To')}
                   placeholder={DATE_PICKER_FORMAT}
                 />
@@ -347,63 +412,76 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
               {t('roleDescription', 'The role will be applicable to only selected stock operations.')}
             </span>
           </FormGroup>
-          <CheckboxGroup className={styles.checkboxGrid} legendText="">
-            {stockOperations?.length > 0 &&
-              stockOperations.map((type) => {
-                return (
-                  <div className={styles.flexRow}>
-                    <Checkbox
-                      checked={isOperationChecked(type)}
-                      className={styles.checkbox}
-                      id={type.uuid}
-                      labelText={type.name}
-                      onChange={(event) => onStockOperationTypeChanged(event)}
-                      value={type.uuid}
-                    />
-                  </div>
-                );
-              })}
+          {/* The grid is inside the group so that the group's error shows below it */}
+          <CheckboxGroup invalid={!!errors.operationTypes} invalidText={errors.operationTypes} legendText="">
+            <div className={styles.checkboxGrid}>
+              {stockOperations?.length > 0 &&
+                stockOperations.map((type) => {
+                  return (
+                    <div className={styles.flexRow}>
+                      <Checkbox
+                        checked={isOperationChecked(type)}
+                        className={styles.checkbox}
+                        id={type.uuid}
+                        labelText={type.name}
+                        onChange={(event) => onStockOperationTypeChanged(event)}
+                        value={type.uuid}
+                      />
+                    </div>
+                  );
+                })}
+            </div>
           </CheckboxGroup>
           <FormGroup legendText={t('locations', 'Locations')}>
             <span className={styles.subTitle}>
               {t('toggleMessage', 'Use the toggle to apply this scope to the locations under the selected location.')}
             </span>
           </FormGroup>
-          <CheckboxGroup className={styles.checkboxGrid} legendText="">
-            {stockLocations?.length > 0 &&
-              stockLocations.map((type) => {
-                const checkedLocation = findCheckedLocation(type);
+          {/* The grid is inside the group so that the group's error shows below it */}
+          <CheckboxGroup invalid={!!errors.locations} invalidText={errors.locations} legendText="">
+            <div className={styles.checkboxGrid}>
+              {stockLocations?.length > 0 &&
+                stockLocations.map((type) => {
+                  const checkedLocation = findCheckedLocation(type);
 
-                const getToggledValue = (locationUuid) => {
-                  const location = checkedLocation?.locationUuid === locationUuid ? checkedLocation : null;
-                  return location?.enableDescendants === true;
-                };
+                  const getToggledValue = (locationUuid) => {
+                    const location = checkedLocation?.locationUuid === locationUuid ? checkedLocation : null;
+                    return location?.enableDescendants === true;
+                  };
 
-                return (
-                  <div className={styles.flexRow}>
-                    <Checkbox
-                      checked={checkedLocation != null}
-                      className={styles.checkbox}
-                      id={`chk-loc-child-${type.id}`}
-                      key={`chk-loc-child-key-${type.id}`}
-                      labelText={type.name}
-                      name="location"
-                      onChange={(event) => onLocationCheckBoxChanged(event)}
-                      value={type.id}
-                    />
-                    {checkedLocation && (
-                      <Toggle
-                        className={styles.toggle}
-                        hideLabel
-                        id={`tg-loc-child-${type.id}`}
-                        key={`tg-loc-child-key-${type.id}`}
-                        toggled={getToggledValue(type.id)}
-                        size="sm"
+                  return (
+                    <div className={styles.flexRow}>
+                      <Checkbox
+                        checked={checkedLocation != null}
+                        className={styles.checkbox}
+                        id={`chk-loc-child-${type.id}`}
+                        key={`chk-loc-child-key-${type.id}`}
+                        labelText={type.name}
+                        name="location"
+                        onChange={(event) => onLocationCheckBoxChanged(event)}
+                        value={type.id}
                       />
-                    )}
-                  </div>
-                );
-              })}
+                      {checkedLocation && (
+                        <>
+                          <span className="cds--visually-hidden" id={`tg-loc-child-label-${type.id}`}>
+                            {t('applyToChildLocations', 'Apply to child locations')}
+                          </span>
+                          <Toggle
+                            aria-labelledby={`tg-loc-child-label-${type.id}`}
+                            className={styles.toggle}
+                            hideLabel
+                            id={`tg-loc-child-${type.id}`}
+                            key={`tg-loc-child-key-${type.id}`}
+                            onToggle={(checked) => onEnableDescendantsToggled(type.id, checked)}
+                            toggled={getToggledValue(type.id)}
+                            size="sm"
+                          />
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
+            </div>
           </CheckboxGroup>
         </Stack>
         <ButtonSet

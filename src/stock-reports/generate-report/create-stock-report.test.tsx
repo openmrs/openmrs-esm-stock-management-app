@@ -72,7 +72,7 @@ describe('CreateReport', () => {
   });
 
   describe('saving an incomplete form', () => {
-    it('marks the missing fields and says what is missing', async () => {
+    it('marks the missing fields instead of listing them in a toast', async () => {
       const user = userEvent.setup();
       renderForm();
       await selectReport(user, 'Stock Expiry Report');
@@ -83,12 +83,7 @@ describe('CreateReport', () => {
       expect(screen.getByText(/End Date is required/)).toBeInTheDocument();
       expect(screen.getByText('Location is required')).toBeInTheDocument();
       expect(screen.getByRole('textbox', { name: 'Start date' })).toHaveAttribute('data-invalid', 'true');
-      expect(showSnackbar).toHaveBeenCalledWith(
-        expect.objectContaining({
-          kind: 'error',
-          subtitle: 'Complete the required fields: Start date, End date, Location',
-        }),
-      );
+      expect(showSnackbar).not.toHaveBeenCalled();
       expect(createBatchJob).not.toHaveBeenCalled();
     });
 

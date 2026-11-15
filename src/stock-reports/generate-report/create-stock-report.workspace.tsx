@@ -30,7 +30,7 @@ import {
   Workspace2,
   type Workspace2DefinitionProps,
 } from '@openmrs/esm-framework';
-import { Controller, type FieldErrors, useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { getParamDefaultLimit, isForecastReport, ReportParameter } from '../ReportType';
 import { DATE_PICKER_CONTROL_FORMAT, DATE_PICKER_FORMAT, formatForDatePicker, today } from '../../constants';
@@ -451,29 +451,6 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
     }
   };
 
-  const handleInvalid = (fieldErrors: FieldErrors<StockReportSchema>) => {
-    const fieldLabels: Partial<Record<keyof StockReportSchema, string>> = {
-      reportName: t('reportName', 'Report name'),
-      date: t('date', 'Date'),
-      startDate: t('startDate', 'Start date'),
-      endDate: t('endDate', 'End date'),
-      inventoryGroupBy: t('inventoryBy', 'Inventory by'),
-      locationUuid: t('location', 'Location'),
-    };
-    const missingFields = Object.keys(fieldErrors)
-      .map((field) => fieldLabels[field])
-      .filter(Boolean);
-
-    showSnackbar({
-      title: t('reportNotSaved', 'Report not saved'),
-      kind: 'error',
-      isLowContrast: true,
-      subtitle: t('completeRequiredFields', 'Complete the required fields: {{fields}}', {
-        fields: missingFields.join(', '),
-      }),
-    });
-  };
-
   // Enter in a date field commits the typed date, it shouldn't also submit the form. This has to run in the
   // capture phase because Carbon's DatePicker stops the keydown from bubbling.
   const handleFormKeyDown = (event: React.KeyboardEvent<HTMLFormElement>) => {
@@ -495,11 +472,7 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
 
   return (
     <Workspace2 title={t('newReport', 'New Report')}>
-      <Form
-        className={styles.container}
-        onKeyDownCapture={handleFormKeyDown}
-        onSubmit={handleSubmit(handleSave, handleInvalid)}
-      >
+      <Form className={styles.container} onKeyDownCapture={handleFormKeyDown} onSubmit={handleSubmit(handleSave)}>
         <Stack className={styles.form} gap={5}>
           <>
             <FormGroup legendText={t('reportName', 'Report name')}>
@@ -745,6 +718,8 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
                   hideSteppers
                   value={value ?? ''}
                   onChange={(_, { value: limit }) => onChange(limit === '' ? undefined : Number(limit))}
+                  invalid={!!errors?.limit?.message}
+                  invalidText={errors?.limit?.message}
                   label={t('limit', 'Limit')}
                 />
               )}
