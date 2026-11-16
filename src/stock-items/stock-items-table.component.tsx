@@ -6,7 +6,6 @@ import {
   IconButton,
   Pagination,
   Table,
-  TableBatchActions,
   TableBody,
   TableCell,
   TableContainer,
@@ -28,7 +27,7 @@ import { ResourceRepresentation } from '../core/api/api';
 import { useDebounce } from '../core/hooks/debounce-hook';
 import { useStockItemsPages } from './stock-items-table.resource';
 import AddStockItemActionButton from './add-stock-item/add-stock-action-button.component';
-import AddStockItemsBulktImportActionButton from './add-bulk-stock-item/add-stock-items-bulk-import-action-button.component';
+import AddStockItemsBulkImportActionButton from './add-bulk-stock-item/add-stock-items-bulk-import-action-button.component';
 import EditStockItemActionsMenu from './edit-stock-item/edit-stock-item-action-menu.component';
 import FilterStockItems from './components/filter-stock-items/filter-stock-items.component';
 import { type CustomTableHeader } from '../core/components/table/types';
@@ -162,16 +161,14 @@ const StockItemsTableComponent: React.FC<StockItemsTableProps> = () => {
         {t('stockItemsTableHeader', 'Drugs and other stock items managed by the system.')}
       </h2>
       <DataTable rows={tableRows} headers={tableHeaders} isSortable useZebraStyles>
-        {({ rows, headers, getHeaderProps, getTableProps, getRowProps, getBatchActionProps }) => (
+        {({ rows, headers, getHeaderProps, getTableProps, getRowProps }) => (
           <TableContainer>
             <TableToolbar
               style={{
                 position: 'static',
                 overflow: 'visible',
-                backgroundColor: 'color',
               }}
             >
-              <TableBatchActions {...getBatchActionProps()} />
               <TableToolbarContent
                 style={{
                   display: 'flex',
@@ -187,7 +184,7 @@ const StockItemsTableComponent: React.FC<StockItemsTableProps> = () => {
                   value={searchInput}
                 />
                 <FilterStockItems filterType={isDrug} changeFilterType={setDrug} />
-                <AddStockItemsBulktImportActionButton />
+                <AddStockItemsBulkImportActionButton />
                 <TableToolbarMenu data-testid="stock-items-menu">
                   <TableToolbarAction className={styles.toolbarAction} onClick={handleRefresh}>
                     {t('refresh', 'Refresh')}
@@ -209,7 +206,7 @@ const StockItemsTableComponent: React.FC<StockItemsTableProps> = () => {
                           })}
                           className={isDesktop ? styles.desktopHeader : styles.tabletHeader}
                           key={`${header.key}`}
-                          isSortable={header.key !== 'name'}
+                          isSortable={header.key !== 'actions'}
                         >
                           {(() => {
                             const customHeader = header as CustomTableHeader;
