@@ -82,8 +82,9 @@ const StockItemsTableComponent: React.FC<StockItemsTableProps> = () => {
       },
       {
         id: 1,
-        header: t('genericName', 'Generic name'),
-        key: 'genericName',
+        // The drug's name, or the concept's name for other items
+        header: t('name', 'Name'),
+        key: 'name',
       },
       {
         id: 2,
@@ -92,8 +93,9 @@ const StockItemsTableComponent: React.FC<StockItemsTableProps> = () => {
       },
       {
         id: 3,
-        header: t('tradeName', 'Trade name'),
-        key: 'tradeName',
+        // The drug's concept, for drugs only
+        header: t('genericName', 'Generic name'),
+        key: 'genericName',
       },
       {
         id: 4,
@@ -126,9 +128,9 @@ const StockItemsTableComponent: React.FC<StockItemsTableProps> = () => {
       key: `key-${stockItem?.uuid}`,
       uuid: `${stockItem?.uuid}`,
       type: stockItem?.drugUuid ? t('drug', 'Drug') : t('other', 'Other'),
-      genericName: <EditStockItemActionsMenu data={items[index]} />,
+      name: <EditStockItemActionsMenu data={items[index]} />,
       commonName: stockItem?.commonName,
-      tradeName: stockItem?.drugUuid ? stockItem?.conceptName : '',
+      genericName: stockItem?.drugUuid ? stockItem?.conceptName : '',
       preferredVendorName: stockItem?.preferredVendorName,
       dispensingUoM: stockItem?.defaultStockOperationsUoMName,
       dispensingUnitName: stockItem?.dispensingUnitName,
@@ -161,7 +163,8 @@ const StockItemsTableComponent: React.FC<StockItemsTableProps> = () => {
       <h2 className={styles.tableHeader}>
         {t('stockItemsTableHeader', 'Drugs and other stock items managed by the system.')}
       </h2>
-      <DataTable rows={tableRows} headers={tableHeaders} isSortable useZebraStyles>
+      {/* The list is paged on the server, which can't sort it, so sorting a column would only sort one page */}
+      <DataTable rows={tableRows} headers={tableHeaders} useZebraStyles>
         {({ rows, headers, getHeaderProps, getTableProps, getRowProps, getBatchActionProps }) => (
           <TableContainer>
             <TableToolbar
@@ -203,13 +206,9 @@ const StockItemsTableComponent: React.FC<StockItemsTableProps> = () => {
                     (header) =>
                       header.key !== 'details' && (
                         <TableHeader
-                          {...getHeaderProps({
-                            header,
-                            isSortable: (header as CustomTableHeader).isSortable,
-                          })}
+                          {...getHeaderProps({ header })}
                           className={isDesktop ? styles.desktopHeader : styles.tabletHeader}
                           key={`${header.key}`}
-                          isSortable={header.key !== 'name'}
                         >
                           {(() => {
                             const customHeader = header as CustomTableHeader;
