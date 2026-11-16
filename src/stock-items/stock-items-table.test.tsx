@@ -79,7 +79,7 @@ describe('StockItemsTableComponent', () => {
     await user.click(settingsMenuButton);
     await screen.findByText(/refresh/i);
 
-    expect(screen.getByRole('columnheader', { name: /^name$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^name$/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /generic name/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /common name/i })).toBeInTheDocument();
     expect(screen.queryByRole('columnheader', { name: /trade name/i })).not.toBeInTheDocument();
