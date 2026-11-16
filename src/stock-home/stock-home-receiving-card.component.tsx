@@ -36,8 +36,8 @@ const StockHomeReceivingCard = () => {
         item?.stockOperationItems.map((stock) => (
           <div className={styles.card} key={index}>
             <div className={styles.colorLineBlue} />
-            <div className={styles.icon}>
-              <Delivery size={40} color={'#0F62FE'} />
+            <div className={`${styles.icon} ${styles.iconInfo}`}>
+              <Delivery size={40} />
             </div>
             <div className={styles.cardText}>
               <p>

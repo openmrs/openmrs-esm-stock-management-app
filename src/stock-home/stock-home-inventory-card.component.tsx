@@ -50,8 +50,8 @@ const StockHomeInventoryCard = () => {
       {filteredData.map((item, index) => (
         <div className={styles.card} key={index}>
           <div className={styles.colorLineRed} />
-          <div className={styles.icon}>
-            <WarningHex size={40} color={'#DA1E28'} />
+          <div className={`${styles.icon} ${styles.iconError}`}>
+            <WarningHex size={40} />
           </div>
           <div className={styles.cardText}>
             <p>{t('expiringStock', 'Expiring stock')}</p>

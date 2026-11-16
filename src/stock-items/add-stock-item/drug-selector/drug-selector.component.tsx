@@ -100,8 +100,8 @@ const DrugSelector = <T,>(props: DrugSelectorProps<T>) => {
               }}
               onInputChange={(event) => handleInputChange(event)}
               placeholder={props.placeholder}
-              invalid={props.invalid}
-              invalidText={props.invalidText}
+              invalid={props.invalid || showExistenceError}
+              invalidText={showExistenceError ? t('itemAlreadyExists', 'Item already exists') : props.invalidText}
               disabled={props.readOnly}
               ref={ref}
             />
@@ -109,9 +109,6 @@ const DrugSelector = <T,>(props: DrugSelectorProps<T>) => {
         }}
       />
       {isLoading && <InlineLoading status="active" iconDescription="Searching" description="Searching..." />}
-      {!props.readOnly && showExistenceError && (
-        <div style={{ color: '#da1e28' }}>{t('itemAlreadyExists', 'Item already exists')}</div>
-      )}
     </div>
   );
 };
