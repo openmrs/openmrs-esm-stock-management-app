@@ -27,7 +27,8 @@ const StockOperationsModal: React.FC<StockOperationsModalProps> = ({ title, requ
   const [reasonIsInvalid, setReasonIsInvalid] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
 
-  const isDestructive = confirmType === 'cancel' || confirmType === 'reject';
+  const isCancelling = confirmType === 'cancel';
+  const isDestructive = isCancelling || confirmType === 'reject';
   const confirmLabels: Record<string, string> = {
     submit: t('submit', 'Submit'),
     dispatch: t('dispatch', 'Dispatch'),
@@ -98,10 +99,14 @@ const StockOperationsModal: React.FC<StockOperationsModalProps> = ({ title, requ
       () => {
         setIsApproving(false);
         showSnackbar({
-          title: t('operationSuccessTitle', '{{title}} Operation', { title }),
-          subtitle: t('operationSuccessful', 'You have successfully {{title}} operation', {
-            title,
-          }),
+          title: isCancelling
+            ? t('operationCancelled', 'Operation cancelled')
+            : t('operationSuccessTitle', '{{title}} Operation', { title }),
+          subtitle: isCancelling
+            ? undefined
+            : t('operationSuccessful', 'You have successfully {{title}} operation', {
+                title,
+              }),
           kind: 'success',
         });
         closeModal();
@@ -112,7 +117,9 @@ const StockOperationsModal: React.FC<StockOperationsModalProps> = ({ title, requ
         const errorMessages = extractErrorMessagesFromResponse(err);
         const message = errorMessages[0].replace(/[[\]]/g, '');
         showSnackbar({
-          title: t('stockOperationErrorTitle', 'Error on saving form'),
+          title: isCancelling
+            ? t('cancelOperationError', 'Couldn’t cancel operation')
+            : t('stockOperationErrorTitle', 'Error on saving form'),
           subtitle: t('stockOperationErrorDescription', 'Details: {{message}}', {
             message,
           }),
@@ -125,23 +132,40 @@ const StockOperationsModal: React.FC<StockOperationsModalProps> = ({ title, requ
   return (
     <div>
       <Form onSubmit={handleClick}>
-        <ModalHeader closeModal={closeModal} title={t('operationModalTitle', '{{title}} Operation', { title })} />
+        <ModalHeader
+          closeModal={closeModal}
+          title={
+            isCancelling
+              ? t('cancelOperationTitle', 'Cancel operation?')
+              : t('operationModalTitle', '{{title}} Operation', { title })
+          }
+        />
         <ModalBody>
           <div className={styles.modalBody}>
             <section className={styles.section}>
               <h5 className={styles.section}>
-                {t('confirmOperation', 'Would you really like to {{title}} the operation?', { title })}
+                {isCancelling
+                  ? t('cancelOperationDescription', 'This operation will be marked as cancelled.')
+                  : t('confirmOperation', 'Would you really like to {{title}} the operation?', { title })}
               </h5>
             </section>
             <br />
             {requireReason && (
               <section className={styles.section}>
                 <TextArea
-                  labelText={t('notes', 'Please explain the reason:')}
+                  labelText={
+                    isCancelling
+                      ? t('cancellationReason', 'Reason for cancellation (required)')
+                      : t('notes', 'Please explain the reason:')
+                  }
                   id="nextNotes"
                   name="nextNotes"
                   invalid={reasonIsInvalid}
-                  invalidText={t('required', 'Required')}
+                  invalidText={
+                    isCancelling
+                      ? t('cancellationReasonRequired', 'Enter a reason for cancelling this operation.')
+                      : t('required', 'Required')
+                  }
                   maxCount={500}
                   enableCounter
                   onChange={(e) => {
@@ -155,7 +179,7 @@ const StockOperationsModal: React.FC<StockOperationsModalProps> = ({ title, requ
         </ModalBody>
         <ModalFooter>
           <Button kind="secondary" onClick={closeModal}>
-            {getCoreTranslation('cancel')}
+            {isCancelling ? t('keepOperation', 'Keep operation') : getCoreTranslation('cancel')}
           </Button>
           {isApproving ? (
             <InlineLoading />
