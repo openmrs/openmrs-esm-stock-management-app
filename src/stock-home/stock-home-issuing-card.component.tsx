@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@carbon/react';
 import { ResourceRepresentation } from '../core/api/api';
+import EditStockOperationActionMenu from '../stock-operations/edit-stock-operation/edit-stock-operation-action-menu.component';
 import { DocumentImport, View } from '@carbon/react/icons';
 import { showModal } from '@openmrs/esm-framework';
 import { useStockIssuing } from './stock-home-issuing.resource';
@@ -29,6 +30,7 @@ const StockHomeIssuingCard = () => {
 
     // Assuming you are using some properties from 'stock' in your code
     const formattedStockItems = stockItems.map((stock, stockIndex) => ({
+      operation: item,
       status: item?.status,
       sourceName: item?.sourceName,
       destinationName: item?.destinationName,
@@ -59,6 +61,8 @@ const StockHomeIssuingCard = () => {
             <DocumentImport size={40} color={'#198038'} />
           </div>
           <div className={styles.cardText}>
+            {/* Opens the operation */}
+            <EditStockOperationActionMenu stockOperation={item.operation} showIcon={false} showprops />
             <p>
               {item?.status} · {item?.sourceName} · {item?.destinationName}
             </p>

@@ -4,6 +4,7 @@ import { Button } from '@carbon/react';
 import { Delivery } from '@carbon/react/icons';
 import { showModal } from '@openmrs/esm-framework';
 import { ResourceRepresentation } from '../core/api/api';
+import EditStockOperationActionMenu from '../stock-operations/edit-stock-operation/edit-stock-operation-action-menu.component';
 import { useStockReceiving } from './stock-home-receiving.resource';
 import styles from './stock-home-detail-card.scss';
 
@@ -40,6 +41,8 @@ const StockHomeReceivingCard = () => {
               <Delivery size={40} color={'#0F62FE'} />
             </div>
             <div className={styles.cardText}>
+              {/* Opens the operation */}
+              <EditStockOperationActionMenu stockOperation={item} showIcon={false} showprops />
               <p>
                 {item?.status} · {item?.sourceName} · {item?.destinationName}
               </p>
