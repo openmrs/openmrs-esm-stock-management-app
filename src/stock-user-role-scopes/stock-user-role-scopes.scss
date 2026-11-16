@@ -65,11 +65,67 @@
   max-width: none;
 }
 
-.arrowIcon {
-  margin: 0 layout.$spacing-02;
-}
-
 .tableHeader {
   @include type.type-style('body-02');
   margin: layout.$spacing-05 0;
+}
+
+.toolbarContent {
+  display: flex;
+  align-items: center;
+}
+
+.tableOverride {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+}
+
+.locationChips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: layout.$spacing-02;
+}
+
+.locationChips :global(.cds--tag) {
+  max-width: 100%;
+  height: auto;
+  margin: 0;
+  white-space: normal;
+}
+
+.locationChips :global(.cds--tag__label) {
+  overflow: visible;
+  white-space: normal;
+  text-overflow: unset;
+}
+
+.moreLink {
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.expandedDetails {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-05;
+  padding: layout.$spacing-03 0;
+  max-width: 48rem;
+  white-space: normal;
+}
+
+.expandedHeading {
+  @include type.type-style('heading-compact-01');
+  margin-bottom: layout.$spacing-02;
+}
+
+.expandedMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-05 layout.$spacing-07;
 }

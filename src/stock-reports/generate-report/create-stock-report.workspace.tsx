@@ -32,13 +32,7 @@ import {
 } from '@openmrs/esm-framework';
 import { Controller, type FieldErrors, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  getParamDefaultLimit,
-  getReportEndDateLabel,
-  getReportLimitLabel,
-  getReportStartDateLabel,
-  ReportParameter,
-} from '../ReportType';
+import { getParamDefaultLimit, isForecastReport, ReportParameter } from '../ReportType';
 import { DATE_PICKER_CONTROL_FORMAT, DATE_PICKER_FORMAT, formatForDatePicker, today } from '../../constants';
 import { BatchJobTypeReport } from '../../core/api/types/BatchJob';
 import { createBatchJob } from '../../stock-batch/stock-batch.resource';
@@ -82,7 +76,6 @@ export interface ReportModel {
   patientName?: string;
   limit?: number | null;
   mostLeastMoving?: string;
-  mostLeastMovingName?: string;
   fullFillment?: string[];
 }
 
@@ -373,8 +366,8 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
         parameters += getReportParameter(
           ReportParameter.MostLeastMoving,
           report.mostLeastMoving ?? 'MostMoving',
-          report.mostLeastMovingName?.trim() ?? 'Most Moving',
-          t('mostMoving', 'Most moving'),
+          report.mostLeastMoving === 'LeastMoving' ? t('leastMoving', 'Least Moving') : t('mostMoving', 'Most moving'),
+          t('rank', 'Rank'),
           newLine,
         );
       }
@@ -383,7 +376,7 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
           ReportParameter.Limit,
           (report.limit ?? getParamDefaultLimit(reportSystemName) ?? 20).toString(),
           (report.limit ?? getParamDefaultLimit(reportSystemName) ?? 20).toString(),
-          t(getReportLimitLabel(reportSystemName)),
+          isForecastReport(reportSystemName) ? t('months', 'Months') : t('limit', 'Limit'),
           newLine,
         );
       }
@@ -401,7 +394,9 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
           ReportParameter.StartDate,
           report.startDate ? JSON.stringify(report.startDate).replaceAll('"', '') : '',
           formatDisplayDate(report.startDate) ?? '',
-          t(getReportStartDateLabel(reportSystemName)),
+          isForecastReport(reportSystemName)
+            ? t('historicalStartDate', 'Historical start date')
+            : t('startDate', 'Start date'),
           newLine,
         );
       }
@@ -410,7 +405,7 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
           ReportParameter.EndDate,
           report.endDate ? JSON.stringify(report.endDate).replaceAll('"', '') : '',
           formatDisplayDate(report.endDate) ?? '',
-          t(getReportEndDateLabel(reportSystemName)),
+          isForecastReport(reportSystemName) ? t('historicalEndDate', 'Historical end date') : t('endDate', 'End date'),
           newLine,
         );
       }
@@ -609,7 +604,11 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
               invalid={!!errors?.inventoryGroupBy?.message}
               invalidText={errors?.inventoryGroupBy?.message}
               labelText={t('inventoryBy', 'Inventory by')}
-              onChange={(e) => setValue('inventoryGroupBy', e.target.value, { shouldValidate: true })}
+              onChange={(e) => {
+                const selectedOption = e.target.selectedOptions[0];
+                setValue('inventoryGroupBy', e.target.value, { shouldValidate: true });
+                setValue('inventoryGroupByName', selectedOption?.text ?? '');
+              }}
             >
               <SelectItem value="" text={t('selectOption', 'Select an option')} />
               <SelectItem value="StockItemOnly" text={t('stockItem', 'Stock Item')} />
