@@ -8,6 +8,7 @@ import { PrintRequisitionStockOperation } from '../stock-print-reports/Requisiti
 import { PrintTransferOutStockOperation } from '../stock-print-reports/StockTransferDocument';
 import {
   getStockItemInventory,
+  getStockOperation,
   getStockOperationItemsCost,
   useStockOperationAndItems,
 } from '../stock-operations.resource';
@@ -83,5 +84,30 @@ describe('StockOperationPrintButton', () => {
       balanceOnHand: 750,
       balanceOnHandUoM: 'Tablet',
     });
+  });
+
+  it("looks up balances at the requisition's location for a stock issue made from a requisition", async () => {
+    vi.mocked(useConfig).mockReturnValue({ printItemCost: false, printBalanceOnHand: true });
+    vi.mocked(getStockOperation).mockResolvedValue({
+      data: {
+        uuid: 'requisition-uuid',
+        operationType: 'requisition',
+        atLocationUuid: 'requesting-location-uuid',
+        atLocationName: 'Main Pharmacy',
+        dateCreated: '2026-11-01T08:00:00.000Z',
+      },
+    } as never);
+
+    await print({
+      ...makeOperation('stockissue'),
+      atLocationUuid: 'issuing-store-uuid',
+      requisitionStockOperationUuid: 'requisition-uuid',
+    } as StockOperationDTO);
+
+    await waitFor(() => expect(PrintRequisitionStockOperation).toHaveBeenCalled());
+    expect(getStockItemInventory).toHaveBeenCalledWith(
+      expect.objectContaining({ locationUuid: 'requesting-location-uuid', stockOperationUuid: operationUuid }),
+    );
+    expect(vi.mocked(PrintRequisitionStockOperation).mock.calls[0][0].location).toBe('Main Pharmacy');
   });
 });

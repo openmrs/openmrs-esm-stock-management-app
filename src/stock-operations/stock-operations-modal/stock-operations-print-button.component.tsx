@@ -55,13 +55,9 @@ const StockOperationPrintButton: React.FC<StockOperationCancelButtonProps> = ({ 
       }
       if (printBalanceOnHand) {
         const inventoryFilter: StockItemInventoryFilter = {};
-        if (operation?.uuid) {
-          inventoryFilter.locationUuid = operation.atLocationUuid;
-          inventoryFilter.stockOperationUuid = operation.uuid;
-        } else {
-          inventoryFilter.locationUuid = operation.atLocationUuid;
-          inventoryFilter.stockOperationUuid = operation.uuid;
-        }
+        // The printout shows the requisition's location for an issue made from one, so the balance comes from there too.
+        inventoryFilter.locationUuid = parentOperation?.atLocationUuid ?? operation.atLocationUuid;
+        inventoryFilter.stockOperationUuid = operation.uuid;
         inventoryFilter.v = ResourceRepresentation.Default;
         inventoryFilter.groupBy = 'LocationStockItem';
         inventoryFilter.includeStockItemName = 'true';
