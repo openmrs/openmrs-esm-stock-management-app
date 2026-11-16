@@ -95,6 +95,53 @@ describe('StockItemsTableComponent', () => {
     expect(screen.queryByRole('button', { name: /actions/i })).not.toBeInTheDocument();
   });
 
+  it('sorts Name by the displayed drug or concept name and opens the correct item', async () => {
+    const user = userEvent.setup();
+    mockUseStockItemsPages.mockReturnValue({
+      ...mockUseStockItemsPages(),
+      items: [
+        {
+          uuid: 'paracetamol-item',
+          drugUuid: 'paracetamol-drug',
+          drugName: 'Paracetamol 500mg',
+          conceptName: 'Acetaminophen',
+        },
+        { uuid: 'gauze-item', drugUuid: null, conceptName: 'Gauze roll' },
+        {
+          uuid: 'amoxicillin-item',
+          drugUuid: 'amoxicillin-drug',
+          drugName: 'Amoxicillin 125mg/5ml',
+          conceptName: 'Amoxicillin',
+        },
+      ] as StockItemDTO[],
+      totalCount: 3,
+    });
+    render(<StockItemsTableComponent />);
+
+    const getNames = () =>
+      screen
+        .getAllByRole('row')
+        .slice(1)
+        .map((row) => within(row).getAllByRole('cell')[1].textContent);
+    const nameHeader = screen.getByRole('button', { name: /^name$/i });
+
+    await user.click(nameHeader);
+    expect(getNames()).toEqual(['Amoxicillin 125mg/5ml', 'Gauze roll', 'Paracetamol 500mg']);
+
+    await user.click(within(screen.getAllByRole('row')[1]).getByRole('button', { name: 'Amoxicillin 125mg/5ml' }));
+    expect(launchAddOrEditStockItemWorkspace).toHaveBeenLastCalledWith(
+      expect.objectContaining({ uuid: 'amoxicillin-item', isDrug: true }),
+    );
+
+    await user.click(nameHeader);
+    expect(getNames()).toEqual(['Paracetamol 500mg', 'Gauze roll', 'Amoxicillin 125mg/5ml']);
+
+    await user.click(within(screen.getAllByRole('row')[1]).getByRole('button', { name: 'Paracetamol 500mg' }));
+    expect(launchAddOrEditStockItemWorkspace).toHaveBeenLastCalledWith(
+      expect.objectContaining({ uuid: 'paracetamol-item', isDrug: true }),
+    );
+  });
+
   it('displays skeleton loader when isLoading is true', () => {
     mockUseStockItemsPages.mockReturnValue({
       ...mockUseStockItemsPages,
