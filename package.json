@@ -45,7 +45,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.0",
-    "@playwright/test": "^1.52.0",
+    "@playwright/test": "^1.65.1",
     "dotenv": "^16.4.5",
     "file-saver": "^2.0.5",
     "lodash-es": "^4.17.21",
