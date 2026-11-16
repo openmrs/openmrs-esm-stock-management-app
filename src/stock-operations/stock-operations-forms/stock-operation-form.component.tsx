@@ -35,6 +35,7 @@ import StockOperationItemsFormStep from './steps/stock-operation-items-form-step
 import StockOperationSubmissionFormStep from './steps/stock-operation-submission-form-step.component';
 import StockItemForm, { type StockItemFormProps } from './stock-item-form/stock-item-form.workspace';
 import StockOperationStepper from './stock-operation-stepper/stock-operation-stepper.component';
+import { isStockOperationEditable } from './stock-operations-form-utils';
 import { useStockOperationAndItems } from '../stock-operations.resource';
 
 /**
@@ -78,6 +79,8 @@ const StockOperationForm: React.FC<Workspace2DefinitionProps<StockOperationFormP
     user: { uuid: defaultLoggedUserUuid },
   } = useSession();
   const { autoPopulateResponsiblePerson } = useConfig<ConfigObject>();
+  // A cancelled, completed or submitted operation opens as a read-only view
+  const editable = isStockOperationEditable(stockOperation);
   // A requisition only prefills a new issue. A saved issue keeps its own details and lines.
   const requisitionToPrefill = stockOperation ? undefined : stockRequisitionUuid;
   const { error, items: _stockOperation, isLoading } = useStockOperationAndItems(requisitionToPrefill);
@@ -104,6 +107,7 @@ const StockOperationForm: React.FC<Workspace2DefinitionProps<StockOperationFormP
       sourceUuid: stockOperation?.sourceUuid ?? '',
       destinationUuid: stockOperation?.destinationUuid ?? '',
     },
+    disabled: !editable,
     mode: 'all',
     values: requisitionToPrefill
       ? {
@@ -270,7 +274,9 @@ const StockOperationForm: React.FC<Workspace2DefinitionProps<StockOperationFormP
   return (
     <Workspace2
       title={
-        stockOperation
+        !editable
+          ? t('viewOperationTitle', 'View {{operationType}}', { operationType: stockOperation.operationTypeName })
+          : stockOperation
           ? t('editOperationTitle', 'Edit {{operationType}}', { operationType: stockOperation.operationTypeName })
           : t('newOperationTitle', 'New: {{operationName}}', { operationName: stockOperationType?.name })
       }

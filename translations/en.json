@@ -243,6 +243,8 @@
   "operationDate": "Operation Date",
   "operationModalTitle": "{{title}} Operation",
   "operationNumber": "Operation Number",
+  "operationReadOnly": "This operation can't be edited",
+  "operationReadOnlySubtitle": "Its status is {{status}}.",
   "operations": "Operations",
   "operationSuccessful": "You have successfully {{title}} operation",
   "operationSuccessTitle": "{{title}} Operation",
@@ -422,6 +424,7 @@
   "userRequired": "User is required",
   "useScopes": "User role scopes",
   "viewAll": "View All",
+  "viewOperationTitle": "View {{operationType}}",
   "whoIsThePreferredVendor": "Who is the preferred vendor?",
   "yes": "Yes"
 }

@@ -25,6 +25,7 @@ import StockAvailability from './stock-availability-cell.component';
 import StockOperationItemBatchNoCell from './stock-operation-item-batch-no-cell.component';
 import StockOperationItemCell from './stock-operation-item-cell.component';
 import StockoperationItemExpiryCell from './stock-operation-item-expiry-cell.component';
+import { isStockOperationEditable } from '../stock-operations-form-utils';
 import { type CustomTableHeader } from '../../../core/components/table/types';
 import styles from './stock-operation-items-form-step.scc.scss';
 
@@ -45,6 +46,7 @@ const StockOperationItemsFormStep: React.FC<StockOperationItemsFormStepProps> = 
   const { t } = useTranslation();
   const operationTypePermision = useOperationTypePermisions(stockOperationType);
   const uniqueId = useId();
+  const editable = isStockOperationEditable(stockOperation);
 
   const form = useFormContext<StockOperationItemDtoSchema>();
   const observableOperationItems = form.watch('stockOperationItems');
@@ -102,9 +104,9 @@ const StockOperationItemsFormStep: React.FC<StockOperationItemsFormStepProps> = 
             },
           ]
         : []),
-      { key: 'actions', header: t('actions', 'Actions') },
+      ...(editable ? [{ key: 'actions', header: t('actions', 'Actions') }] : []),
     ];
-  }, [operationTypePermision, t]);
+  }, [editable, operationTypePermision, t]);
 
   const tableRows = useMemo(() => {
     return observableOperationItems?.map((item, index) => {
@@ -177,6 +179,10 @@ const StockOperationItemsFormStep: React.FC<StockOperationItemsFormStepProps> = 
   }, [observableOperationItems, onLaunchItemsForm, stockOperationType, t, uniqueId]);
 
   const handleNext = async () => {
+    if (!editable) {
+      onNext();
+      return;
+    }
     const valid = await form.trigger(['stockOperationItems']);
     if (valid) {
       onNext();
@@ -200,16 +206,18 @@ const StockOperationItemsFormStep: React.FC<StockOperationItemsFormStepProps> = 
         <div className={styles.heading}>
           <h4>{headerTitle}</h4>
         </div>
-        <StockItemSearch
-          onSelectedItem={(stockItem) =>
-            onLaunchItemsForm({
-              uuid: `new-item-${getStockOperationUniqueId()}`,
-              stockItemUuid: stockItem.uuid,
-              hasExpiration: stockItem.hasExpiration,
-              purchasePrice: stockItem.purchasePrice,
-            })
-          }
-        />
+        {editable && (
+          <StockItemSearch
+            onSelectedItem={(stockItem) =>
+              onLaunchItemsForm({
+                uuid: `new-item-${getStockOperationUniqueId()}`,
+                stockItemUuid: stockItem.uuid,
+                hasExpiration: stockItem.hasExpiration,
+                purchasePrice: stockItem.purchasePrice,
+              })
+            }
+          />
+        )}
         <DataTable rows={tableRows ?? []} headers={headers} isSortable={false} useZebraStyles>
           {({ rows, headers, getTableProps, getHeaderProps, getRowProps }) => (
             <TableContainer>

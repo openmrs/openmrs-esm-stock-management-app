@@ -24,6 +24,7 @@ import useOperationTypePermisions from '../hooks/useOperationTypePermisions';
 import useParties from '../hooks/useParties';
 import StockOperationReasonSelector from '../input-components/stock-operation-reason-selector.component';
 import UsersSelector from '../input-components/users-selector.component';
+import { isStockOperationEditable } from '../stock-operations-form-utils';
 import styles from '../stock-operation-form.scss';
 
 type BaseOperationDetailsFormStepProps = {
@@ -54,6 +55,11 @@ const BaseOperationDetailsFormStep: FC<BaseOperationDetailsFormStepProps> = ({
     [stockOperationType],
   );
   const handleNext = async () => {
+    // A read-only operation has nothing to check
+    if (!isStockOperationEditable(stockOperation)) {
+      onNext();
+      return;
+    }
     const valid = await form.trigger([
       'responsiblePersonUuid',
       'operationDate',

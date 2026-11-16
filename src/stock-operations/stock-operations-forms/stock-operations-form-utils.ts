@@ -30,3 +30,7 @@ export const getStockOperationLocationByOperationType = (
     destinationUuid: stockOperation?.destinationUuid ?? '',
   };
 };
+
+/** A new operation is always editable. A saved one is editable only when the backend says so. */
+export const isStockOperationEditable = (stockOperation?: StockOperationDTO) =>
+  !stockOperation || stockOperation.permission?.canEdit === true;

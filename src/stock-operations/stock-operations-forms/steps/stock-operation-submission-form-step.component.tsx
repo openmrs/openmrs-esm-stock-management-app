@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { Button, Column, InlineLoading, RadioButton, RadioButtonGroup, Stack } from '@carbon/react';
+import { Button, Column, InlineLoading, InlineNotification, RadioButton, RadioButtonGroup, Stack } from '@carbon/react';
 import { ArrowLeft, ArrowRight, Departure, ListChecked, Save, SendFilled } from '@carbon/react/icons';
 import { useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
@@ -14,6 +14,7 @@ import { type StockOperationDTO } from '../../../core/api/types/stockOperation/S
 import { type StockOperationItemDTO } from '../../../core/api/types/stockOperation/StockOperationItemDTO';
 import { type StockOperationItemDtoSchema } from '../../validation-schema';
 import useOperationTypePermisions from '../hooks/useOperationTypePermisions';
+import { isStockOperationEditable } from '../stock-operations-form-utils';
 import styles from '../stock-operation-form.scss';
 
 type StockOperationSubmissionFormStepProps = {
@@ -34,7 +35,7 @@ const StockOperationSubmissionFormStep: React.FC<StockOperationSubmissionFormSte
   const { t } = useTranslation();
   const handleMutate = useHandleMutate();
   const operationTypePermision = useOperationTypePermisions(stockOperationType);
-  const editable = !stockOperation || stockOperation.permission?.canEdit === true;
+  const editable = isStockOperationEditable(stockOperation);
   const form = useFormContext<StockOperationItemDtoSchema>();
   const [approvalRequired, setApprovalRequired] = useState<boolean | null>(stockOperation?.approvalRequired);
   const isStockIssueOperation = useMemo(
@@ -157,6 +158,17 @@ const StockOperationSubmissionFormStep: React.FC<StockOperationSubmissionFormSte
             : t('submitAndComplete', 'Submit/Complete')}
         </h4>
       </div>
+      {!editable && (
+        <Column>
+          <InlineNotification
+            hideCloseButton
+            kind="info"
+            lowContrast
+            subtitle={t('operationReadOnlySubtitle', 'Its status is {{status}}.', { status: stockOperation?.status })}
+            title={t('operationReadOnly', "This operation can't be edited")}
+          />
+        </Column>
+      )}
 
       <Column>
         <RadioButtonGroup

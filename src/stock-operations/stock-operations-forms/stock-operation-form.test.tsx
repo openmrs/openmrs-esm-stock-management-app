@@ -133,3 +133,88 @@ describe('StockOperationForm with a linked requisition', () => {
     expect(screen.getByRole('combobox', { name: /destination/i })).toHaveValue('Requisition Pharmacy');
   });
 });
+
+describe('StockOperationForm for an operation the user cannot edit', () => {
+  const cancelledIssue = {
+    ...savedIssue,
+    operationNumber: 'SIS-0142',
+    operationTypeName: 'Stock Issue',
+    status: 'CANCELLED',
+    approvalRequired: false,
+    permission: { canView: true, canEdit: false },
+  } as StockOperationDTO;
+
+  beforeEach(() => {
+    mockUseStockOperationAndItems.mockReturnValue({ items: undefined, isLoading: false, error: null });
+    mockUseParties.mockReturnValue({
+      destinationParties: parties,
+      destinationPartiesFilter: () => true,
+      destinationTags: [],
+      error: undefined,
+      isLoading: false,
+      mutate: vi.fn(),
+      parties,
+      sourceParties: parties,
+      sourcePartiesFilter: () => true,
+      sourceTags: [],
+    });
+    mockUseConfig.mockReturnValue({ autoPopulateResponsiblePerson: false });
+    mockUseSession.mockReturnValue({
+      authenticated: true,
+      sessionId: 'test-session-id',
+      user: { uuid: 'test-user-uuid' },
+    } as ReturnType<typeof useSession>);
+  });
+
+  const renderForm = (stockOperation: StockOperationDTO) =>
+    render(<StockOperationForm {...mockWorkspace2Props({ stockOperationType: stockIssueType, stockOperation })} />);
+
+  it('opens as a read-only view of the operation', async () => {
+    const user = userEvent.setup();
+    renderForm(cancelledIssue);
+
+    expect(screen.getByRole('heading', { name: 'View Stock Issue' })).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: /source/i })).toHaveAttribute('readonly');
+    expect(screen.getByRole('combobox', { name: /destination/i })).toHaveAttribute('readonly');
+    expect(screen.getByRole('textbox', { name: /remarks/i })).toHaveAttribute('readonly');
+
+    await user.click(screen.getByRole('button', { name: /next/i }));
+
+    // The lines can be read but not changed
+    expect(screen.getAllByRole('row').slice(1)).toHaveLength(2);
+    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: /actions/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /edit/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /delete/i })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /next/i }));
+
+    expect(screen.getByText("This operation can't be edited")).toBeInTheDocument();
+    expect(screen.getByText('Its status is CANCELLED.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /save/i })).not.toBeInTheDocument();
+  });
+
+  it('lets the user page through an incomplete operation without validating it', async () => {
+    const user = userEvent.setup();
+    renderForm({ ...cancelledIssue, responsiblePersonUuid: undefined, stockOperationItems: [] } as StockOperationDTO);
+
+    await user.click(screen.getByRole('button', { name: /next/i }));
+    await user.click(screen.getByRole('button', { name: /next/i }));
+
+    expect(screen.getByText("This operation can't be edited")).toBeInTheDocument();
+  });
+
+  it('still opens an editable operation for editing', async () => {
+    const user = userEvent.setup();
+    renderForm({ ...cancelledIssue, status: 'NEW', permission: { canView: true, canEdit: true } } as StockOperationDTO);
+
+    expect(screen.getByRole('heading', { name: 'Edit Stock Issue' })).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: /source/i })).not.toHaveAttribute('readonly');
+
+    await user.click(screen.getByText(/stock items/i));
+
+    expect(screen.getByRole('searchbox')).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /actions/i })).toBeInTheDocument();
+    expect(screen.queryByText("This operation can't be edited")).not.toBeInTheDocument();
+  });
+});

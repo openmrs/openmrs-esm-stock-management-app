@@ -1,12 +1,13 @@
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { Button, InlineLoading } from '@carbon/react';
-import { Edit } from '@carbon/react/icons';
+import { Edit, View } from '@carbon/react/icons';
 import { showSnackbar } from '@openmrs/esm-framework';
 import { useTranslation } from 'react-i18next';
 import { type StockOperationDTO } from '../../core/api/types/stockOperation/StockOperationDTO';
 import { launchStockoperationAddOrEditWorkSpace } from '../stock-operation.utils';
 import { useStockOperationAndItems } from '../stock-operations.resource';
 import useFilteredOperationTypesByRoles from '../stock-operations-forms/hooks/useFilteredOperationTypesByRoles';
+import { isStockOperationEditable } from '../stock-operations-forms/stock-operations-form-utils';
 import styles from './edit-stock-operation-button.scss';
 
 interface EditStockOperationActionMenuProps {
@@ -70,7 +71,11 @@ const EditStockOperationActionMenu: React.FC<EditStockOperationActionMenuProps> 
       kind="ghost"
       size="sm"
       onClick={handleLaunchWorkspace}
-      renderIcon={showIcon ? () => <Edit size={16} /> : undefined}
+      renderIcon={
+        showIcon
+          ? () => (isStockOperationEditable(fetchedStockOperation) ? <Edit size={16} /> : <View size={16} />)
+          : undefined
+      }
     >
       {showprops && <span className={styles.operationNumberText}>{fetchedStockOperation?.operationNumber}</span>}
     </Button>
