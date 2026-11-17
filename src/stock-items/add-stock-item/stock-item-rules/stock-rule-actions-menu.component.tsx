@@ -57,7 +57,12 @@ const StockRuleActionsMenu: React.FC<StockRuleActionsMenuProps> = ({ data, stock
   }
 
   return (
-    <OverflowMenu aria-label={t('stockRuleActions', 'Stock rule actions')} flipped size="md">
+    <OverflowMenu
+      aria-label={t('stockRuleActions', 'Stock rule actions')}
+      iconDescription={t('stockRuleActions', 'Stock rule actions')}
+      flipped
+      size="md"
+    >
       <OverflowMenuItem itemText={t('editStockRule', 'Edit Stock Rule')} onClick={handleEdit} />
       <OverflowMenuItem isDelete itemText={t('deleteRule', 'Delete Rule')} onClick={handleDelete} />
     </OverflowMenu>
