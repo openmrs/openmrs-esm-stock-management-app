@@ -2,7 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@carbon/react';
 import { ResourceRepresentation } from '../core/api/api';
-import { DocumentImport, View } from '@carbon/react/icons';
+import { DocumentExport } from '@carbon/react/icons';
 import { showModal } from '@openmrs/esm-framework';
 import { useStockIssuing } from './stock-home-issuing.resource';
 import styles from './stock-home-detail-card.scss';
@@ -56,7 +56,7 @@ const StockHomeIssuingCard = () => {
         <div className={styles.card} key={index}>
           <div className={styles.colorLineGreen} />
           <div className={styles.icon}>
-            <DocumentImport size={40} color={'#198038'} />
+            <DocumentExport size={40} color={'#198038'} />
           </div>
           <div className={styles.cardText}>
             <p>
