@@ -22,6 +22,7 @@ import {
   getCoreTranslation,
   restBaseUrl,
   showSnackbar,
+  useConfig,
   useLayoutType,
   useSession,
   Workspace2,
@@ -33,22 +34,13 @@ import {
   useStockTagLocations,
   useUser,
 } from '../../stock-lookups/stock-lookups.resource';
+import { type ConfigObject } from '../../config-schema';
 import { ResourceRepresentation } from '../../core/api/api';
 import { type UserRoleScope } from '../../core/api/types/identity/UserRoleScope';
 import { createOrUpdateUserRoleScope } from '../stock-user-role-scopes.resource';
 import { type UserRoleScopeOperationType } from '../../core/api/types/identity/UserRoleScopeOperationType';
 import { type UserRoleScopeLocation } from '../../core/api/types/identity/UserRoleScopeLocation';
-import {
-  DATE_PICKER_CONTROL_FORMAT,
-  DATE_PICKER_FORMAT,
-  formatForDatePicker,
-  INVENTORY_ADMINISTRATOR_ROLE_UUID,
-  INVENTORY_CLERK_ROLE_UUID,
-  INVENTORY_DISPENSING_ROLE_UUID,
-  INVENTORY_MANAGER_ROLE_UUID,
-  INVENTORY_REPORTING_ROLE_UUID,
-  today,
-} from '../../constants';
+import { DATE_PICKER_CONTROL_FORMAT, DATE_PICKER_FORMAT, formatForDatePicker, today } from '../../constants';
 import { type Role } from '../../core/api/types/identity/Role';
 import { type StockOperationType } from '../../core/api/types/stockOperation/StockOperationType';
 import { type User } from '../../core/api/types/identity/User';
@@ -70,6 +62,7 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
 }) => {
   const { model, editMode } = workspaceProps ?? {};
   const { t } = useTranslation();
+  const { stockRoleUUIDs } = useConfig<ConfigObject>();
   const handleMutate = useHandleMutate();
   const title = model
     ? t('editUserRoleScope', 'Edit user role scope')
@@ -117,7 +110,7 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
   });
 
   /* Only load locations tagged to perform stock related activities.
-     Unless a location is tag as main store, main pharmacy or dispensing, it will not be listed here.
+     Unless a location has one of the tags configured in `stockLocationTags`, it will not be listed here.
    */
   const { stockLocations, isLoading: isLoadingStockLocations } = useStockTagLocations();
   const onEnabledChanged = (): void => {
@@ -190,16 +183,8 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
   };
 
   const onUserChanged = (data: { selectedItem: User }) => {
-    const stockRolesUUIDs = [
-      INVENTORY_CLERK_ROLE_UUID,
-      INVENTORY_MANAGER_ROLE_UUID,
-      INVENTORY_DISPENSING_ROLE_UUID,
-      INVENTORY_REPORTING_ROLE_UUID,
-      INVENTORY_ADMINISTRATOR_ROLE_UUID,
-    ];
-
     const filteredStockRoles = data.selectedItem?.roles
-      .filter((role) => stockRolesUUIDs.includes(role.uuid))
+      .filter((role) => stockRoleUUIDs.includes(role.uuid))
       .filter((role) => role.uuid !== loggedInUserUuid);
     setFormModel({ ...formModel, userUuid: data.selectedItem?.uuid });
     setRoles(filteredStockRoles ?? []);

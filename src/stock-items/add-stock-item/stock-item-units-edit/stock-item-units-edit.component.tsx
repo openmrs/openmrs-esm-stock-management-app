@@ -64,7 +64,7 @@ const StockItemUnitsEdit: React.FC<StockItemUnitsEditProps> = ({ stockItemUuid, 
         />
       )}
       <DispensingPackageMeasurement
-        dispensingUnitPackagingUoMUuid={stockItem?.purchasePriceUoMUuid}
+        dispensingUnitPackagingUoMUuid={stockItem?.reorderLevelUoMUuid}
         name="reorderLevelUoMUuid"
         controllerName="reorderLevelUoMUuid"
         control={control}

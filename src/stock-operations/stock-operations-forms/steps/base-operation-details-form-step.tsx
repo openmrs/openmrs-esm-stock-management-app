@@ -13,8 +13,9 @@ import {
 import { ArrowRight } from '@carbon/react/icons';
 import { Controller, useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { ErrorState } from '@openmrs/esm-framework';
-import { DATE_PICKER_CONTROL_FORMAT, DATE_PICKER_FORMAT, MAIN_STORE_LOCATION_TAG } from '../../../constants';
+import { ErrorState, useConfig } from '@openmrs/esm-framework';
+import { type ConfigObject } from '../../../config-schema';
+import { DATE_PICKER_CONTROL_FORMAT, DATE_PICKER_FORMAT } from '../../../constants';
 import { type Party } from '../../../core/api/types/Party';
 import { type StockOperationDTO } from '../../../core/api/types/stockOperation/StockOperationDTO';
 import { OperationType, type StockOperationType } from '../../../core/api/types/stockOperation/StockOperationType';
@@ -37,6 +38,7 @@ const BaseOperationDetailsFormStep: FC<BaseOperationDetailsFormStepProps> = ({
   onNext,
 }) => {
   const { t } = useTranslation();
+  const { mainStoreLocationTag } = useConfig<ConfigObject>();
   const operationTypePermision = useOperationTypePermisions(stockOperationType);
   const {
     destinationParties,
@@ -71,7 +73,7 @@ const BaseOperationDetailsFormStep: FC<BaseOperationDetailsFormStepProps> = ({
     // Prefill default locaton with current location if is a new operation
     if (!stockOperation && stockOperationType.operationType !== OperationType.STOCK_ISSUE_OPERATION_TYPE) {
       if (stockOperationType?.hasSource) {
-        const shouldLockSource = sourceTags.length === 1 && sourceTags[0] === MAIN_STORE_LOCATION_TAG;
+        const shouldLockSource = sourceTags.length === 1 && sourceTags[0] === mainStoreLocationTag;
         if (shouldLockSource && sourceParties?.length) {
           const party = sourceParties[0];
           form.setValue('sourceUuid', party.uuid);
@@ -79,14 +81,23 @@ const BaseOperationDetailsFormStep: FC<BaseOperationDetailsFormStepProps> = ({
       }
 
       if (stockOperationType?.hasDestination) {
-        const shouldLockDestination = destinationTags.length === 1 && destinationTags[0] === MAIN_STORE_LOCATION_TAG;
+        const shouldLockDestination = destinationTags.length === 1 && destinationTags[0] === mainStoreLocationTag;
         if (shouldLockDestination && destinationParties?.length) {
           const party = destinationParties[0];
           form.setValue('destinationUuid', party.uuid);
         }
       }
     }
-  }, [sourceParties, destinationParties, stockOperation, stockOperationType, form, destinationTags, sourceTags]);
+  }, [
+    sourceParties,
+    destinationParties,
+    stockOperation,
+    stockOperationType,
+    form,
+    destinationTags,
+    sourceTags,
+    mainStoreLocationTag,
+  ]);
 
   if (isPartiesLoading)
     return (

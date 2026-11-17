@@ -26,7 +26,8 @@ import {
 } from '@carbon/react';
 import { ArrowRight } from '@carbon/react/icons';
 import { useTranslation } from 'react-i18next';
-import { isDesktop, restBaseUrl } from '@openmrs/esm-framework';
+import { isDesktop, restBaseUrl, useConfig } from '@openmrs/esm-framework';
+import { type ConfigObject } from '../config-schema';
 import { DATE_PICKER_CONTROL_FORMAT, DATE_PICKER_FORMAT, StockFilters } from '../constants';
 import { formatDisplayDate } from '../core/utils/datetimeUtils';
 import { useHandleMutate } from '../utils';
@@ -45,6 +46,7 @@ interface StockOperationsTableProps {
 const StockOperations: React.FC<StockOperationsTableProps> = () => {
   const { t } = useTranslation();
   const handleMutate = useHandleMutate();
+  const { stockSourceTypeUUID } = useConfig<ConfigObject>();
 
   const handleRefresh = () => {
     handleMutate(`${restBaseUrl}/stockmanagement/stockoperation`);
@@ -198,7 +200,11 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
                       placeholder={DATE_PICKER_FORMAT}
                     />
                   </DatePicker>
-                  <StockOperationsFilters filterName={StockFilters.SOURCES} onFilterChange={handleOnFilterChange} />
+                  <StockOperationsFilters
+                    conceptUuid={stockSourceTypeUUID}
+                    filterName={StockFilters.SOURCES}
+                    onFilterChange={handleOnFilterChange}
+                  />
                   <StockOperationsFilters filterName={StockFilters.STATUS} onFilterChange={handleOnFilterChange} />
                   <StockOperationsFilters filterName={StockFilters.OPERATION} onFilterChange={handleOnFilterChange} />
                 </div>

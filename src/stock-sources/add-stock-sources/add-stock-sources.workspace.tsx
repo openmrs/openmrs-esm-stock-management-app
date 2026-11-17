@@ -80,6 +80,13 @@ const StockSourcesAddOrUpdate: React.FC<Workspace2DefinitionProps<AddStockSource
     if (model?.uuid) {
       payload.uuid = model.uuid;
     }
+  const onNameChanged = (evt: React.ChangeEvent<HTMLInputElement>): void => {
+    setFormModel({ ...formModel, name: evt.target.value });
+  };
+
+  const onAcronymChanged = (evt: React.ChangeEvent<HTMLInputElement>): void => {
+    setFormModel({ ...formModel, acronym: evt.target.value });
+  };
 
     return createOrUpdateStockSource(payload)
       .then(() => {
@@ -145,6 +152,25 @@ const StockSourcesAddOrUpdate: React.FC<Workspace2DefinitionProps<AddStockSource
                   invalidText={errors.acronym?.message}
                 />
               )}
+            <TextInput
+              id="fullname"
+              labelText={t('fullName', 'Full name')}
+              onChange={onNameChanged}
+              placeholder="e.g National Medical Stores"
+              size="md"
+              type="text"
+              value={formModel.name ?? ''}
+            />
+          </FormGroup>
+          <FormGroup legendText={''}>
+            <TextInput
+              id="acronym"
+              labelText={t('acronymOrCode', 'Acronym/Code')}
+              onChange={onAcronymChanged}
+              placeholder="e.g NMS"
+              size="md"
+              type="text"
+              value={formModel.acronym ?? ''}
             />
           </FormGroup>
           <Controller

@@ -3,13 +3,16 @@ import { ButtonSkeleton, OverflowMenu, OverflowMenuItem } from '@carbon/react';
 import { OverflowMenuVertical } from '@carbon/react/icons';
 import { useTranslation } from 'react-i18next';
 import { showSnackbar } from '@openmrs/esm-framework';
+import { TASK_STOCKMANAGEMENT_STOCKOPERATIONS_MUTATE } from '../../constants';
 import { OperationType, type StockOperationType } from '../../core/api/types/stockOperation/StockOperationType';
 import { launchStockoperationAddOrEditWorkSpace } from '../stock-operation.utils';
 import useFilteredOperationTypesByRoles from '../stock-operations-forms/hooks/useFilteredOperationTypesByRoles';
 
 const StockOperationTypesSelector = () => {
   const { t } = useTranslation();
-  const { error, isLoading, operationTypes } = useFilteredOperationTypesByRoles();
+  const { error, isLoading, operationTypes } = useFilteredOperationTypesByRoles(
+    TASK_STOCKMANAGEMENT_STOCKOPERATIONS_MUTATE,
+  );
 
   const handleSelect = useCallback((stockOperationType: StockOperationType) => {
     const isStockIssueOperation = stockOperationType.operationType === OperationType.STOCK_ISSUE_OPERATION_TYPE;

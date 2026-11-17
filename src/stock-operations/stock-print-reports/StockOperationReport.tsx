@@ -1,8 +1,10 @@
+import { getConfig } from '@openmrs/esm-framework';
+import { type ConfigObject } from '../../config-schema';
 import { type StockItemInventory } from '../../core/api/types/stockItem/StockItemInventory';
 import { type StockOperationDTO } from '../../core/api/types/stockOperation/StockOperationDTO';
 import { type StockOperationItemCost } from '../../core/api/types/stockOperation/StockOperationItemCost';
 import { type StockOperationItemDTO } from '../../core/api/types/stockOperation/StockOperationItemDTO';
-import { HEALTH_CENTER_NAME } from '../../constants';
+import { moduleName } from '../../constants';
 import { OperationType } from '../../core/api/types/stockOperation/StockOperationType';
 
 export interface StockOperationPrintData {
@@ -65,7 +67,8 @@ export const BuildStockOperationData = async (
   data.responsiblePerson = data.orderedBy = parentOperation?.responsiblePersonFamilyName
     ? `${parentOperation.responsiblePersonFamilyName ?? ''} ${parentOperation?.responsiblePersonGivenName ?? ''}`
     : `${currentOperation.responsiblePersonFamilyName ?? ''} ${currentOperation.responsiblePersonGivenName ?? ''}`;
-  data.organizationName = HEALTH_CENTER_NAME;
+  const { facilityName } = await getConfig<ConfigObject>(moduleName);
+  data.organizationName = facilityName;
   data.documentTitle = `${currentOperation.operationTypeName} ${currentOperation?.operationNumber}${
     parentOperation ? ` of ${parentOperation.operationTypeName} ${parentOperation?.operationNumber}` : ''
   }`;
