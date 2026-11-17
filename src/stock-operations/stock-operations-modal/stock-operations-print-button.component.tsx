@@ -49,11 +49,15 @@ const StockOperationPrintButton: React.FC<StockOperationCancelButtonProps> = ({ 
         }
       }
 
-      if (printItemCost) {
+      // A goods received note shows neither costs nor balances, and a transfer out document shows only costs.
+      const isReceipt = operation.operationType === OperationType.RECEIPT_OPERATION_TYPE;
+      const isTransferOut = operation.operationType === OperationType.TRANSFER_OUT_OPERATION_TYPE;
+
+      if (printItemCost && !isReceipt) {
         const res = await getStockOperationItemsCost(operation.uuid);
         itemsCost = res.data?.results;
       }
-      if (printBalanceOnHand) {
+      if (printBalanceOnHand && !isReceipt && !isTransferOut) {
         const inventoryFilter: StockItemInventoryFilter = {};
         // The printout shows the requisition's location for an issue made from one, so the balance comes from there too.
         inventoryFilter.locationUuid = parentOperation?.atLocationUuid ?? operation.atLocationUuid;

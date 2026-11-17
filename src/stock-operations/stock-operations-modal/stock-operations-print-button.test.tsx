@@ -4,6 +4,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useConfig } from '@openmrs/esm-framework';
 import { type StockOperationDTO } from '../../core/api/types/stockOperation/StockOperationDTO';
+import { PrintGoodsReceivedNoteStockOperation } from '../stock-print-reports/GoodsReceivedNote';
 import { PrintRequisitionStockOperation } from '../stock-print-reports/RequisitionDocument';
 import { PrintTransferOutStockOperation } from '../stock-print-reports/StockTransferDocument';
 import {
@@ -84,6 +85,26 @@ describe('StockOperationPrintButton', () => {
       balanceOnHand: 750,
       balanceOnHandUoM: 'Tablet',
     });
+  });
+
+  it("doesn't look up costs or balances for a receipt, whose printout shows neither", async () => {
+    vi.mocked(useConfig).mockReturnValue({ printItemCost: true, printBalanceOnHand: true });
+
+    await print(makeOperation('receipt'));
+
+    await waitFor(() => expect(PrintGoodsReceivedNoteStockOperation).toHaveBeenCalled());
+    expect(getStockOperationItemsCost).not.toHaveBeenCalled();
+    expect(getStockItemInventory).not.toHaveBeenCalled();
+  });
+
+  it("doesn't look up balances for a transfer out, whose printout shows only costs", async () => {
+    vi.mocked(useConfig).mockReturnValue({ printItemCost: true, printBalanceOnHand: true });
+
+    await print(makeOperation('transferout'));
+
+    await waitFor(() => expect(PrintTransferOutStockOperation).toHaveBeenCalled());
+    expect(getStockOperationItemsCost).toHaveBeenCalledWith(operationUuid);
+    expect(getStockItemInventory).not.toHaveBeenCalled();
   });
 
   it("looks up balances at the requisition's location for a stock issue made from a requisition", async () => {
