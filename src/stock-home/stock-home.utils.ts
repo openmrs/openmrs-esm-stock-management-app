@@ -1,3 +1,4 @@
+import { type ConfigObject } from '../config-schema';
 import { type StockItemDTO } from '../core/api/types/stockItem/StockItem';
 import { type StockItemInventory } from '../core/api/types/stockItem/StockItemInventory';
 
@@ -118,8 +119,26 @@ export function getStockLevels(
   return { outOfStock, understocked };
 }
 
-export function getDisposalReasonCategory(reasonName: string | null | undefined): DisposalReasonCategory {
-  const normalizedReason = reasonName?.trim().toLowerCase();
+export function getDisposalReasonCategory(
+  reason: { reasonUuid?: string | null; reasonName?: string | null },
+  config?: Pick<ConfigObject, 'expiredStockReasonUUIDs' | 'poorQualityStockReasonUUIDs'>,
+): DisposalReasonCategory {
+  const expiredReasonUuids = config?.expiredStockReasonUUIDs ?? [];
+  const poorQualityReasonUuids = config?.poorQualityStockReasonUUIDs ?? [];
+
+  if (reason.reasonUuid && (expiredReasonUuids.length > 0 || poorQualityReasonUuids.length > 0)) {
+    if (expiredReasonUuids.includes(reason.reasonUuid)) {
+      return 'expired';
+    }
+
+    if (poorQualityReasonUuids.includes(reason.reasonUuid)) {
+      return 'poorQuality';
+    }
+
+    return null;
+  }
+
+  const normalizedReason = reason.reasonName?.trim().toLowerCase();
 
   if (!normalizedReason) {
     return null;

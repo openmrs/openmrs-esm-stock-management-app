@@ -165,7 +165,21 @@ describe('getDisposalReasonCategory', () => {
     ['Poor Quality', 'poorQuality'],
     ['Miscellaneous', null],
     [null, null],
-  ])('categorizes %s as %s', (reasonName, category) => {
-    expect(getDisposalReasonCategory(reasonName)).toBe(category);
+  ])('falls back to matching the reason name %s as %s when no reason UUIDs are configured', (reasonName, category) => {
+    expect(getDisposalReasonCategory({ reasonName })).toBe(category);
+  });
+
+  const reasonUuids = {
+    expiredStockReasonUUIDs: ['expired-uuid'],
+    poorQualityStockReasonUUIDs: ['poor-quality-uuid'],
+  };
+
+  it.each([
+    [{ reasonUuid: 'expired-uuid', reasonName: 'Some other locale-specific name' }, 'expired'],
+    [{ reasonUuid: 'poor-quality-uuid', reasonName: 'Some other locale-specific name' }, 'poorQuality'],
+    [{ reasonUuid: 'unrelated-uuid', reasonName: 'Medication expired' }, null],
+    [{ reasonUuid: null, reasonName: 'Medication expired' }, 'expired'],
+  ])('matches %o by reason UUID as %s when reason UUIDs are configured', (reason, category) => {
+    expect(getDisposalReasonCategory(reason, reasonUuids)).toBe(category);
   });
 });
