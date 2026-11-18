@@ -387,6 +387,7 @@
   "stockOperationItemsTableHeader": "Items",
   "stockOperationLoadError": "Error loading stock operation",
   "stockOperations": "Opérations de Stock",
+  "stockOperationsLoadError": "Error loading stock operations",
   "stockOperationsTableHeader": "Opérations sur les stocks pour suivre les mouvements des stocks.",
   "stockOperationTypesError": "Error loading stock operation types",
   "stockReportsTableHeader": "Liste des rapports demandés par les utilisateurs",

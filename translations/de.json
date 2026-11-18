@@ -387,6 +387,7 @@
   "stockOperationItemsTableHeader": "Items",
   "stockOperationLoadError": "Fehler beim Laden des Lagervorgangs",
   "stockOperations": "Lagervorgänge",
+  "stockOperationsLoadError": "Error loading stock operations",
   "stockOperationsTableHeader": "Lagervorgänge zur Verfolgung von Lagerbewegungen.",
   "stockOperationTypesError": "Fehler beim Laden der Lagervorgangsarten",
   "stockReportsTableHeader": "Liste der von Benutzern angeforderten Berichte.",

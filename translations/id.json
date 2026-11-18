@@ -387,6 +387,7 @@
   "stockOperationItemsTableHeader": "Items",
   "stockOperationLoadError": "Error loading stock operation",
   "stockOperations": "Operasi stok",
+  "stockOperationsLoadError": "Error loading stock operations",
   "stockOperationsTableHeader": "Operasi stok untuk melacak pergerakan stok.",
   "stockOperationTypesError": "Error loading stock operation types",
   "stockReportsTableHeader": "Daftar laporan yang diminta oleh pengguna.",
