@@ -63,7 +63,7 @@ export function isExpiringStock(row: StockInventoryRow, now = new Date()) {
   }
 
   const days = daysUntil(row.expiration, now);
-  return days !== null && days <= (Number(row.expiryNotice) || 0);
+  return days !== null && days >= 0 && days <= (Number(row.expiryNotice) || 0);
 }
 
 export function isExpiringWithinSixMonths(row: StockInventoryRow, now = new Date()) {

@@ -101,13 +101,16 @@ describe('getStockLevels', () => {
 });
 
 describe('expiry helpers', () => {
-  it('includes expired stock and stock inside the expiry notice period', () => {
+  it('includes stock inside the expiry notice period', () => {
     expect(
       isExpiringStock(makeInventoryRow({ quantity: 5, expiration: new Date('2026-01-15T00:00:00.000Z') }), now),
     ).toBe(true);
+  });
+
+  it('excludes already-expired stock', () => {
     expect(
       isExpiringStock(makeInventoryRow({ quantity: 5, expiration: new Date('2025-12-20T00:00:00.000Z') }), now),
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it('excludes zero-quantity, non-expiring, and stock outside the expiry notice period', () => {

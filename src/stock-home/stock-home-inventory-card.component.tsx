@@ -4,7 +4,7 @@ import { Button } from '@carbon/react';
 import { WarningHex } from '@carbon/react/icons';
 import { showModal } from '@openmrs/esm-framework';
 import { useStockInventory } from './stock-home-inventory-expiry.resource';
-import { daysUntil, isExpiringWithinSixMonths } from './stock-home.utils';
+import { daysUntil, isExpiringStock } from './stock-home.utils';
 import styles from './stock-home-detail-card.scss';
 
 const StockHomeInventoryCard = () => {
@@ -17,7 +17,7 @@ const StockHomeInventoryCard = () => {
 
   const now = new Date();
   const expiringItems = items
-    .filter((item) => isExpiringWithinSixMonths(item, now))
+    .filter((item) => isExpiringStock(item, now))
     .sort((a, b) => (daysUntil(a.expiration, now) ?? 0) - (daysUntil(b.expiration, now) ?? 0));
 
   if (expiringItems.length === 0) {
@@ -45,7 +45,7 @@ const StockHomeInventoryCard = () => {
             <p>{t('expiringStock', 'Expiring stock')}</p>
             <p>
               <strong>{item.itemName}</strong> {t('batchNumberLabel', 'Batch number:')} {item.batchNumber}{' '}
-              {t('quantityLabel', 'Quantity:')} {item.quantity} {item.dispensingUnitName || item.quantityUoM}
+              {t('quantityLabel', 'Quantity:')} {item.quantity} {item.quantityUoM || item.dispensingUnitName}
             </p>
           </div>
         </div>

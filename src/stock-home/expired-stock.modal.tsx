@@ -55,7 +55,7 @@ const ExpiredStockModal = ({ closeModal, expiredStock }: ExpiredStockModalProps)
                     <TableCell>{item.itemName || 'N/A'}</TableCell>
                     <TableCell>{item.batchNumber || 'N/A'}</TableCell>
                     <TableCell>{item.quantity ?? 'N/A'}</TableCell>
-                    <TableCell>{item.dispensingUnitName || item.quantityUoM || 'N/A'}</TableCell>
+                    <TableCell>{item.quantityUoM || item.dispensingUnitName || 'N/A'}</TableCell>
                     <TableCell>{formatDate(item.expiration)}</TableCell>
                   </TableRow>
                 ))}

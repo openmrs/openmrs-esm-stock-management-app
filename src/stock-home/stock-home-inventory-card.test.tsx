@@ -11,10 +11,12 @@ const row = ({
   batchNumber,
   expiresInDays,
   itemName = 'Paracetamol 500mg',
+  expiryNotice = 30,
 }: {
   batchNumber: string;
   expiresInDays: number;
   itemName?: string;
+  expiryNotice?: number;
 }) => ({
   stockItemUuid: `item-${batchNumber}`,
   stockBatchUuid: `batch-${batchNumber}`,
@@ -27,7 +29,7 @@ const row = ({
   expiration: dayjs().add(expiresInDays, 'day').toDate(),
   itemName,
   hasExpiration: true,
-  expiryNotice: 30,
+  expiryNotice,
   reorderLevel: 10,
   reorderLevelUoMFactor: 1,
   dispensingUnitName: 'Tablet',
@@ -43,7 +45,7 @@ const setup = (items: Array<unknown> = []) => {
 };
 
 describe('StockHomeInventoryCard', () => {
-  it('says there are no alerts, without View All, when no batch expires within 6 months', () => {
+  it('says there are no alerts, without View All, when no batch is within its expiry notice period', () => {
     setup([row({ batchNumber: 'LATER', expiresInDays: 400 })]);
 
     expect(screen.getByText('No inventory alerts to display')).toBeInTheDocument();
@@ -57,13 +59,27 @@ describe('StockHomeInventoryCard', () => {
     expect(screen.queryByRole('button', { name: 'View All' })).not.toBeInTheDocument();
   });
 
-  it('lists a batch that expires within 6 months, with View All', () => {
+  it('lists a batch within its expiry notice period, with View All', () => {
     setup([row({ batchNumber: 'SOON', expiresInDays: 30 }), row({ batchNumber: 'LATER', expiresInDays: 400 })]);
 
     expect(screen.getByText(/SOON/)).toBeInTheDocument();
     expect(screen.queryByText(/LATER/)).not.toBeInTheDocument();
     expect(screen.queryByText('No inventory alerts to display')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'View All' })).toBeInTheDocument();
+  });
+
+  it('excludes a batch that expires within 6 months but outside its notice period', () => {
+    setup([row({ batchNumber: 'BEYOND', expiresInDays: 60, expiryNotice: 30 })]);
+
+    expect(screen.getByText('No inventory alerts to display')).toBeInTheDocument();
+    expect(screen.queryByText(/BEYOND/)).not.toBeInTheDocument();
+  });
+
+  it('excludes an already-expired batch', () => {
+    setup([row({ batchNumber: 'PAST', expiresInDays: -5 })]);
+
+    expect(screen.getByText('No inventory alerts to display')).toBeInTheDocument();
+    expect(screen.queryByText(/PAST/)).not.toBeInTheDocument();
   });
 
   it('names a non-drug item whose batch expires soon', () => {
