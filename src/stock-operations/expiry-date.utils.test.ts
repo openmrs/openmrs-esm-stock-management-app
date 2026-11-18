@@ -1,0 +1,30 @@
+import { describe, expect, it } from 'vitest';
+import { parseStockExpiryDate, stockExpiryDateForApi } from './expiry-date.utils';
+
+describe('stock batch expiry calendar dates', () => {
+  it.each([
+    [2027, 12, 31],
+    [2028, 2, 29],
+    [2028, 3, 1],
+    [2027, 1, 1],
+  ])('preserves %i-%i-%i through the API boundary', (year, month, day) => {
+    const selected = new Date(year, month - 1, day);
+    const outgoing = stockExpiryDateForApi(selected).toISOString();
+    const expected = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    expect(outgoing).toBe(`${expected}T00:00:00.000Z`);
+    const redisplayed = parseStockExpiryDate(outgoing);
+    expect([redisplayed.getFullYear(), redisplayed.getMonth() + 1, redisplayed.getDate()]).toEqual([year, month, day]);
+  });
+
+  it('uses the calendar portion of OpenMRS date-only responses', () => {
+    const restored = parseStockExpiryDate('2027-12-31T00:00:00.000+0000');
+    expect([restored.getFullYear(), restored.getMonth() + 1, restored.getDate()]).toEqual([2027, 12, 31]);
+  });
+
+  it('does not mutate a selected Date', () => {
+    const selected = new Date(2027, 11, 31);
+    const before = selected.getTime();
+    stockExpiryDateForApi(selected);
+    expect(selected.getTime()).toBe(before);
+  });
+});

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { ComboBox, SelectSkeleton } from '@carbon/react';
 import { type StockBatchWithUoM } from '../../../core/api/types/stockItem/StockBatchDTO';
 import { formatForDatePicker } from '../../../constants';
+import { parseStockExpiryDate } from '../../expiry-date.utils';
 import { useStockItemBatchInformationHook } from '../../../stock-items/add-stock-item/batch-information/batch-information.resource';
 import { useStockItemBatchNumbers } from '../hooks/useStockItemBatchNumbers';
 
@@ -80,7 +81,9 @@ const BatchNoSelector: React.FC<BatchNoSelectorProps> = ({ stockItemUuid, error,
       if (!batch?.batchNo) return '';
 
       const quantityDisplay = formatQuantityDisplay(batch);
-      const expiryDate = batch.expiration ? formatForDatePicker(batch.expiration) : t('noExpiry', 'No expiry');
+      const expiryDate = batch.expiration
+        ? formatForDatePicker(parseStockExpiryDate(batch.expiration))
+        : t('noExpiry', 'No expiry');
 
       return `${batch.batchNo} | Qty: ${quantityDisplay} | Expiry: ${expiryDate}`;
     },
