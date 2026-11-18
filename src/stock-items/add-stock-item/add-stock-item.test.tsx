@@ -11,7 +11,15 @@ vi.mock('@carbon/react/icons', () => ({
 }));
 
 vi.mock('./stock-item-details/stock-item-details.component', () => ({
-  default: ({ stockItem }) => <div data-testid="stock-item-details">Stock Item Details: {stockItem?.uuid}</div>,
+  default: ({ stockItem, onStockItemSaved }) => (
+    <>
+      <div data-testid="stock-item-details">Stock Item Details: {stockItem?.uuid}</div>
+      <div data-testid="stock-item-common-name">{stockItem?.commonName}</div>
+      <button onClick={() => onStockItemSaved?.({ ...stockItem, commonName: 'Saved Common Name' })}>
+        Mock save details
+      </button>
+    </>
+  ),
 }));
 
 vi.mock('./packaging-units/packaging-units.component', () => ({
@@ -113,6 +121,17 @@ describe('AddEditStockItem', () => {
     render(<AddEditStockItem {...mockWorkspace2Props({ stockItem: mockModel })} />);
     expect(screen.getByTestId('stock-item-details')).toBeInTheDocument();
     expect(screen.getByText('Stock Item Details: test-uuid-123')).toBeInTheDocument();
+  });
+
+  it('shows the saved details when returning to the Details tab', async () => {
+    const user = userEvent.setup();
+    render(<AddEditStockItem {...mockWorkspace2Props({ stockItem: mockModel })} />);
+
+    await user.click(screen.getByText('Mock save details'));
+    await user.click(screen.getByText(/packaging units/i));
+    await user.click(screen.getByText(/stock item details/i));
+
+    expect(screen.getByTestId('stock-item-common-name')).toHaveTextContent('Saved Common Name');
   });
 
   it('changes selected tab when clicking on different tabs', async () => {

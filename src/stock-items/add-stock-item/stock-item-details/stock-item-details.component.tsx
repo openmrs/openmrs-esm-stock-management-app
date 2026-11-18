@@ -26,11 +26,17 @@ import styles from '../../add-stock-item/add-stock-item.scss';
 interface StockItemDetailsProps {
   stockItem?: StockItemDTO;
   handleTabChange: (index) => void;
+  onStockItemSaved?: (stockItem: StockItemDTO) => void;
   onCloseWorkspace?: () => void;
 }
 
 // t('purchasePriceUoMRequired', 'Purchase price packaging unit is required when purchase price is set')
-const StockItemDetails = ({ stockItem, handleTabChange, onCloseWorkspace }: StockItemDetailsProps) => {
+const StockItemDetails = ({
+  stockItem,
+  handleTabChange,
+  onStockItemSaved,
+  onCloseWorkspace,
+}: StockItemDetailsProps) => {
   const { t } = useTranslation();
   const handleMutate = useHandleMutate();
   const isTablet = useLayoutType() === 'tablet';
@@ -61,6 +67,9 @@ const StockItemDetails = ({ stockItem, handleTabChange, onCloseWorkspace }: Stoc
           const item = response.data;
           item.isDrug = !!item.drugUuid;
           launchAddOrEditStockItemWorkspace(item);
+        } else {
+          // Keep what the server now holds, so the next visit to this tab does not show (and re-save) stale values
+          onStockItemSaved?.({ ...stockItem, ...response.data, isDrug: stockItem.isDrug });
         }
       }
 

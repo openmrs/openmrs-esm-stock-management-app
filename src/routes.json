@@ -147,9 +147,9 @@
     {
       "name": "stock-management-app-menu-item",
       "component": "stockManagementAppMenuItem",
-      "slot": "app-menu-item-slot",
+      "slot": "app-menu-slot",
       "meta": {
-        "name": " Stock Management"
+        "name": "Stock Management"
       }
     },
     {
@@ -181,6 +181,10 @@
     {
       "name": "import-bulk-stock-items",
       "component": "importBulkStockItemsModal"
+    },
+    {
+      "name": "issuing-stock-modal",
+      "component": "issuingStockModal"
     },
     {
       "name": "receiving-stock-modal",

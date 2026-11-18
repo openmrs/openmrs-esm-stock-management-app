@@ -12,6 +12,7 @@ import {
 } from '@carbon/react';
 import { useTranslation } from 'react-i18next';
 import { formatDate as formatDisplayDate } from '@openmrs/esm-framework';
+import { getStockItemName } from '../stock-items/stock-item.utils';
 
 interface ExpiredStockModalProps {
   closeModal: () => void;
@@ -22,11 +23,11 @@ const ExpiredStockModal = ({ closeModal, expiredStock }: ExpiredStockModalProps)
   const { t } = useTranslation();
 
   const headers = [
-    { key: 'drugName', header: 'Drug Name' },
-    { key: 'batchNo', header: 'Batch No' },
-    { key: 'quantity', header: 'Quantity' },
-    { key: 'dispensingUnitName', header: 'Unit' },
-    { key: 'expiration', header: 'Expiration Date' },
+    { key: 'item', header: t('item', 'Item') },
+    { key: 'batchNo', header: t('batchNo', 'Batch number') },
+    { key: 'quantity', header: t('quantity', 'Quantity') },
+    { key: 'dispensingUnitName', header: t('unit', 'Unit') },
+    { key: 'expiration', header: t('expiration', 'Expiration date') },
   ];
 
   const formatDate = (dateString) => {
@@ -51,7 +52,7 @@ const ExpiredStockModal = ({ closeModal, expiredStock }: ExpiredStockModalProps)
               <TableBody>
                 {expiredStock.map((item, index) => (
                   <TableRow key={index}>
-                    <TableCell>{item?.drugName || 'N/A'}</TableCell>
+                    <TableCell>{getStockItemName(item) || 'N/A'}</TableCell>
                     <TableCell>{item?.batchNo || 'N/A'}</TableCell>
                     <TableCell>{item?.quantity || 'N/A'}</TableCell>
                     <TableCell>{item?.dispensingUnitName || 'N/A'}</TableCell>
