@@ -5,6 +5,7 @@ import {
   DatePicker,
   DatePickerInput,
   InlineLoading,
+  InlineNotification,
   Link,
   Pagination,
   Table,
@@ -69,17 +70,27 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
     debouncedSearch(searchInput);
   }, [searchInput, debouncedSearch]);
 
-  const { items, tableHeaders, currentPage, pageSizes, totalItems, goTo, currentPageSize, setPageSize, isLoading } =
-    useStockOperationPages({
-      v: ResourceRepresentation.Full,
-      totalCount: true,
-      operationDateMin: selectedFromDate?.toISOString(),
-      operationDateMax: selectedToDate?.toISOString(),
-      status: selectedStatus.join(','),
-      sourceTypeUuid: selectedSources.join(','),
-      operationTypeUuid: selectedOperations.join(','),
-      q: searchString || undefined,
-    });
+  const {
+    items,
+    tableHeaders,
+    currentPage,
+    pageSizes,
+    totalItems,
+    goTo,
+    currentPageSize,
+    setPageSize,
+    isLoading,
+    error,
+  } = useStockOperationPages({
+    v: ResourceRepresentation.Full,
+    totalCount: true,
+    operationDateMin: selectedFromDate?.toISOString(),
+    operationDateMax: selectedToDate?.toISOString(),
+    status: selectedStatus.join(','),
+    sourceTypeUuid: selectedSources.join(','),
+    operationTypeUuid: selectedOperations.join(','),
+    q: searchString || undefined,
+  });
 
   const filterApplied =
     searchString ||
@@ -174,7 +185,16 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
       <h2 className={styles.tableHeader}>
         {t('stockOperationsTableHeader', 'Stock operations to track movement of stock.')}
       </h2>
-      <DataTable headers={tableHeaders} isSortable rows={tableRows} useZebraStyles>
+      {error ? (
+        <InlineNotification
+          kind="error"
+          lowContrast
+          hideCloseButton
+          title={t('stockOperationsLoadError', 'Error loading stock operations')}
+          subtitle={error?.message}
+        />
+      ) : null}
+      <DataTable headers={tableHeaders} isSortable rows={error ? [] : tableRows} useZebraStyles>
         {({ expandRow, getExpandedRowProps, getHeaderProps, getRowProps, getTableProps, headers, rows }) => (
           <TableContainer>
             <TableToolbar
@@ -286,7 +306,7 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
                 })}
               </TableBody>
             </Table>
-            {rows.length === 0 && !isLoading ? (
+            {rows.length === 0 && !isLoading && !error ? (
               <div className={styles.tileContainer}>
                 <Tile className={styles.tile}>
                   <div className={styles.tileContent}>

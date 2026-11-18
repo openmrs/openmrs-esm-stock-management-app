@@ -101,4 +101,13 @@ describe('StockOperations', () => {
 
     expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
   });
+
+  it('shows an error and hides the previous rows when the request fails', () => {
+    mockPages({ items: operations, tableHeaders, totalItems: 2, error: new Error('Server unavailable') });
+
+    render(<StockOperations />);
+
+    expect(screen.getByText('Server unavailable')).toBeInTheDocument();
+    expect(screen.queryByText('RCPT-0049')).not.toBeInTheDocument();
+  });
 });
