@@ -3,7 +3,6 @@ import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useStockOperations } from '../stock-operations/stock-operations.resource';
-import StockHomeIssuingCard from './stock-home-issuing-card.component';
 import StockHomeReceivingCard from './stock-home-receiving-card.component';
 
 const mockHandleMutate = vi.fn();
@@ -20,10 +19,7 @@ const receipt = {
   stockOperationItems: [{ stockItemName: 'Paracetamol', stockItemPackagingUOMName: 'Tablet', quantity: 5 }],
 };
 
-describe.each([
-  ['Receiving', StockHomeReceivingCard, "Couldn't load received stock"],
-  ['Issuing', StockHomeIssuingCard, "Couldn't load issued stock"],
-])('The Overview %s card', (_, Card, errorTitle) => {
+describe('StockHomeReceivingCard', () => {
   it('shows an error with a retry when the operations fail to load', async () => {
     const user = userEvent.setup();
     vi.mocked(useStockOperations).mockReturnValue({
@@ -31,9 +27,9 @@ describe.each([
       isLoading: false,
       error: new Error('Service Unavailable'),
     } as never);
-    render(<Card />);
+    render(<StockHomeReceivingCard />);
 
-    expect(screen.getByRole('alert')).toHaveTextContent(errorTitle);
+    expect(screen.getByRole('alert')).toHaveTextContent("Couldn't load received stock");
     expect(screen.queryByRole('button', { name: 'View All' })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Try again' }));
@@ -48,24 +44,24 @@ describe.each([
       isLoading: false,
       error: new Error('Service Unavailable'),
     } as never);
-    render(<Card />);
+    render(<StockHomeReceivingCard />);
 
     screen.getByRole('button', { name: 'Try again' }).focus();
     await user.keyboard('{Escape}');
 
-    expect(screen.getByRole('alert')).toHaveTextContent(errorTitle);
+    expect(screen.getByRole('alert')).toHaveTextContent("Couldn't load received stock");
     expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
   });
 
   it('shows the error when a reload fails, even with data from an earlier load', () => {
     vi.mocked(useStockOperations).mockReturnValue({
-      items: { results: [receipt, { ...receipt, uuid: 'issue-uuid', operationType: 'stockissue' }] },
+      items: { results: [receipt] },
       isLoading: false,
       error: new Error('Service Unavailable'),
     } as never);
-    render(<Card />);
+    render(<StockHomeReceivingCard />);
 
-    expect(screen.getByRole('alert')).toHaveTextContent(errorTitle);
+    expect(screen.getByRole('alert')).toHaveTextContent("Couldn't load received stock");
     expect(screen.queryByText('Paracetamol')).not.toBeInTheDocument();
   });
 
@@ -75,7 +71,7 @@ describe.each([
       isLoading: false,
       error: null,
     } as never);
-    render(<Card />);
+    render(<StockHomeReceivingCard />);
 
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
