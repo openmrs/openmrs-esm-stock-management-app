@@ -41,6 +41,9 @@
   gap: layout.$spacing-03;
   height: auto;
   margin-top: layout.$spacing-05;
+  // Carbon's transform makes this a stacking context, which keeps the filter menus below the table header and the
+  // empty-state tile
+  transform: none;
 }
 
 .search {
