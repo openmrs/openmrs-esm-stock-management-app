@@ -6,7 +6,7 @@ import { type StockBatchDTO } from '../core/api/types/stockItem/StockBatchDTO';
 import { type InventoryGroupBy, type StockItemDTO } from '../core/api/types/stockItem/StockItem';
 import { type StockItemInventory } from '../core/api/types/stockItem/StockItemInventory';
 import { type StockItemPackagingUOMDTO } from '../core/api/types/stockItem/StockItemPackagingUOM';
-import { type StockItemReference, type StockItemReferenceDTO } from '../core/api/types/stockItem/StockItemReference';
+import { type StockItemReferenceDTO } from '../core/api/types/stockItem/StockItemReference';
 import { type StockItemTransactionDTO } from '../core/api/types/stockItem/StockItemTransaction';
 import { type StockRule } from '../core/api/types/stockItem/StockRule';
 import { type StockOperationItemCost } from '../core/api/types/stockOperation/StockOperationItemCost';
@@ -390,7 +390,7 @@ export function useStockItemReferences(filter: StockItemReferenceFilter) {
       data: PageableResult<StockItemReferenceDTO>;
     },
     Error
-  >(apiUrl, openmrsFetch);
+  >(filter.stockItemUuid ? apiUrl : null, openmrsFetch);
 
   return {
     items: data?.data || <PageableResult<StockItemReferenceDTO>>{},
@@ -414,7 +414,7 @@ export function createStockItemReference(item: StockItemReferenceDTO) {
 }
 
 // updateStockRule
-export function updateStockItemReference(item: StockItemReference, uuid: string) {
+export function updateStockItemReference(item: StockItemReferenceDTO, uuid: string) {
   const apiUrl = `${restBaseUrl}/stockmanagement/stockitemreference/${uuid}`;
   const abortController = new AbortController();
   return openmrsFetch(apiUrl, {
