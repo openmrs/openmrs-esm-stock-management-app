@@ -29,6 +29,7 @@ import { ArrowRight } from '@carbon/react/icons';
 import { useTranslation } from 'react-i18next';
 import { isDesktop, restBaseUrl, useConfig } from '@openmrs/esm-framework';
 import { type ConfigObject } from '../config-schema';
+import { type StockOperationDTO } from '../core/api/types/stockOperation/StockOperationDTO';
 import { DATE_PICKER_CONTROL_FORMAT, DATE_PICKER_FORMAT, StockFilters } from '../constants';
 import { formatDisplayDate } from '../core/utils/datetimeUtils';
 import { useHandleMutate } from '../utils';
@@ -43,6 +44,12 @@ import styles from './stock-operations-table.scss';
 
 interface StockOperationsTableProps {
   status?: string;
+}
+
+// The Items column names the first item of an operation and says how many more there are
+function getVisibleItemNames(stockOperation: StockOperationDTO) {
+  const itemNames = stockOperation?.stockOperationItems?.map((item) => item.commonName) ?? [];
+  return { names: itemNames.slice(0, 1).join(', '), more: Math.max(itemNames.length - 1, 0) };
 }
 
 const StockOperations: React.FC<StockOperationsTableProps> = () => {
@@ -125,54 +132,73 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
     }
   };
 
+  // Carbon sorts a column on its cell values and can only compare text and numbers, so every value here is
+  // the text or number to sort that column by. renderCell turns the ones that need it into what the cell shows.
   const tableRows = useMemo(
     () =>
-      items?.map((stockOperation, index) => {
-        const threshHold = 1;
-        const itemCountGreaterThanThreshhold = (stockOperation?.stockOperationItems?.length ?? 0) > threshHold;
-        const commonNames =
-          stockOperation?.stockOperationItems
-            ?.slice(0, itemCountGreaterThanThreshhold ? threshHold : undefined)
-            .map((item) => item.commonName)
-            .join(', ') ?? '';
-
-        return {
-          ...stockOperation,
-          id: stockOperation?.uuid,
-          key: `key-${stockOperation?.uuid}`,
-          operationTypeName: `${stockOperation?.operationTypeName}`,
-          operationNumber: (
-            <EditStockOperationActionMenu stockOperation={stockOperation} showIcon={false} showprops={true} />
-          ),
-          stockOperationItems: {
-            commonNames,
-            more: itemCountGreaterThanThreshhold ? stockOperation?.stockOperationItems?.length - threshHold : 0,
-          },
-          status: `${stockOperation?.status}`,
-          source: `${stockOperation?.sourceName ?? ''}`,
-          destination: `${stockOperation?.destinationName ?? ''}`,
-          location: (
-            <>
-              {stockOperation?.sourceName ?? ''}
-              {stockOperation?.sourceName && stockOperation?.destinationName ? (
-                <ArrowRight className={styles.arrowIcon} key={`${index}-0`} size={12} />
-              ) : (
-                ''
-              )}{' '}
-              {stockOperation?.destinationName ?? ''}
-            </>
-          ),
-          responsiblePerson: `${
-            stockOperation?.responsiblePersonFamilyName ?? stockOperation?.responsiblePersonOther ?? ''
-          } ${stockOperation?.responsiblePersonGivenName ?? ''}`,
-          operationDate: formatDisplayDate(stockOperation?.operationDate),
-          actions: <EditStockOperationActionMenu stockOperation={stockOperation} showIcon={true} showprops={false} />,
-        };
-      }),
+      items?.map((stockOperation) => ({
+        ...stockOperation,
+        id: stockOperation?.uuid,
+        key: `key-${stockOperation?.uuid}`,
+        operationTypeName: `${stockOperation?.operationTypeName}`,
+        operationNumber: stockOperation?.operationNumber ?? '',
+        stockOperationItems: getVisibleItemNames(stockOperation).names,
+        status: `${stockOperation?.status}`,
+        source: `${stockOperation?.sourceName ?? ''}`,
+        destination: `${stockOperation?.destinationName ?? ''}`,
+        location: [stockOperation?.sourceName, stockOperation?.destinationName].filter(Boolean).join(' '),
+        responsiblePerson: `${
+          stockOperation?.responsiblePersonFamilyName ?? stockOperation?.responsiblePersonOther ?? ''
+        } ${stockOperation?.responsiblePersonGivenName ?? ''}`,
+        operationDate: stockOperation?.operationDate ? new Date(stockOperation.operationDate).getTime() : 0,
+        actions: '',
+      })),
     [items],
   );
 
   const itemsById = useMemo(() => new Map((items ?? []).map((op) => [op.uuid, op])), [items]);
+
+  const renderCell = (
+    cell: { value: unknown; info: { header: string } },
+    operation: StockOperationDTO | undefined,
+    showAllItems: () => void,
+  ) => {
+    if (!operation) {
+      return cell.value as React.ReactNode;
+    }
+
+    switch (cell.info.header) {
+      case 'operationNumber':
+        return <EditStockOperationActionMenu stockOperation={operation} showIcon={false} showprops={true} />;
+      case 'stockOperationItems': {
+        const { names, more } = getVisibleItemNames(operation);
+        return (
+          <span>
+            <span>{names}</span>
+            {more > 0 && <Link onClick={showAllItems}>{`...(${more} more)`}</Link>}
+          </span>
+        );
+      }
+      case 'location':
+        return (
+          <>
+            {operation.sourceName ?? ''}
+            {operation.sourceName && operation.destinationName ? (
+              <ArrowRight className={styles.arrowIcon} size={12} />
+            ) : (
+              ''
+            )}{' '}
+            {operation.destinationName ?? ''}
+          </>
+        );
+      case 'operationDate':
+        return formatDisplayDate(operation.operationDate);
+      case 'actions':
+        return <EditStockOperationActionMenu stockOperation={operation} showIcon={true} showprops={false} />;
+      default:
+        return cell.value as React.ReactNode;
+    }
+  };
 
   if (isLoading && !filterApplied && !items.length) {
     return (
@@ -276,18 +302,7 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
                     <React.Fragment key={row.id}>
                       <TableExpandRow className={isDesktop ? styles.desktopRow : styles.tabletRow} {...props}>
                         {row.cells.map((cell) => (
-                          <TableCell key={cell.id}>
-                            {cell?.info?.header === 'stockOperationItems' ? (
-                              <span>
-                                <span>{cell.value.commonNames}</span>
-                                {cell.value.more > 0 && (
-                                  <Link onClick={() => expandRow(row.id)}>{`...(${cell.value.more} more)`}</Link>
-                                )}
-                              </span>
-                            ) : (
-                              cell.value
-                            )}
-                          </TableCell>
+                          <TableCell key={cell.id}>{renderCell(cell, operation, () => expandRow(row.id))}</TableCell>
                         ))}
                       </TableExpandRow>
                       {row.isExpanded && operation ? (

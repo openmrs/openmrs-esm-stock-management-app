@@ -19,6 +19,14 @@ beforeEach(() => {
 });
 
 describe('useStockOperationPages', () => {
+  it('offers sorting only on the columns that have a heading', () => {
+    const { result } = renderHook(() => useStockOperationPages({}));
+
+    const columnsWithoutHeading = result.current.tableHeaders.filter(({ header }) => !header);
+    expect(columnsWithoutHeading.map(({ key }) => key)).toEqual(['details', 'actions']);
+    expect(columnsWithoutHeading.every((column) => 'isSortable' in column && column.isSortable === false)).toBe(true);
+  });
+
   it('asks the server for the first page only', () => {
     renderHook(() => useStockOperationPages({}));
 
