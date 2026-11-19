@@ -47,6 +47,8 @@
   flex: 1 1 12rem;
   max-width: 24rem;
   margin-right: auto;
+  // Carbon sizes the search input to fill this container, which otherwise collapses to the input's line height
+  block-size: layout.$spacing-09;
 }
 
 .container {
