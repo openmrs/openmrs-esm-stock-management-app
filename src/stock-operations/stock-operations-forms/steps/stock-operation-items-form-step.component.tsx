@@ -48,6 +48,7 @@ const StockOperationItemsFormStep: React.FC<StockOperationItemsFormStepProps> = 
 
   const form = useFormContext<StockOperationItemDtoSchema>();
   const observableOperationItems = form.watch('stockOperationItems');
+  const sourceUuid = form.watch('sourceUuid');
   const headers = useMemo(() => {
     return [
       {
@@ -122,7 +123,7 @@ const StockOperationItemsFormStep: React.FC<StockOperationItemsFormStepProps> = 
       return {
         id: uuid || `${uniqueId}-${index}`,
         item: stockItemUuid ? <StockOperationItemCell stockItemUuid={stockItemUuid} /> : '--',
-        itemDetails: stockItemUuid ? <StockAvailability stockItemUuid={stockItemUuid} /> : '--',
+        itemDetails: stockItemUuid ? <StockAvailability stockItemUuid={stockItemUuid} sourceUuid={sourceUuid} /> : '--',
         batch: (
           <StockOperationItemBatchNoCell
             operation={stockOperationType}
@@ -174,7 +175,7 @@ const StockOperationItemsFormStep: React.FC<StockOperationItemsFormStepProps> = 
         ),
       };
     });
-  }, [observableOperationItems, onLaunchItemsForm, stockOperationType, t, uniqueId]);
+  }, [observableOperationItems, onLaunchItemsForm, sourceUuid, stockOperationType, t, uniqueId]);
 
   const handleNext = async () => {
     const valid = await form.trigger(['stockOperationItems']);

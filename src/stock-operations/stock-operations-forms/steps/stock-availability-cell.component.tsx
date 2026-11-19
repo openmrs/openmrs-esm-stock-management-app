@@ -2,25 +2,30 @@ import { InlineLoading } from '@carbon/react';
 import { showSnackbar } from '@openmrs/esm-framework';
 import React, { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useStockItemBatchInformationHook } from '../../../stock-items/add-stock-item/batch-information/batch-information.resource';
+import { ResourceRepresentation } from '../../../core/api/api';
+import { type StockItemInventoryFilter, useStockItemInventory } from '../../../stock-items/stock-items.resource';
 import styles from './stock-operation-items-form-step.scc.scss';
-const StockAvailability: React.FC<{ stockItemUuid: string }> = ({ stockItemUuid }) => {
-  const { items, isLoading, error } = useStockItemBatchInformationHook({
-    stockItemUuid: stockItemUuid,
-    includeBatchNo: true,
-  });
+const StockAvailability: React.FC<{ stockItemUuid: string; sourceUuid?: string | null }> = ({
+  stockItemUuid,
+  sourceUuid,
+}) => {
   const { t } = useTranslation();
 
-  const totalQuantity = useMemo(() => {
-    if (!items?.length) return 0;
-    return items.reduce((total, batch) => {
-      return total + (Number(batch.quantity) || 0);
-    }, 0);
-  }, [items]);
-  const commonUOM = useMemo(() => {
-    if (!items?.length) return '';
-    return items[0]?.quantityUoM || '';
-  }, [items]);
+  const filter = useMemo<StockItemInventoryFilter>(
+    () => ({
+      v: ResourceRepresentation.Default,
+      stockItemUuid,
+      partyUuid: sourceUuid || undefined,
+      groupBy: sourceUuid ? 'LocationStockItem' : 'StockItemOnly',
+    }),
+    [stockItemUuid, sourceUuid],
+  );
+
+  const { items, isLoading, error } = useStockItemInventory(filter);
+
+  const row = items?.results?.[0];
+  const totalQuantity = Number(row?.quantity) || 0;
+  const uom = row?.quantityUoM ?? '';
 
   useEffect(() => {
     if (error) {
@@ -39,7 +44,7 @@ const StockAvailability: React.FC<{ stockItemUuid: string }> = ({ stockItemUuid 
     <div className={styles.availability}>
       {totalQuantity > 0 ? (
         <span>
-          Available: {totalQuantity.toLocaleString()} {commonUOM}
+          Available: {totalQuantity.toLocaleString()} {uom}
         </span>
       ) : (
         <span className={styles.outOfStock}>Out of Stock</span>
