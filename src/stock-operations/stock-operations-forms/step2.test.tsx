@@ -238,6 +238,8 @@ describe('Stock Operation step 2 (stock operation items details)', () => {
       stockItemsList: [
         { uuid: 'mock-uuid', commonName: 'mock-common-name', drugName: 'mock-common-name' },
       ] as Array<StockItemDTO>,
+      searchedFor: 'stock',
+      totalCount: 1,
       setLimit: vi.fn(),
       setRepresentation: vi.fn(),
       isLoading: false,
@@ -266,6 +268,8 @@ describe('Stock Operation step 2 (stock operation items details)', () => {
       stockItemsList: [
         { uuid: 'mock-uuid', commonName: 'mock-common-name', drugName: 'mock-common-name' },
       ] as Array<StockItemDTO>,
+      searchedFor: 'stock',
+      totalCount: 1,
       setLimit: vi.fn(),
       setRepresentation: vi.fn(),
       isLoading: false,

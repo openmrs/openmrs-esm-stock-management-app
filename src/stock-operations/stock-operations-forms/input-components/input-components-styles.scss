@@ -48,3 +48,9 @@
     cursor: pointer;
   }
 }
+
+.searchMessage {
+  @include type.type-style('helper-text-01');
+  color: $text-02;
+  padding: layout.$spacing-03 layout.$spacing-05;
+}

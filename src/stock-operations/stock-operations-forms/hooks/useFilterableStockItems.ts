@@ -13,7 +13,7 @@ export function useFilterableStockItems(filter?: StockItemFilter) {
   );
 
   const {
-    items: { results: stockItemsList },
+    items: { results: stockItemsList, totalCount },
     isLoading,
   } = useStockItemsData(conceptFilter);
 
@@ -29,11 +29,15 @@ export function useFilterableStockItems(filter?: StockItemFilter) {
       v: representation,
       limit: limit,
       q: searchString,
+      totalCount: true,
     });
   }, [searchString, limit, representation]);
 
   return {
     stockItemsList,
+    // The search the results are for, and how many items it matches in all
+    searchedFor: conceptFilter.q,
+    totalCount,
     setLimit,
     setRepresentation,
     setSearchString,
