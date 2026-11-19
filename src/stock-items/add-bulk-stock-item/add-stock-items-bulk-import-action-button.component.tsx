@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@carbon/react';
 import { showModal } from '@openmrs/esm-framework';
 
-const AddStockItemsBulktImportActionButton: React.FC = () => {
+const AddStockItemsBulkImportActionButton: React.FC = () => {
   const { t } = useTranslation();
 
   const handleLaunchImportBulkStockItemsModal = useCallback(() => {
@@ -19,4 +19,4 @@ const AddStockItemsBulktImportActionButton: React.FC = () => {
   );
 };
 
-export default AddStockItemsBulktImportActionButton;
+export default AddStockItemsBulkImportActionButton;

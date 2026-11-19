@@ -18,7 +18,7 @@ const DeleteStockSourceModal: React.FC<DeleteStockSourceModalProps> = ({ close, 
   return (
     <>
       <ModalHeader closeModal={close} className={styles.modalHeader}>
-        {t('deleteStock', 'Delete Stock source')}?
+        {t('deleteStock', 'Delete stock source')}
       </ModalHeader>
       <ModalBody>
         <p className={styles.bodyText}>

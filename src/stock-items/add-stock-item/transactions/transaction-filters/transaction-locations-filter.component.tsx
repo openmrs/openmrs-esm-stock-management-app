@@ -27,6 +27,7 @@ const TransactionsLocationsFilter = <T,>(props: TransactionsLocationsFilterProps
       render={({ field: { onChange, value, ref } }) => (
         <ComboBox
           titleText={props.title}
+          aria-label={t('location', 'Location')}
           id={props.name}
           size={'md'}
           items={stockLocations ?? []}
