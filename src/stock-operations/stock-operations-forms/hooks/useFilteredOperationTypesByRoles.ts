@@ -1,24 +1,35 @@
 import { useMemo } from 'react';
-import { useStockOperationTypes, useUserRoles } from '../../../stock-lookups/stock-lookups.resource';
+import { useStockManagementSession, useStockOperationTypes } from '../../../stock-lookups/stock-lookups.resource';
 
-const useFilteredOperationTypesByRoles = () => {
+/**
+ * Returns the operation types in the current user's privilege scopes.
+ * @param privilege Only count scopes that grant this privilege. Leave it out to count every scope.
+ */
+const useFilteredOperationTypesByRoles = (privilege?: string) => {
   const {
     types: { results },
     isLoading: isStockOperationTypesLoading,
     error: stockOperationTypesError,
   } = useStockOperationTypes();
 
-  const { userRoles, isLoading: isUserRolesLoading, error: userRolesError } = useUserRoles();
+  const {
+    privilegeScopes,
+    isLoading: isPrivilegeScopesLoading,
+    error: privilegeScopesError,
+  } = useStockManagementSession();
 
   const operationTypes = useMemo(() => {
-    const applicablePrivilegeScopes = userRoles?.operationTypes?.map((p) => p.operationTypeUuid) || [];
-    const uniqueApplicablePrivilegeScopes = [...new Set(applicablePrivilegeScopes)];
+    const applicableOperationTypeUuids = new Set(
+      privilegeScopes
+        ?.filter((scope) => !privilege || scope.privilege === privilege)
+        .map((scope) => scope.operationTypeUuid),
+    );
 
-    return results?.filter((p) => uniqueApplicablePrivilegeScopes.includes(p.uuid)) || [];
-  }, [results, userRoles]);
+    return results?.filter((p) => applicableOperationTypeUuids.has(p.uuid)) || [];
+  }, [results, privilegeScopes, privilege]);
 
-  const isLoading = isStockOperationTypesLoading || isUserRolesLoading;
-  const error = stockOperationTypesError || userRolesError;
+  const isLoading = isStockOperationTypesLoading || isPrivilegeScopesLoading;
+  const error = stockOperationTypesError || privilegeScopesError;
 
   return {
     operationTypes,

@@ -21,7 +21,7 @@ const StockOperationRejectButton: React.FC<StockOperationRejectButtonProps> = ({
   }, [operation]);
 
   return (
-    <Button onClick={launchRejectModal} renderIcon={(props) => <Repeat size={16} {...props} />}>
+    <Button onClick={launchRejectModal} kind="tertiary" renderIcon={(props) => <Repeat size={16} {...props} />}>
       {t('reject', 'Reject')}
     </Button>
   );

@@ -21,12 +21,12 @@ const IssuingStockModal = ({ issuingStock, closeModal }: IssuingStockModalProps)
   const { t } = useTranslation();
 
   const headers = [
-    { key: 'status', header: 'Status' },
-    { key: 'sourceName', header: 'Source' },
-    { key: 'destinationName', header: 'Destination' },
-    { key: 'stockItemName', header: 'Stock Item' },
-    { key: 'stockItemPackagingUOMName', header: 'Unit' },
-    { key: 'quantity', header: 'Quantity' },
+    { key: 'status', header: t('status', 'Status') },
+    { key: 'sourceName', header: t('source', 'Source') },
+    { key: 'destinationName', header: t('destination', 'Destination') },
+    { key: 'stockItemName', header: t('stockItem', 'Stock Item') },
+    { key: 'stockItemPackagingUOMName', header: t('unit', 'Unit') },
+    { key: 'quantity', header: t('quantity', 'Quantity') },
   ];
 
   return (
@@ -44,16 +44,18 @@ const IssuingStockModal = ({ issuingStock, closeModal }: IssuingStockModalProps)
                 </TableRow>
               </TableHead>
               <TableBody>
-                {issuingStock.map((item, index) => (
-                  <TableRow key={index}>
-                    <TableCell>{item?.status || 'N/A'}</TableCell>
-                    <TableCell>{item?.sourceName || 'N/A'}</TableCell>
-                    <TableCell>{item?.destinationName || 'N/A'}</TableCell>
-                    <TableCell>{item?.stockItemName || 'N/A'}</TableCell>
-                    <TableCell>{item?.stockItemPackagingUOMName || 'N/A'}</TableCell>
-                    <TableCell>{item?.quantity || 'N/A'}</TableCell>
-                  </TableRow>
-                ))}
+                {issuingStock.map((item, index) =>
+                  item?.stockOperationItems?.map((stock, stockIndex) => (
+                    <TableRow key={`${index}-${stockIndex}`}>
+                      <TableCell>{item?.status || 'N/A'}</TableCell>
+                      <TableCell>{item?.sourceName || 'N/A'}</TableCell>
+                      <TableCell>{item?.destinationName || 'N/A'}</TableCell>
+                      <TableCell>{stock?.stockItemName || 'N/A'}</TableCell>
+                      <TableCell>{stock?.stockItemPackagingUOMName || 'N/A'}</TableCell>
+                      <TableCell>{stock?.quantity || 'N/A'}</TableCell>
+                    </TableRow>
+                  )),
+                )}
               </TableBody>
             </Table>
           </TableContainer>

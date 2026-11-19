@@ -71,6 +71,8 @@ const EditStockOperationActionMenu: React.FC<EditStockOperationActionMenuProps> 
       size="sm"
       onClick={handleLaunchWorkspace}
       renderIcon={showIcon ? () => <Edit size={16} /> : undefined}
+      hasIconOnly={showIcon && !showprops}
+      iconDescription={t('editStockOperation', 'Edit stock operation')}
     >
       {showprops && <span className={styles.operationNumberText}>{fetchedStockOperation?.operationNumber}</span>}
     </Button>

@@ -78,7 +78,9 @@ const StockOperationForm: React.FC<Workspace2DefinitionProps<StockOperationFormP
     user: { uuid: defaultLoggedUserUuid },
   } = useSession();
   const { autoPopulateResponsiblePerson } = useConfig<ConfigObject>();
-  const { error, items: _stockOperation, isLoading } = useStockOperationAndItems(stockRequisitionUuid);
+  // A requisition only prefills a new issue. A saved issue keeps its own details and lines.
+  const requisitionToPrefill = stockOperation ? undefined : stockRequisitionUuid;
+  const { error, items: _stockOperation, isLoading } = useStockOperationAndItems(requisitionToPrefill);
 
   const form = useForm<StockOperationItemDtoSchema>({
     defaultValues: {
@@ -103,7 +105,7 @@ const StockOperationForm: React.FC<Workspace2DefinitionProps<StockOperationFormP
       destinationUuid: stockOperation?.destinationUuid ?? '',
     },
     mode: 'all',
-    values: stockRequisitionUuid
+    values: requisitionToPrefill
       ? {
           sourceUuid: _stockOperation?.destinationUuid,
           destinationUuid: _stockOperation?.sourceUuid,
