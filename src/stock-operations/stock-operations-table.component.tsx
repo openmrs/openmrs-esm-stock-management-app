@@ -165,8 +165,9 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
           rows,
         }) => (
           <TableContainer>
-            {/* TableToolbar doesn't accept a className, and a global rule positions toolbars absolutely over the table */}
-            <TableToolbar style={{ position: 'static', overflow: 'visible' }}>
+            {/* TableToolbar doesn't accept a className. A global rule positions toolbars absolutely over the table,
+                and Carbon fixes their height, so the toolbar couldn't grow to fit its wrapped controls */}
+            <TableToolbar style={{ position: 'static', overflow: 'visible', blockSize: 'auto' }}>
               <TableToolbarContent className={styles.toolbarContent}>
                 <TableToolbarSearch
                   className={styles.search}
@@ -177,7 +178,6 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
                 />
                 <div className={styles.container}>
                   <DatePicker
-                    className={styles.datePicker}
                     datePickerType="range"
                     dateFormat={DATE_PICKER_CONTROL_FORMAT}
                     onChange={([startDate, endDate]) => handleDateFilterChange([startDate, endDate])}

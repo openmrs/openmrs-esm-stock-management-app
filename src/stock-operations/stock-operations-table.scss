@@ -41,8 +41,6 @@
   gap: layout.$spacing-03;
   height: auto;
   margin-top: layout.$spacing-05;
-  // Carbon moves the toolbar content with a transform, which would detach it from the table header
-  transform: none;
 }
 
 .search {
