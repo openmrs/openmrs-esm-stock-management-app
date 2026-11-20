@@ -20,7 +20,7 @@ export const configSchema = {
     _elements: {
       _type: Type.UUID,
     },
-    _default: [],
+    _default: ['5b3a9913-7f22-4ef0-ad07-77e5200c5304'],
     _description:
       'The UUIDs of the "reason for stock adjustment" concepts that mean stock was disposed of because it expired. Used to categorise the Disposed stock tile. When any are set, reasons are matched by UUID (locale-independent); when empty, they are matched by name',
   },
@@ -62,7 +62,7 @@ export const configSchema = {
     _elements: {
       _type: Type.UUID,
     },
-    _default: [],
+    _default: ['2450d06c-b2eb-431a-aab9-cfa9c2f32fc9'],
     _description:
       'The UUIDs of the "reason for stock adjustment" concepts that mean stock was disposed of because it was of poor quality. Used to categorise the Disposed stock tile. When any are set, reasons are matched by UUID (locale-independent); when empty, they are matched by name',
   },

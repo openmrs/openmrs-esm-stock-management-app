@@ -125,30 +125,17 @@ export function getDisposalReasonCategory(
 ): DisposalReasonCategory {
   const expiredReasonUuids = config?.expiredStockReasonUUIDs ?? [];
   const poorQualityReasonUuids = config?.poorQualityStockReasonUUIDs ?? [];
+  const normalizedReason = reason.reasonName?.trim().toLowerCase() ?? '';
+  const matches = (reasonUuids: Array<string>, reasonNames: Array<string>) =>
+    reasonUuids.length > 0
+      ? reason.reasonUuid != null && reasonUuids.includes(reason.reasonUuid)
+      : reasonNames.some((name) => normalizedReason.includes(name));
 
-  if (reason.reasonUuid && (expiredReasonUuids.length > 0 || poorQualityReasonUuids.length > 0)) {
-    if (expiredReasonUuids.includes(reason.reasonUuid)) {
-      return 'expired';
-    }
-
-    if (poorQualityReasonUuids.includes(reason.reasonUuid)) {
-      return 'poorQuality';
-    }
-
-    return null;
-  }
-
-  const normalizedReason = reason.reasonName?.trim().toLowerCase();
-
-  if (!normalizedReason) {
-    return null;
-  }
-
-  if (normalizedReason.includes('expired')) {
+  if (matches(expiredReasonUuids, ['expired'])) {
     return 'expired';
   }
 
-  if (normalizedReason.includes('spillage') || normalizedReason.includes('poor quality')) {
+  if (matches(poorQualityReasonUuids, ['spillage', 'poor quality'])) {
     return 'poorQuality';
   }
 

@@ -178,7 +178,7 @@ describe('getDisposalReasonCategory', () => {
     [{ reasonUuid: 'expired-uuid', reasonName: 'Some other locale-specific name' }, 'expired'],
     [{ reasonUuid: 'poor-quality-uuid', reasonName: 'Some other locale-specific name' }, 'poorQuality'],
     [{ reasonUuid: 'unrelated-uuid', reasonName: 'Medication expired' }, null],
-    [{ reasonUuid: null, reasonName: 'Medication expired' }, 'expired'],
+    [{ reasonUuid: null, reasonName: 'Medication expired' }, null],
   ])('matches %o by reason UUID as %s when reason UUIDs are configured', (reason, category) => {
     expect(getDisposalReasonCategory(reason, reasonUuids)).toBe(category);
   });
