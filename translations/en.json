@@ -389,6 +389,7 @@
   "stockOperationsTableHeader": "Stock operations to track movement of stock.",
   "stockOperationTypesError": "Error loading stock operation types",
   "stockReportsTableHeader": "List of reports requested by users.",
+  "stockRuleActions": "Stock rule actions",
   "stockRuleAddedSuccessfully": "Stock rule added successfully",
   "stockRuleDeletedSuccessfully": "Stock Rule Deleted Successfully",
   "stockRuleEditedSuccessfully": "Stock rule edited successfully",

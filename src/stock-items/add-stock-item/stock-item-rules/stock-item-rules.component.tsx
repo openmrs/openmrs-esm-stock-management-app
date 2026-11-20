@@ -25,10 +25,10 @@ import { useHandleMutate } from '../../../utils';
 import { type StockRule } from '../../../core/api/types/stockItem/StockRule';
 import { useStockItemRules } from './stock-item-rules.resource';
 import AddStockRuleActionButton from './add-stock-rule-button.component';
-import EditStockRuleActionsMenu from './edit-stock-rule.component';
-import StockRulesDeleteActionMenu from './stock-rules-delete.component';
+import StockRuleActionsMenu from './stock-rule-actions-menu.component';
 import StockRulesFilter from './stock-rules-filter.component';
 import styles from '../../stock-items-table.scss';
+import rulesStyles from './stock-item-rules.scss';
 
 interface StockItemRulesProps {
   onSubmit?: () => void;
@@ -67,12 +67,7 @@ const StockItemRules: React.FC<StockItemRulesProps> = ({ stockItemUuid, model, c
       lastActionDate: formatDisplayDate(stockRule?.lastActionDate),
       nextActionDate: formatDisplayDate(stockRule?.nextActionDate),
       enabled: stockRule.enabled ? 'Yes' : 'No',
-      actions: (
-        <>
-          <EditStockRuleActionsMenu data={items[index]} stockItemUuid={items[index].stockItemUuid} />
-          <StockRulesDeleteActionMenu uuid={items[index].uuid} />
-        </>
-      ),
+      actions: <StockRuleActionsMenu data={items[index]} stockItemUuid={items[index].stockItemUuid} />,
     }));
   }, [items]);
 
@@ -81,7 +76,7 @@ const StockItemRules: React.FC<StockItemRulesProps> = ({ stockItemUuid, model, c
   }
 
   return (
-    <div className={styles.tableOverride}>
+    <div className={rulesStyles.tableOverride}>
       <DataTable rows={tableRows} headers={tableHeaders} isSortable useZebraStyles>
         {({ rows, headers, getHeaderProps, getTableProps, getRowProps, onInputChange }) => (
           <TableContainer>
@@ -103,49 +98,62 @@ const StockItemRules: React.FC<StockItemRulesProps> = ({ stockItemUuid, model, c
                   <StockRulesFilter stockItemUuid={stockItemUuid} />
                 </div>
                 <TableToolbarMenu>
-                  <TableToolbarAction className={styles.toolbarMenuAction} onClick={handleRefresh}>
+                  <TableToolbarAction className={rulesStyles.toolbarMenuAction} onClick={handleRefresh}>
                     {t('refresh', 'Refresh')}
                   </TableToolbarAction>
                 </TableToolbarMenu>
                 <AddStockRuleActionButton stockItemUuid={stockItemUuid} />
               </TableToolbarContent>
             </TableToolbar>
-            <Table {...getTableProps()}>
-              <TableHead>
-                <TableRow>
-                  {headers.map(
-                    (header: any) =>
-                      header.key !== 'details' && (
-                        <TableHeader
-                          {...getHeaderProps({
-                            header,
-                            isSortable: header.isSortable,
-                          })}
-                          className={isDesktop ? styles.desktopHeader : styles.tabletHeader}
-                          key={`${header.key}`}
+            <div className={rulesStyles.tableScrollContainer}>
+              <Table {...getTableProps()}>
+                <TableHead>
+                  <TableRow>
+                    {headers.map(
+                      (header: any) =>
+                        header.key !== 'details' &&
+                        header.key !== 'actions' && (
+                          <TableHeader
+                            {...getHeaderProps({
+                              header,
+                              isSortable: header.isSortable,
+                            })}
+                            className={isDesktop ? styles.desktopHeader : styles.tabletHeader}
+                            key={`${header.key}`}
+                          >
+                            {header.header?.content ?? header.header}
+                          </TableHeader>
+                        ),
+                    )}
+                    <TableHeader className={rulesStyles.actionsCell}></TableHeader>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {rows.map((row: any) => {
+                    return (
+                      <React.Fragment key={row.id}>
+                        <TableRow
+                          className={isDesktop ? styles.desktopRow : styles.tabletRow}
+                          {...getRowProps({ row })}
                         >
-                          {header.header?.content ?? header.header}
-                        </TableHeader>
-                      ),
-                  )}
-                  <TableHeader></TableHeader>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {rows.map((row: any) => {
-                  return (
-                    <React.Fragment key={row.id}>
-                      <TableRow className={isDesktop ? styles.desktopRow : styles.tabletRow} {...getRowProps({ row })}>
-                        {row.cells.map(
-                          (cell: any) =>
-                            cell?.info?.header !== 'details' && <TableCell key={cell.id}>{cell.value}</TableCell>,
-                        )}
-                      </TableRow>
-                    </React.Fragment>
-                  );
-                })}
-              </TableBody>
-            </Table>
+                          {row.cells.map(
+                            (cell: any) =>
+                              cell?.info?.header !== 'details' &&
+                              (cell?.info?.header === 'actions' ? (
+                                <TableCell className={rulesStyles.actionsCell} key={cell.id}>
+                                  {cell.value}
+                                </TableCell>
+                              ) : (
+                                <TableCell key={cell.id}>{cell.value}</TableCell>
+                              )),
+                          )}
+                        </TableRow>
+                      </React.Fragment>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
             {rows.length === 0 ? (
               <div className={styles.tileContainer}>
                 <Tile className={styles.tile}>
