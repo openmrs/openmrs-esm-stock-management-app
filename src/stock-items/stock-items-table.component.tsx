@@ -6,7 +6,6 @@ import {
   IconButton,
   Pagination,
   Table,
-  TableBatchActions,
   TableBody,
   TableCell,
   TableContainer,
@@ -23,12 +22,12 @@ import {
 import { Edit } from '@carbon/react/icons';
 import { isDesktop, restBaseUrl } from '@openmrs/esm-framework';
 import { useHandleMutate } from '../utils';
-import { launchAddOrEditStockItemWorkspace } from './stock-item.utils';
+import { getStockItemName, launchAddOrEditStockItemWorkspace } from './stock-item.utils';
 import { ResourceRepresentation } from '../core/api/api';
 import { useDebounce } from '../core/hooks/debounce-hook';
 import { useStockItemsPages } from './stock-items-table.resource';
 import AddStockItemActionButton from './add-stock-item/add-stock-action-button.component';
-import AddStockItemsBulktImportActionButton from './add-bulk-stock-item/add-stock-items-bulk-import-action-button.component';
+import AddStockItemsBulkImportActionButton from './add-bulk-stock-item/add-stock-items-bulk-import-action-button.component';
 import EditStockItemActionsMenu from './edit-stock-item/edit-stock-item-action-menu.component';
 import FilterStockItems from './components/filter-stock-items/filter-stock-items.component';
 import { type CustomTableHeader } from '../core/components/table/types';
@@ -82,8 +81,9 @@ const StockItemsTableComponent: React.FC<StockItemsTableProps> = () => {
       },
       {
         id: 1,
-        header: t('genericName', 'Generic name'),
-        key: 'genericName',
+        // The drug's name, or the concept's name for other items
+        header: t('name', 'Name'),
+        key: 'name',
       },
       {
         id: 2,
@@ -92,8 +92,9 @@ const StockItemsTableComponent: React.FC<StockItemsTableProps> = () => {
       },
       {
         id: 3,
-        header: t('tradeName', 'Trade name'),
-        key: 'tradeName',
+        // The drug's concept, for drugs only
+        header: t('genericName', 'Generic name'),
+        key: 'genericName',
       },
       {
         id: 4,
@@ -119,16 +120,18 @@ const StockItemsTableComponent: React.FC<StockItemsTableProps> = () => {
     [t],
   );
 
+  const stockItemsById = useMemo(() => new Map(items?.map((stockItem) => [stockItem.uuid, stockItem])), [items]);
+
   const tableRows = useMemo(() => {
-    return items?.map((stockItem, index) => ({
+    return items?.map((stockItem) => ({
       ...stockItem,
       id: stockItem?.uuid,
       key: `key-${stockItem?.uuid}`,
       uuid: `${stockItem?.uuid}`,
       type: stockItem?.drugUuid ? t('drug', 'Drug') : t('other', 'Other'),
-      genericName: <EditStockItemActionsMenu data={items[index]} />,
+      name: getStockItemName(stockItem),
       commonName: stockItem?.commonName,
-      tradeName: stockItem?.drugUuid ? stockItem?.conceptName : '',
+      genericName: stockItem?.drugUuid ? stockItem?.conceptName : '',
       preferredVendorName: stockItem?.preferredVendorName,
       dispensingUoM: stockItem?.defaultStockOperationsUoMName,
       dispensingUnitName: stockItem?.dispensingUnitName,
@@ -162,16 +165,14 @@ const StockItemsTableComponent: React.FC<StockItemsTableProps> = () => {
         {t('stockItemsTableHeader', 'Drugs and other stock items managed by the system.')}
       </h2>
       <DataTable rows={tableRows} headers={tableHeaders} isSortable useZebraStyles>
-        {({ rows, headers, getHeaderProps, getTableProps, getRowProps, getBatchActionProps }) => (
+        {({ rows, headers, getHeaderProps, getTableProps, getRowProps }) => (
           <TableContainer>
             <TableToolbar
               style={{
                 position: 'static',
                 overflow: 'visible',
-                backgroundColor: 'color',
               }}
             >
-              <TableBatchActions {...getBatchActionProps()} />
               <TableToolbarContent
                 style={{
                   display: 'flex',
@@ -187,7 +188,7 @@ const StockItemsTableComponent: React.FC<StockItemsTableProps> = () => {
                   value={searchInput}
                 />
                 <FilterStockItems filterType={isDrug} changeFilterType={setDrug} />
-                <AddStockItemsBulktImportActionButton />
+                <AddStockItemsBulkImportActionButton />
                 <TableToolbarMenu data-testid="stock-items-menu">
                   <TableToolbarAction className={styles.toolbarAction} onClick={handleRefresh}>
                     {t('refresh', 'Refresh')}
@@ -209,7 +210,7 @@ const StockItemsTableComponent: React.FC<StockItemsTableProps> = () => {
                           })}
                           className={isDesktop ? styles.desktopHeader : styles.tabletHeader}
                           key={`${header.key}`}
-                          isSortable={header.key !== 'name'}
+                          isSortable={header.key !== 'actions'}
                         >
                           {(() => {
                             const customHeader = header as CustomTableHeader;
@@ -227,6 +228,7 @@ const StockItemsTableComponent: React.FC<StockItemsTableProps> = () => {
               </TableHead>
               <TableBody>
                 {rows.map((row) => {
+                  const stockItem = stockItemsById.get(row.id);
                   return (
                     <React.Fragment key={row.id}>
                       <TableRow
@@ -236,7 +238,15 @@ const StockItemsTableComponent: React.FC<StockItemsTableProps> = () => {
                       >
                         {row.cells.map(
                           (cell) =>
-                            cell?.info?.header !== 'details' && <TableCell key={cell.id}>{cell.value}</TableCell>,
+                            cell?.info?.header !== 'details' && (
+                              <TableCell key={cell.id}>
+                                {cell.info.header === 'name' && stockItem ? (
+                                  <EditStockItemActionsMenu data={stockItem} />
+                                ) : (
+                                  cell.value
+                                )}
+                              </TableCell>
+                            ),
                         )}
                       </TableRow>
                     </React.Fragment>
