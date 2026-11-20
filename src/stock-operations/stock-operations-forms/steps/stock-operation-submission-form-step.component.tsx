@@ -9,6 +9,7 @@ import { extractErrorMessagesFromResponse } from '../../../constants';
 import { useHandleMutate } from '../../../utils';
 import { OperationType, type StockOperationType } from '../../../core/api/types/stockOperation/StockOperationType';
 import { otherUser } from '../../../core/utils/utils';
+import { stockExpiryDateForApi } from '../../expiry-date.utils';
 import { launchStockOperationsModal } from '../../stock-operation.utils';
 import { type StockOperationDTO } from '../../../core/api/types/stockOperation/StockOperationDTO';
 import { type StockOperationItemDTO } from '../../../core/api/types/stockOperation/StockOperationItemDTO';
@@ -89,6 +90,7 @@ const StockOperationSubmissionFormStep: React.FC<StockOperationSubmissionFormSte
           stockOperationItems: [
             ...formData.stockOperationItems.map((item) => ({
               ...item,
+              expiration: item.expiration ? stockExpiryDateForApi(item.expiration) : item.expiration,
               uuid:
                 item.uuid.startsWith('new-item-') || (!stockOperation && isStockIssueOperation) ? undefined : item.uuid, // Remove uuid for newly inserted items and stock issue items derived from requisition to avoid foreign key constraint lookup error
             })),
