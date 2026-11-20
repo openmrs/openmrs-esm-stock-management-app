@@ -1,15 +1,17 @@
 import { DataTableSkeleton } from '@carbon/react';
 import { ArrowLeft } from '@carbon/react/icons';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import DataList from '../../../core/components/table/table.component';
 import { formatDisplayDate } from '../../../core/utils/datetimeUtils';
+import { type StockItemTransactionDTO } from '../../../core/api/types/stockItem/StockItemTransaction';
 import { type StockItemInventoryFilter } from '../../stock-items.resource';
 import TransactionsPrintAction from './printout/transactions-print-action.component';
 import TransactionsLocationsFilter from './transaction-filters/transaction-locations-filter.component';
 import { useStockItemsTransactions } from './transactions.resource';
 import StockOperationReference from '../../../stock-operations/stock-operation-reference.component';
+import styles from './transactions.scss';
 
 interface TransactionsProps {
   onSubmit?: () => void;
@@ -38,8 +40,8 @@ const Transactions: React.FC<TransactionsProps> = ({ stockItemUuid }) => {
 
   const { control } = useForm({});
 
-  const tableRows = useMemo(() => {
-    return items?.map((stockItemTransaction) => {
+  const toTableRow = useCallback(
+    (stockItemTransaction: StockItemTransactionDTO) => {
       const balance = inventory?.total ?? '';
 
       return {
@@ -54,24 +56,24 @@ const Transactions: React.FC<TransactionsProps> = ({ stockItemUuid }) => {
               stockItemTransaction.quantity > 0 ? (
                 <>
                   <span className="transaction-location">{stockItemTransaction.operationSourcePartyName}</span>
-                  <ArrowLeft size={16} /> {stockItemTransaction.operationDestinationPartyName}
+                  <ArrowLeft className={styles.locationArrow} /> {stockItemTransaction.operationDestinationPartyName}
                 </>
               ) : (
                 <>
                   <span className="transaction-location">{stockItemTransaction.operationSourcePartyName}</span>
-                  <ArrowLeft size={16} /> {stockItemTransaction.operationDestinationPartyName}
+                  <ArrowLeft className={styles.locationArrow} /> {stockItemTransaction.operationDestinationPartyName}
                 </>
               )
             ) : stockItemTransaction.operationDestinationPartyName === stockItemTransaction?.partyName ? (
               stockItemTransaction.quantity > 0 ? (
                 <>
                   <span className="transaction-location">{stockItemTransaction.operationDestinationPartyName}</span>
-                  <ArrowLeft size={16} /> {stockItemTransaction.operationSourcePartyName}
+                  <ArrowLeft className={styles.locationArrow} /> {stockItemTransaction.operationSourcePartyName}
                 </>
               ) : (
                 <>
                   <span className="transaction-location">{stockItemTransaction.operationDestinationPartyName}</span>
-                  <ArrowLeft size={16} /> {stockItemTransaction.operationSourcePartyName}
+                  <ArrowLeft className={styles.locationArrow} /> {stockItemTransaction.operationSourcePartyName}
                 </>
               )
             ) : (
@@ -118,8 +120,11 @@ const Transactions: React.FC<TransactionsProps> = ({ stockItemUuid }) => {
             : '',
         balance: `${balance} ${stockItemTransaction?.packagingUomName ?? ''}`,
       };
-    });
-  }, [items, inventory]);
+    },
+    [inventory],
+  );
+
+  const tableRows = useMemo(() => items?.map((item) => toTableRow(item)), [items, toTableRow]);
 
   if (isLoading) {
     return <DataTableSkeleton role="progressbar" />;
@@ -129,7 +134,13 @@ const Transactions: React.FC<TransactionsProps> = ({ stockItemUuid }) => {
     <DataList
       children={() => (
         <>
-          <TransactionsPrintAction columns={binCardHeaders} data={tableRows} itemUuid={stockItemUuid} />
+          <TransactionsPrintAction
+            columns={binCardHeaders}
+            data={tableRows}
+            itemUuid={stockItemUuid}
+            locationUuid={stockItemFilter?.locationUuid}
+            toBinCardRow={toTableRow}
+          />
           <TransactionsLocationsFilter
             onLocationIdChange={(q) => {
               setLocationUuid(q);

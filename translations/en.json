@@ -130,6 +130,7 @@
   "errorEditingRule": "Error editing a rule",
   "errorEditingStockItem": "Error editing a stock Item",
   "errorFetchingStockSourceTypes": "Error fetching stock source types",
+  "errorLoadingPrintout": "Error loading the transactions to print",
   "errorLoadingStockOperation": "Error loading stock operation",
   "errorLoadingStockOperationTypes": "Error loading stock operation types",
   "errorPrintingStockOperation": "Error printing stock operation",
