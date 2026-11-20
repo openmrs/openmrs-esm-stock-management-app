@@ -129,12 +129,7 @@ const Transactions: React.FC<TransactionsProps> = ({ stockItemUuid }) => {
     <DataList
       children={() => (
         <>
-          <TransactionsPrintAction
-            columns={binCardHeaders}
-            data={tableRows}
-            itemUuid={stockItemUuid}
-            filter={stockItemFilter}
-          />
+          <TransactionsPrintAction columns={binCardHeaders} data={tableRows} itemUuid={stockItemUuid} />
           <TransactionsLocationsFilter
             onLocationIdChange={(q) => {
               setLocationUuid(q);
