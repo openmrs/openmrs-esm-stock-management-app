@@ -32,7 +32,7 @@ import {
   View,
   WarningAltFilled,
 } from '@carbon/react/icons';
-import { isDesktop, restBaseUrl, userHasAccess, useSession } from '@openmrs/esm-framework';
+import { isDesktop, restBaseUrl, userHasAccess, useSession, launchWorkspace2 } from '@openmrs/esm-framework';
 import { useGetReports } from '../stock-reports.resource';
 import {
   URL_BATCH_JOB_ARTIFACT,
@@ -47,9 +47,11 @@ import {
   BatchJobStatusFailed,
   BatchJobStatusPending,
   BatchJobStatusRunning,
+  parseParametersToMap,
 } from '../../core/api/types/BatchJob';
 import { useHandleMutate } from '../../utils';
 import { PrivilegedView } from '../../core/components/privileged-view-component/privileged-view.component';
+import { ReportParameter } from '../ReportType';
 import NewReportActionButton from './new-report-button.component';
 import StockReportStatus from './stock-report-status.component';
 import StockReportParameters from './stock-report-parameters.component';
@@ -120,6 +122,49 @@ const StockReports: React.FC = () => {
     ],
     [t],
   );
+
+  const onCloneReportClick = useCallback((batchJob: any) => {
+    const parsedParams = parseParametersToMap(batchJob.parameters, []);
+    if (!parsedParams) return;
+
+    const model = {
+      reportSystemName: parsedParams['report']?.value,
+      reportName: batchJob.description,
+      locationUuid: parsedParams[ReportParameter.Location]?.value,
+      location: parsedParams[ReportParameter.Location]?.display,
+      childLocations: parsedParams[ReportParameter.ChildLocations]?.value === 'true',
+      startDate: parsedParams[ReportParameter.StartDate]?.value
+        ? new Date(parsedParams[ReportParameter.StartDate].value)
+        : undefined,
+      endDate: parsedParams[ReportParameter.EndDate]?.value
+        ? new Date(parsedParams[ReportParameter.EndDate].value)
+        : undefined,
+      date: parsedParams[ReportParameter.Date]?.value ? new Date(parsedParams[ReportParameter.Date].value) : undefined,
+      stockItemCategoryConceptUuid: parsedParams[ReportParameter.StockItemCategory]?.value,
+      stockItemCategory: parsedParams[ReportParameter.StockItemCategory]?.display,
+      stockSourceUuid: parsedParams[ReportParameter.StockSource]?.value,
+      stockSource: parsedParams[ReportParameter.StockSource]?.display,
+      stockSourceDestinationUuid: parsedParams[ReportParameter.StockSourceDestination]?.value,
+      stockSourceDestination: parsedParams[ReportParameter.StockSourceDestination]?.display,
+      inventoryGroupBy: parsedParams[ReportParameter.InventoryGroupBy]?.value,
+      inventoryGroupByName: parsedParams[ReportParameter.InventoryGroupBy]?.display,
+      maxReorderLevelRatio: parsedParams[ReportParameter.MaxReorderLevelRatio]?.value
+        ? Number(parsedParams[ReportParameter.MaxReorderLevelRatio].value)
+        : undefined,
+      stockItemUuid: parsedParams[ReportParameter.StockItem]?.value,
+      stockItemName: parsedParams[ReportParameter.StockItem]?.display,
+      patientUuid: parsedParams[ReportParameter.Patient]?.value,
+      patientName: parsedParams[ReportParameter.Patient]?.display,
+      limit: parsedParams[ReportParameter.Limit]?.value ? Number(parsedParams[ReportParameter.Limit].value) : null,
+      mostLeastMoving: parsedParams[ReportParameter.MostLeastMoving]?.value,
+      mostLeastMovingName: parsedParams[ReportParameter.MostLeastMoving]?.display,
+      fullFillment: parsedParams[ReportParameter.Fullfillment]?.value
+        ? parsedParams[ReportParameter.Fullfillment].value.split(',')
+        : undefined,
+    };
+
+    launchWorkspace2('stock-reports-form-workspace', { model });
+  }, []);
 
   const onDownloadReportClick = useCallback((uuid: string, fileExit: string | undefined | null) => {
     if (uuid) {
@@ -211,10 +256,13 @@ const StockReports: React.FC = () => {
               type="button"
               size="sm"
               className="submitButton clear-padding-margin"
-              iconDescription={'Copy'}
+              iconDescription={t('copy', 'Copy')}
+              aria-label={t('copy', 'Copy')}
+              hasIconOnly
               kind="ghost"
               renderIcon={Copy}
-              // onClick={() => onCloneReportClick(batchJob.uuid)}
+              onClick={() => onCloneReportClick(batchJob)}
+              disabled={!canCreateReport}
             />
             {batchJob?.status === BatchJobStatusCompleted && (batchJob.outputArtifactSize ?? 0) > 0 && (
               <Button
@@ -231,7 +279,7 @@ const StockReports: React.FC = () => {
         ),
       };
     });
-  }, [reports, onDownloadReportClick, t, now]);
+  }, [reports, onDownloadReportClick, t, now, onCloneReportClick, canCreateReport]);
 
   if (isLoading) {
     return <DataTableSkeleton role="progressbar" />;

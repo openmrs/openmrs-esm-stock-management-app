@@ -104,7 +104,7 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
   const [displayLimit, setDisplayLimit] = useState<boolean>(false);
   const [displayMostLeastMoving, setDisplayMostLeastMoving] = useState<boolean>(false);
   const [displayFulfillment, setDisplayFulfillment] = useState<boolean>(false);
-  const [selectedReportName, setSelectedReportName] = useState<string>('');
+  const [selectedReportName, setSelectedReportName] = useState<string>(model?.reportName ?? '');
 
   const [stockItemSearchResults, setStockItemSearchResults] = useState<StockItemDTO[]>([]);
   const [patientSearchResults, setPatientSearchResults] = useState<Patient[]>([]);
@@ -248,6 +248,27 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
   } = useForm<StockReportSchema>({
     mode: 'all',
     resolver: zodResolver(getReportSchema(displayLocation)),
+    defaultValues: {
+      reportName: model?.reportName ?? '',
+      locationUuid: model?.locationUuid ?? '',
+      location: model?.location ?? '',
+      startDate: model?.startDate,
+      endDate: model?.endDate,
+      date: model?.date,
+      stockItemCategoryConceptUuid: model?.stockItemCategoryConceptUuid ?? '',
+      stockItemCategory: model?.stockItemCategory ?? '',
+      inventoryGroupBy: model?.inventoryGroupBy ?? '',
+      inventoryGroupByName: model?.inventoryGroupByName ?? '',
+      maxReorderLevelRatio: model?.maxReorderLevelRatio ?? undefined,
+      stockItemUuid: model?.stockItemUuid ?? '',
+      stockItemName: model?.stockItemName ?? '',
+      patientUuid: model?.patientUuid ?? '',
+      patientName: model?.patientName ?? '',
+      limit: model?.limit ?? undefined,
+      mostLeastMoving: model?.mostLeastMoving ?? 'MostMoving',
+      fullFillment: model?.fullFillment ?? ['All'],
+      childLocations: model?.childLocations ?? false,
+    },
   });
 
   if (isLoading) {
@@ -514,10 +535,13 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
                     titleText={t('reportName', 'Report name')}
                     items={Array.isArray(reportTypes) ? reportTypes : [reportTypes]}
                     itemToString={(item) => `${item?.name ?? item?.name ?? ''}`}
+                    initialSelectedItem={
+                      Array.isArray(reportTypes) ? reportTypes.find((r) => r.name === model?.reportName) : undefined
+                    }
                     placeholder={t('filter', 'Filter...')}
                     onChange={({ selectedItem }) => {
-                      onChange(selectedItem.name);
-                      handleReportNameChange(selectedItem.name);
+                      onChange(selectedItem?.name);
+                      handleReportNameChange(selectedItem?.name ?? '');
                     }}
                   />
                 )}
@@ -537,6 +561,9 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
                       size="md"
                       titleText={t('stockItemCategory', 'Stock Item Category')}
                       items={stockItemCategories}
+                      initialSelectedItem={stockItemCategories.find(
+                        (c) => c.uuid === model?.stockItemCategoryConceptUuid,
+                      )}
                       onChange={({ selectedItem }) => {
                         onChange(selectedItem?.uuid ?? '');
                         setValue('stockItemCategory', selectedItem?.display ?? '');
@@ -600,7 +627,7 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
           {displayInventoryGroupBy && (
             <Select
               id="inventoryGroupBy"
-              defaultValue={model?.inventoryGroupBy}
+              defaultValue={model?.inventoryGroupBy ?? ''}
               invalid={!!errors?.inventoryGroupBy?.message}
               invalidText={errors?.inventoryGroupBy?.message}
               labelText={t('inventoryBy', 'Inventory by')}
@@ -625,6 +652,9 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
                   id="patient"
                   titleText={t('patient', 'Patient')}
                   items={patientSearchResults}
+                  initialSelectedItem={
+                    model?.patientUuid ? ({ uuid: model.patientUuid, display: model.patientName } as any) : undefined
+                  }
                   onChange={(data) => {
                     onChange(data.selectedItem?.uuid);
                     setValue('patientName', data.selectedItem?.display || '');
@@ -648,6 +678,11 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
                   id="stockItem"
                   titleText={t('stockItem', 'Stock Item')}
                   items={stockItemSearchResults}
+                  initialSelectedItem={
+                    model?.stockItemUuid
+                      ? ({ uuid: model.stockItemUuid, drugName: model.stockItemName } as any)
+                      : undefined
+                  }
                   onChange={(data) => {
                     onChange(data.selectedItem?.uuid);
                     setValue(
@@ -688,7 +723,7 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
                 setValue('locationUuid', e.target.value, { shouldValidate: true });
                 setValue('location', selectedLocation?.name || '');
               }}
-              defaultValue=""
+              defaultValue={model?.locationUuid ?? ''}
               invalid={!!errors?.locationUuid?.message}
               invalidText={errors?.locationUuid?.message}
             >

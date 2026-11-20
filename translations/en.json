@@ -66,6 +66,7 @@
   "completeDispatch": "Complete dispatch",
   "completeRequiredFields": "Complete the required fields: {{fields}}",
   "confirmOperation": "Would you really like to {{title}} the operation?",
+  "copy": "Copy",
   "createLocation": "Create Location",
   "date": "Date",
   "dateRequested": "Date Requested",
