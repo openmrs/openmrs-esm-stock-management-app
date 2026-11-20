@@ -1,10 +1,11 @@
 import { DataTableSkeleton } from '@carbon/react';
 import { ArrowLeft } from '@carbon/react/icons';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import DataList from '../../../core/components/table/table.component';
 import { formatDisplayDate } from '../../../core/utils/datetimeUtils';
+import { type StockItemTransactionDTO } from '../../../core/api/types/stockItem/StockItemTransaction';
 import { type StockItemInventoryFilter } from '../../stock-items.resource';
 import TransactionsPrintAction from './printout/transactions-print-action.component';
 import TransactionsLocationsFilter from './transaction-filters/transaction-locations-filter.component';
@@ -39,8 +40,8 @@ const Transactions: React.FC<TransactionsProps> = ({ stockItemUuid }) => {
 
   const { control } = useForm({});
 
-  const tableRows = useMemo(() => {
-    return items?.map((stockItemTransaction) => {
+  const toTableRow = useCallback(
+    (stockItemTransaction: StockItemTransactionDTO) => {
       const balance = inventory?.total ?? '';
 
       return {
@@ -119,8 +120,11 @@ const Transactions: React.FC<TransactionsProps> = ({ stockItemUuid }) => {
             : '',
         balance: `${balance} ${stockItemTransaction?.packagingUomName ?? ''}`,
       };
-    });
-  }, [items, inventory]);
+    },
+    [inventory],
+  );
+
+  const tableRows = useMemo(() => items?.map((item) => toTableRow(item)), [items, toTableRow]);
 
   if (isLoading) {
     return <DataTableSkeleton role="progressbar" />;
@@ -130,7 +134,13 @@ const Transactions: React.FC<TransactionsProps> = ({ stockItemUuid }) => {
     <DataList
       children={() => (
         <>
-          <TransactionsPrintAction columns={binCardHeaders} data={tableRows} itemUuid={stockItemUuid} />
+          <TransactionsPrintAction
+            columns={binCardHeaders}
+            data={tableRows}
+            itemUuid={stockItemUuid}
+            locationUuid={stockItemFilter?.locationUuid}
+            toBinCardRow={toTableRow}
+          />
           <TransactionsLocationsFilter
             onLocationIdChange={(q) => {
               setLocationUuid(q);

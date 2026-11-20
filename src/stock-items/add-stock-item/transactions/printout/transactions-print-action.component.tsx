@@ -1,20 +1,29 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { MenuButton, MenuItem } from '@carbon/react';
 import { Printer } from '@carbon/react/icons';
 import { useTranslation } from 'react-i18next';
-import { showModal, useConfig } from '@openmrs/esm-framework';
-import { type StockItemInventoryFilter, useStockItem, useStockItemTransactions } from '../../../stock-items.resource';
+import { showModal, showSnackbar, useConfig } from '@openmrs/esm-framework';
+import {
+  fetchAllStockItemTransactions,
+  type StockItemInventoryFilter,
+  useStockItem,
+  useStockItemTransactions,
+} from '../../../stock-items.resource';
 import { ResourceRepresentation } from '../../../../core/api/api';
+import { type StockItemTransactionDTO } from '../../../../core/api/types/stockItem/StockItemTransaction';
 import { type ConfigObject } from '../../../../config-schema';
 
 type Props = {
   itemUuid: string;
   columns: any;
   data: any;
+  locationUuid?: string | null;
+  toBinCardRow: (transaction: StockItemTransactionDTO) => Record<string, unknown>;
 };
 
-const TransactionsPrintAction: React.FC<Props> = ({ columns, data, itemUuid }) => {
+const TransactionsPrintAction: React.FC<Props> = ({ columns, data, itemUuid, locationUuid, toBinCardRow }) => {
   const { t } = useTranslation();
+  const [isLoadingPrintout, setIsLoadingPrintout] = useState(false);
 
   const { enablePrintButton } = useConfig<ConfigObject>();
 
@@ -70,23 +79,43 @@ const TransactionsPrintAction: React.FC<Props> = ({ columns, data, itemUuid }) =
     [],
   );
 
-  const handleBincardClick = () => {
-    const dispose = showModal('transactions-print-bincard-preview-modal', {
-      onClose: () => dispose(),
-      title: stockItem.drugName || stockItem.conceptName || '',
-      columns,
-      data,
-    });
+  // The Transactions table and the Stock Card request hold one page each, so a card loads every page
+  // before its preview opens.
+  const openPreview = async (modalName: string, previewColumns: unknown, loadRows: () => Promise<Array<unknown>>) => {
+    setIsLoadingPrintout(true);
+    try {
+      const rows = await loadRows();
+      const dispose = showModal(modalName, {
+        onClose: () => dispose(),
+        title: stockItem.drugName || stockItem.conceptName || '',
+        columns: previewColumns,
+        data: rows,
+      });
+    } catch (error) {
+      showSnackbar({
+        kind: 'error',
+        title: t('errorLoadingPrintout', 'Error loading the transactions to print'),
+        subtitle: error?.message,
+      });
+    } finally {
+      setIsLoadingPrintout(false);
+    }
   };
 
-  const handleStockcardClick = () => {
-    const dispose = showModal('transactions-print-stockcard-preview-modal', {
-      onClose: () => dispose(),
-      title: stockItem.drugName || stockItem.conceptName || '',
-      columns: stockCardHeaders,
-      data: stockCardData?.results ?? [],
+  const handleBincardClick = () =>
+    openPreview('transactions-print-bincard-preview-modal', columns, async () => {
+      const transactions = await fetchAllStockItemTransactions({
+        v: ResourceRepresentation.Default,
+        stockItemUuid: itemUuid,
+        locationUuid,
+      });
+      return transactions.map((transaction) => toBinCardRow(transaction));
     });
-  };
+
+  const handleStockcardClick = () =>
+    openPreview('transactions-print-stockcard-preview-modal', stockCardHeaders, () =>
+      fetchAllStockItemTransactions(stockCardItemFilter),
+    );
 
   // Each card is offered only when it has rows to print. The Stock Card stays listed, disabled, while its
   // transactions load so it doesn't appear in the menu afterwards.
@@ -98,7 +127,7 @@ const TransactionsPrintAction: React.FC<Props> = ({ columns, data, itemUuid }) =
   }
 
   return (
-    <MenuButton kind="ghost" label={t('print', 'Print')} menuAlignment="bottom-start">
+    <MenuButton disabled={isLoadingPrintout} kind="ghost" label={t('print', 'Print')} menuAlignment="bottom-start">
       {showStockCard && (
         <MenuItem
           label={t('printStockCard', 'Print Stock Card')}
