@@ -22,6 +22,7 @@ const EditStockRuleActionsMenu: React.FC<EditStockRulesActionMenuProps> = ({ dat
     <Button
       kind="ghost"
       size="md"
+      hasIconOnly
       onClick={() => handleClick()}
       iconDescription={t('editStockRule', 'Edit Stock Rule')}
       renderIcon={(props) => <Edit size={16} {...props} />}

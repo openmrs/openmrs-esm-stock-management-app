@@ -1,10 +1,11 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   DataTable,
   DataTableSkeleton,
   DatePicker,
   DatePickerInput,
   InlineLoading,
+  InlineNotification,
   Link,
   Pagination,
   Table,
@@ -32,6 +33,7 @@ import { DATE_PICKER_CONTROL_FORMAT, DATE_PICKER_FORMAT, StockFilters } from '..
 import { formatDisplayDate } from '../core/utils/datetimeUtils';
 import { useHandleMutate } from '../utils';
 import { ResourceRepresentation } from '../core/api/api';
+import { useDebounce } from '../core/hooks/debounce-hook';
 import { useStockOperationPages } from './stock-operations-table.resource';
 import EditStockOperationActionMenu from './edit-stock-operation/edit-stock-operation-action-menu.component';
 import StockOperationTypesSelector from './stock-operation-types-selector/stock-operation-types-selector.component';
@@ -57,20 +59,46 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
   const [selectedSources, setSelectedSources] = useState<string[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<string[]>([]);
   const [selectedOperations, setSelectedOperations] = useState<string[]>([]);
+  const [searchInput, setSearchInput] = useState('');
+  const [searchString, setSearchString] = useState('');
 
-  const { items, tableHeaders, currentPage, pageSizes, totalItems, goTo, currentPageSize, setPageSize, isLoading } =
-    useStockOperationPages({
-      v: ResourceRepresentation.Full,
-      totalCount: true,
-      operationDateMin: selectedFromDate?.toISOString(),
-      operationDateMax: selectedToDate?.toISOString(),
-      status: selectedStatus.join(','),
-      sourceTypeUuid: selectedSources.join(','),
-      operationTypeUuid: selectedOperations.join(','),
-    });
+  const debouncedSearch = useDebounce((query: string) => {
+    setSearchString(query);
+  }, 500);
+
+  useEffect(() => {
+    debouncedSearch(searchInput);
+  }, [searchInput, debouncedSearch]);
+
+  const {
+    items,
+    tableHeaders,
+    currentPage,
+    pageSizes,
+    totalItems,
+    goTo,
+    currentPageSize,
+    setPageSize,
+    isLoading,
+    error,
+  } = useStockOperationPages({
+    v: ResourceRepresentation.Full,
+    totalCount: true,
+    operationDateMin: selectedFromDate?.toISOString(),
+    operationDateMax: selectedToDate?.toISOString(),
+    status: selectedStatus.join(','),
+    sourceTypeUuid: selectedSources.join(','),
+    operationTypeUuid: selectedOperations.join(','),
+    q: searchString || undefined,
+  });
 
   const filterApplied =
-    selectedFromDate || selectedToDate || selectedSources.length || selectedStatus.length || selectedOperations.length;
+    searchString ||
+    selectedFromDate ||
+    selectedToDate ||
+    selectedSources.length ||
+    selectedStatus.length ||
+    selectedOperations.length;
 
   const handleOnFilterChange = useCallback((selectedItems, filterType) => {
     if (filterType === StockFilters.SOURCES) {
@@ -144,7 +172,9 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
     [items],
   );
 
-  if (isLoading && !filterApplied) {
+  const itemsById = useMemo(() => new Map((items ?? []).map((op) => [op.uuid, op])), [items]);
+
+  if (isLoading && !filterApplied && !items.length) {
     return (
       <DataTableSkeleton className={styles.dataTableSkeleton} showHeader={false} rowCount={5} columnCount={5} zebra />
     );
@@ -155,35 +185,33 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
       <h2 className={styles.tableHeader}>
         {t('stockOperationsTableHeader', 'Stock operations to track movement of stock.')}
       </h2>
-      <DataTable headers={tableHeaders} isSortable rows={tableRows} useZebraStyles>
-        {({
-          expandRow,
-          getExpandedRowProps,
-          getHeaderProps,
-          getRowProps,
-          getTableProps,
-          headers,
-          onInputChange,
-          rows,
-        }) => (
+      {error ? (
+        <InlineNotification
+          kind="error"
+          lowContrast
+          hideCloseButton
+          title={t('stockOperationsLoadError', 'Error loading stock operations')}
+          subtitle={error?.message}
+        />
+      ) : null}
+      <DataTable headers={tableHeaders} isSortable rows={error ? [] : tableRows} useZebraStyles>
+        {({ expandRow, getExpandedRowProps, getHeaderProps, getRowProps, getTableProps, headers, rows }) => (
           <TableContainer>
-            <TableToolbar
-              style={{
-                position: 'static',
-                overflow: 'visible',
-                backgroundColor: 'color',
-              }}
-            >
+            {/* TableToolbar doesn't accept a className. A global rule positions toolbars absolutely over the table,
+                and Carbon fixes their height, so the toolbar couldn't grow to fit its wrapped controls */}
+            <TableToolbar style={{ position: 'static', overflow: 'visible', blockSize: 'auto' }}>
               <TableToolbarContent className={styles.toolbarContent}>
                 <TableToolbarSearch
+                  className={styles.search}
                   expanded
                   labelText={t('searchStockOperations', 'Search stock operations')}
-                  onChange={onInputChange}
+                  onChange={(e) =>
+                    setSearchInput(typeof e === 'string' ? e : (e as React.ChangeEvent<HTMLInputElement>).target.value)
+                  }
                   placeholder={t('searchStockOperations', 'Search stock operations')}
                 />
                 <div className={styles.container}>
                   <DatePicker
-                    className={styles.datePicker}
                     datePickerType="range"
                     dateFormat={DATE_PICKER_CONTROL_FORMAT}
                     onChange={([startDate, endDate]) => handleDateFilterChange([startDate, endDate])}
@@ -240,9 +268,10 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {rows?.map((row: any, index) => {
+                {rows?.map((row: any) => {
                   const props = getRowProps({ row });
                   const expandedRowProps = getExpandedRowProps({ row });
+                  const operation = itemsById.get(row.id);
                   return (
                     <React.Fragment key={row.id}>
                       <TableExpandRow className={isDesktop ? styles.desktopRow : styles.tabletRow} {...props}>
@@ -261,9 +290,9 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
                           </TableCell>
                         ))}
                       </TableExpandRow>
-                      {row.isExpanded ? (
+                      {row.isExpanded && operation ? (
                         <TableExpandedRow colSpan={headers.length + 2}>
-                          <StockOperationExpandedRow model={items[index]} />
+                          <StockOperationExpandedRow model={operation} />
                         </TableExpandedRow>
                       ) : (
                         <TableExpandedRow className={styles.hiddenRow} colSpan={headers.length + 2} />
@@ -273,7 +302,7 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
                 })}
               </TableBody>
             </Table>
-            {rows.length === 0 && !isLoading ? (
+            {rows.length === 0 && !isLoading && !error ? (
               <div className={styles.tileContainer}>
                 <Tile className={styles.tile}>
                   <div className={styles.tileContent}>
@@ -283,7 +312,7 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
                 </Tile>
               </div>
             ) : null}
-            {Boolean(filterApplied && isLoading) && (
+            {isLoading && (
               <div className={styles.rowLoadingContainer}>
                 <InlineLoading description={t('loadingPlaceholder', 'Loading...')} />
               </div>
