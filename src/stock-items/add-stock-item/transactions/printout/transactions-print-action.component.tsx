@@ -98,7 +98,7 @@ const TransactionsPrintAction: React.FC<Props> = ({ columns, data, itemUuid }) =
   }
 
   return (
-    <MenuButton kind="ghost" label={t('print', 'Print')}>
+    <MenuButton kind="ghost" label={t('print', 'Print')} menuAlignment="bottom-start">
       {showStockCard && (
         <MenuItem
           label={t('printStockCard', 'Print Stock Card')}
