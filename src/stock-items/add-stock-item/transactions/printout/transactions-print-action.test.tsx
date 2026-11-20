@@ -24,6 +24,16 @@ const patientTransactions = [
   { uuid: 'transaction-2', stockItemUuid: itemUuid, packagingUomName: 'Tablet', quantity: -5 },
 ];
 
+const transactionRows = [{ id: 'row-1', date: '20-Oct-2026' }];
+
+const mockPatientTransactions = (results: typeof patientTransactions | undefined, isLoading = false) => {
+  mockUseStockItemTransactions.mockReturnValue({
+    items: results ? { results } : undefined,
+    isLoading,
+    error: null,
+  } as ReturnType<typeof useStockItemTransactions>);
+};
+
 const clickPrintMenuItem = async (user: ReturnType<typeof userEvent.setup>, name: RegExp) => {
   await user.click(screen.getByRole('button', { name: /^print$/i }));
   await user.click(screen.getByRole('menuitem', { name }));
@@ -37,16 +47,12 @@ describe('TransactionsPrintAction', () => {
       isLoading: false,
       error: null,
     } as ReturnType<typeof useStockItem>);
-    mockUseStockItemTransactions.mockReturnValue({
-      items: { results: patientTransactions },
-      isLoading: false,
-      error: null,
-    } as ReturnType<typeof useStockItemTransactions>);
+    mockPatientTransactions(patientTransactions);
   });
 
   it('opens the print menu when the Print button is clicked', async () => {
     const user = userEvent.setup();
-    render(<TransactionsPrintAction itemUuid={itemUuid} columns={[]} data={[]} />);
+    render(<TransactionsPrintAction itemUuid={itemUuid} columns={[]} data={transactionRows} />);
 
     expect(screen.queryByRole('menuitem')).not.toBeInTheDocument();
 
@@ -54,6 +60,44 @@ describe('TransactionsPrintAction', () => {
 
     expect(screen.getByRole('menuitem', { name: /print stock card/i })).toBeInTheDocument();
     expect(screen.getByRole('menuitem', { name: /print bin card/i })).toBeInTheDocument();
+  });
+
+  it('leaves out Print Bin Card when the Transactions table is empty', async () => {
+    const user = userEvent.setup();
+    render(<TransactionsPrintAction itemUuid={itemUuid} columns={[]} data={[]} />);
+
+    await user.click(screen.getByRole('button', { name: /^print$/i }));
+
+    expect(screen.getByRole('menuitem', { name: /print stock card/i })).toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: /print bin card/i })).not.toBeInTheDocument();
+  });
+
+  it('leaves out Print Stock Card when the item has no patient transactions', async () => {
+    const user = userEvent.setup();
+    mockPatientTransactions([]);
+    render(<TransactionsPrintAction itemUuid={itemUuid} columns={[]} data={transactionRows} />);
+
+    await user.click(screen.getByRole('button', { name: /^print$/i }));
+
+    expect(screen.queryByRole('menuitem', { name: /print stock card/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: /print bin card/i })).toBeInTheDocument();
+  });
+
+  it('shows Print Stock Card disabled while the patient transactions load', async () => {
+    const user = userEvent.setup();
+    mockPatientTransactions(undefined, true);
+    render(<TransactionsPrintAction itemUuid={itemUuid} columns={[]} data={[]} />);
+
+    await user.click(screen.getByRole('button', { name: /^print$/i }));
+
+    expect(screen.getByRole('menuitem', { name: /print stock card/i })).toHaveAttribute('aria-disabled', 'true');
+  });
+
+  it('renders no Print button when neither card has anything to print', () => {
+    mockPatientTransactions([]);
+    render(<TransactionsPrintAction itemUuid={itemUuid} columns={[]} data={[]} />);
+
+    expect(screen.queryByRole('button', { name: /^print$/i })).not.toBeInTheDocument();
   });
 
   it('requests patient transactions for the current item only', () => {

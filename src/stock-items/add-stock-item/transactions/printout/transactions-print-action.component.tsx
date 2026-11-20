@@ -88,25 +88,34 @@ const TransactionsPrintAction: React.FC<Props> = ({ columns, data, itemUuid }) =
     });
   };
 
+  // Each card is offered only when it has rows to print. The Stock Card stays listed, disabled, while its
+  // transactions load so it doesn't appear in the menu afterwards.
+  const showStockCard = isStockCardLoading || stockCardData?.results?.length > 0;
+  const showBinCard = data?.length > 0;
+
+  if (!enablePrintButton || (!showStockCard && !showBinCard)) {
+    return null;
+  }
+
   return (
-    <>
-      {enablePrintButton && (
-        <MenuButton kind="ghost" label={t('print', 'Print')}>
-          <MenuItem
-            label={t('printStockCard', 'Print Stock Card')}
-            renderIcon={(props) => <Printer size={24} {...props} />}
-            onClick={handleStockcardClick}
-            disabled={isStockItemLoading || isStockCardLoading}
-          />
-          <MenuItem
-            label={t('printBinCard', 'Print Bin Card')}
-            renderIcon={(props) => <Printer size={24} {...props} />}
-            onClick={handleBincardClick}
-            disabled={isStockItemLoading}
-          />
-        </MenuButton>
+    <MenuButton kind="ghost" label={t('print', 'Print')}>
+      {showStockCard && (
+        <MenuItem
+          label={t('printStockCard', 'Print Stock Card')}
+          renderIcon={(props) => <Printer size={24} {...props} />}
+          onClick={handleStockcardClick}
+          disabled={isStockItemLoading || isStockCardLoading}
+        />
       )}
-    </>
+      {showBinCard && (
+        <MenuItem
+          label={t('printBinCard', 'Print Bin Card')}
+          renderIcon={(props) => <Printer size={24} {...props} />}
+          onClick={handleBincardClick}
+          disabled={isStockItemLoading}
+        />
+      )}
+    </MenuButton>
   );
 };
 
