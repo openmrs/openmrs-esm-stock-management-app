@@ -1,9 +1,14 @@
 import { z } from 'zod';
 
+const typedDate = () =>
+  z.coerce
+    .date({ errorMap: () => ({ message: 'Enter a valid date in the format DD/MM/YYYY that is not in the future' }) })
+    .optional();
+
 export const reportSchema = z
   .object({
-    startDate: z.coerce.date().optional(),
-    endDate: z.coerce.date().optional(),
+    startDate: typedDate(),
+    endDate: typedDate(),
     location: z.string().optional(),
     reportName: z.string({ required_error: 'Report Name Required' }).min(1, {
       message: 'Report Name Required',
@@ -27,7 +32,7 @@ export const reportSchema = z
     maxReorderLevelRatio: z.number().optional(),
     fullFillment: z.string().array().optional(),
     limit: z.number().optional(),
-    date: z.coerce.date().optional(),
+    date: typedDate(),
   })
   .superRefine((data, ctx) => {
     if (data.reportName !== 'Stock Status Report' && data.reportName !== 'Stock-Out Report') {

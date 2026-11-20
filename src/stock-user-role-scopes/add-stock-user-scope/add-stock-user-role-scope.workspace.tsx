@@ -41,6 +41,7 @@ import { createOrUpdateUserRoleScope } from '../stock-user-role-scopes.resource'
 import { type UserRoleScopeOperationType } from '../../core/api/types/identity/UserRoleScopeOperationType';
 import { type UserRoleScopeLocation } from '../../core/api/types/identity/UserRoleScopeLocation';
 import { DATE_PICKER_CONTROL_FORMAT, DATE_PICKER_FORMAT, formatForDatePicker, today } from '../../constants';
+import { isInvalidDate, parseTypedDate } from '../../core/utils/typed-date';
 import { type Role } from '../../core/api/types/identity/Role';
 import { type StockOperationType } from '../../core/api/types/stockOperation/StockOperationType';
 import { type User } from '../../core/api/types/identity/User';
@@ -72,6 +73,7 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
   const isTablet = useLayoutType() === 'tablet';
 
   const [roles, setRoles] = useState<Role[]>([]);
+  const [invalidActiveDates, setInvalidActiveDates] = useState<{ activeFrom?: boolean; activeTo?: boolean }>({});
 
   const loggedInUserUuid = currentUser?.user?.uuid;
   const [selectedUserUuid, setSelectedUserUuid] = useState<string | null>(null);
@@ -120,6 +122,8 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
 
   const onPermanentChanged = (): void => {
     const isPermanent = !formModel?.permanent;
+    // The dates are cleared below, so an error left by an invalid one no longer applies.
+    setInvalidActiveDates({});
     setFormModel({
       ...formModel,
       permanent: isPermanent,
@@ -179,8 +183,22 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
   };
 
   const onActiveDatesChange = (dates: Date[]): void => {
+    setInvalidActiveDates({});
     setFormModel({ ...formModel, activeFrom: dates[0], activeTo: dates[1] });
   };
+
+  const onActiveDateTyped =
+    (field: 'activeFrom' | 'activeTo') =>
+    (event: ChangeEvent<HTMLInputElement>): void => {
+      const date = parseTypedDate(event.target.value, { minDate: MinDate });
+      const invalid = isInvalidDate(date);
+      setInvalidActiveDates((current) => ({ ...current, [field]: invalid }));
+      if (!event.target.value.trim()) {
+        setFormModel((current) => ({ ...current, [field]: undefined }));
+      } else if (date && !invalid) {
+        setFormModel((current) => ({ ...current, [field]: date }));
+      }
+    };
 
   const onUserChanged = (data: { selectedItem: User }) => {
     const filteredStockRoles = data.selectedItem?.roles
@@ -209,6 +227,11 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
     return formModel?.operationTypes?.filter((x) => x.operationTypeUuid === operationType.uuid)?.length > 0;
   };
 
+  const invalidActiveDateText = t(
+    'invalidActiveDate',
+    'Enter a valid date in the format DD/MM/YYYY that is not in the past',
+  );
+
   const addStockUserRole = async (e) => {
     e.preventDefault();
 
@@ -229,6 +252,16 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
         kind: 'error',
         isLowContrast: true,
         subtitle: t('roleRequired', 'Role is required'),
+      });
+      return;
+    }
+
+    if (!formModel?.permanent && (invalidActiveDates.activeFrom || invalidActiveDates.activeTo)) {
+      showSnackbar({
+        title: t('errorSavingUserRoleScope', 'Error Saving user role scope'),
+        kind: 'error',
+        isLowContrast: true,
+        subtitle: invalidActiveDateText,
       });
       return;
     }
@@ -324,6 +357,7 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
               <DatePicker
                 dateFormat={DATE_PICKER_CONTROL_FORMAT}
                 datePickerType="range"
+                invalid={invalidActiveDates.activeFrom || invalidActiveDates.activeTo}
                 light
                 locale="en"
                 minDate={formatForDatePicker(MinDate)}
@@ -331,12 +365,16 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
               >
                 <DatePickerInput
                   id="date-picker-input-id-start"
+                  invalidText={invalidActiveDates.activeFrom ? invalidActiveDateText : undefined}
                   labelText={t('activeFrom', 'Active From')}
+                  onChange={onActiveDateTyped('activeFrom')}
                   placeholder={DATE_PICKER_FORMAT}
                 />
                 <DatePickerInput
                   id="date-picker-input-id-finish"
+                  invalidText={invalidActiveDates.activeTo ? invalidActiveDateText : undefined}
                   labelText={t('activeTo', 'Active To')}
+                  onChange={onActiveDateTyped('activeTo')}
                   placeholder={DATE_PICKER_FORMAT}
                 />
               </DatePicker>

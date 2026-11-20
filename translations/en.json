@@ -173,6 +173,7 @@
   "in6Months": "In 6 months",
   "includeChildLocations": "Include Child Locations",
   "indicateWhetherItemExpires": "Please indicate whether the item expires",
+  "invalidActiveDate": "Enter a valid date in the format DD/MM/YYYY that is not in the past",
   "inventoryAlerts": "Inventory alerts",
   "inventoryBy": "Inventory by",
   "inventoryGroupBy": "Inventory group by",
