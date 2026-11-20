@@ -151,8 +151,8 @@ export function getStockOperationTypes(): Promise<FetchResponse<PageableResult<S
 }
 
 // getUsers
-export function useUsers(filter: UserFilterCriteria) {
-  const apiUrl = `${restBaseUrl}/user${toQueryParams(filter)}`;
+export function useUsers(filter: UserFilterCriteria | null) {
+  const apiUrl = filter ? `${restBaseUrl}/user${toQueryParams(filter)}` : null;
   const { data, error, isLoading } = useSWR<
     {
       data: PageableResult<User>;

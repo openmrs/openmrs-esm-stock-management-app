@@ -8,6 +8,7 @@ export interface SessionPriviledge {
 
 export interface User {
   uuid: string;
+  username?: string;
   display: string;
   givenName: string;
   familyName: string;

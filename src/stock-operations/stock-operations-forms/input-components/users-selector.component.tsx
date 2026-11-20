@@ -1,19 +1,21 @@
 import React, { useEffect } from 'react';
 import { ComboBox, InlineNotification, SelectSkeleton, Column, TextInput } from '@carbon/react';
 import { Controller, useFormContext } from 'react-hook-form';
+import { getUserName } from '../../../core/utils/user-display';
 import { useTranslation } from 'react-i18next';
 import { type User } from '../../../core/api/types/identity/User';
 import { useDebounce } from '../../../core/hooks/debounce-hook';
 import { otherUser } from '../../../core/utils/utils';
 import { useUser } from '../../../stock-lookups/stock-lookups.resource';
 import useSearchUser from '../hooks/useSearchUser';
+import UserOption from '../../../core/components/user-option/user-option.component';
 
 const UsersSelector = () => {
-  const { isLoading, userList, setSearchString } = useSearchUser();
+  const { isLoading, userList, setSearchString, hasSearchTerm } = useSearchUser();
   const { t } = useTranslation();
   const debouncedSearch = useDebounce((query: string) => {
     setSearchString(query);
-  }, 1000);
+  }, 300);
 
   const form = useFormContext<{ responsiblePersonUuid: string; responsiblePersonOther: string }>();
   const observableresponsiblePersonUuid = form.watch('responsiblePersonUuid');
@@ -42,6 +44,14 @@ const UsersSelector = () => {
       />
     );
 
+  const searchHelperText = isLoading
+    ? t('searchingUsers', 'Searching users...')
+    : !hasSearchTerm
+    ? t('typeToSearchUsers', 'Type a name or username to search')
+    : (userList ?? []).length === 0
+    ? t('noUsersFound', 'No users found')
+    : undefined;
+
   return (
     <React.Fragment>
       <Column>
@@ -66,9 +76,12 @@ const UsersSelector = () => {
                     : data
                   : observableresponsiblePersonOther && !observableresponsiblePersonUuid
                   ? otherUser
-                  : ''
+                  : null
               }
-              itemToString={(item) => (typeof item === 'string' ? item : item?.person?.display || '')}
+              itemToString={(item) => (typeof item === 'string' ? item : getUserName(item))}
+              itemToElement={UserOption}
+              shouldFilterItem={() => true}
+              helperText={searchHelperText}
               onInputChange={debouncedSearch}
               placeholder={t('filter', 'Filter...')}
               invalid={!!error?.message}
