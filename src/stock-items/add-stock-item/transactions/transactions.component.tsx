@@ -10,6 +10,7 @@ import TransactionsPrintAction from './printout/transactions-print-action.compon
 import TransactionsLocationsFilter from './transaction-filters/transaction-locations-filter.component';
 import { useStockItemsTransactions } from './transactions.resource';
 import StockOperationReference from '../../../stock-operations/stock-operation-reference.component';
+import styles from './transactions.scss';
 
 interface TransactionsProps {
   onSubmit?: () => void;
@@ -54,24 +55,24 @@ const Transactions: React.FC<TransactionsProps> = ({ stockItemUuid }) => {
               stockItemTransaction.quantity > 0 ? (
                 <>
                   <span className="transaction-location">{stockItemTransaction.operationSourcePartyName}</span>
-                  <ArrowLeft size={16} /> {stockItemTransaction.operationDestinationPartyName}
+                  <ArrowLeft className={styles.locationArrow} /> {stockItemTransaction.operationDestinationPartyName}
                 </>
               ) : (
                 <>
                   <span className="transaction-location">{stockItemTransaction.operationSourcePartyName}</span>
-                  <ArrowLeft size={16} /> {stockItemTransaction.operationDestinationPartyName}
+                  <ArrowLeft className={styles.locationArrow} /> {stockItemTransaction.operationDestinationPartyName}
                 </>
               )
             ) : stockItemTransaction.operationDestinationPartyName === stockItemTransaction?.partyName ? (
               stockItemTransaction.quantity > 0 ? (
                 <>
                   <span className="transaction-location">{stockItemTransaction.operationDestinationPartyName}</span>
-                  <ArrowLeft size={16} /> {stockItemTransaction.operationSourcePartyName}
+                  <ArrowLeft className={styles.locationArrow} /> {stockItemTransaction.operationSourcePartyName}
                 </>
               ) : (
                 <>
                   <span className="transaction-location">{stockItemTransaction.operationDestinationPartyName}</span>
-                  <ArrowLeft size={16} /> {stockItemTransaction.operationSourcePartyName}
+                  <ArrowLeft className={styles.locationArrow} /> {stockItemTransaction.operationSourcePartyName}
                 </>
               )
             ) : (
