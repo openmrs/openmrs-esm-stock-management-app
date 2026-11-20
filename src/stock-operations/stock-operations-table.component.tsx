@@ -197,15 +197,12 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
       <DataTable headers={tableHeaders} isSortable rows={error ? [] : tableRows} useZebraStyles>
         {({ expandRow, getExpandedRowProps, getHeaderProps, getRowProps, getTableProps, headers, rows }) => (
           <TableContainer>
-            <TableToolbar
-              style={{
-                position: 'static',
-                overflow: 'visible',
-                backgroundColor: 'color',
-              }}
-            >
+            {/* TableToolbar doesn't accept a className. A global rule positions toolbars absolutely over the table,
+                and Carbon fixes their height, so the toolbar couldn't grow to fit its wrapped controls */}
+            <TableToolbar style={{ position: 'static', overflow: 'visible', blockSize: 'auto' }}>
               <TableToolbarContent className={styles.toolbarContent}>
                 <TableToolbarSearch
+                  className={styles.search}
                   expanded
                   labelText={t('searchStockOperations', 'Search stock operations')}
                   onChange={(e) =>
@@ -215,7 +212,6 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
                 />
                 <div className={styles.container}>
                   <DatePicker
-                    className={styles.datePicker}
                     datePickerType="range"
                     dateFormat={DATE_PICKER_CONTROL_FORMAT}
                     onChange={([startDate, endDate]) => handleDateFilterChange([startDate, endDate])}

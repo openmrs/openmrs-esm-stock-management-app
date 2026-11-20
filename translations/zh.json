@@ -387,6 +387,7 @@
   "stockOperationItemsTableHeader": "Items",
   "stockOperationLoadError": "库存操作加载错误",
   "stockOperations": "库存操作",
+  "stockOperationsLoadError": "Error loading stock operations",
   "stockOperationsTableHeader": "库存操作表格标题",
   "stockOperationTypesError": "库存操作类型错误",
   "stockReportsTableHeader": "库存报告表格标题",
