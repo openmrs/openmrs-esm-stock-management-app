@@ -372,6 +372,7 @@
   "stockItemError": "Error loading stock item",
   "stockItems": "Stock items",
   "stockItemSearchFailed": "Stock item search failed",
+  "stockItemSections": "Stock item sections",
   "stockItemsTableHeader": "Drugs and other stock items managed by the system.",
   "stockItemsUploadedSuccessfully": "Stock items uploaded successfully",
   "stockManagement": "Stock management",

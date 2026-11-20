@@ -27,3 +27,42 @@
 .stack {
   margin: layout.$spacing-05;
 }
+
+.sections {
+  height: 100%;
+  width: 100%;
+  min-height: 0;
+  min-width: 0;
+
+  :global(.cds--grid),
+  :global(.cds--css-grid) {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    width: 100%;
+    height: 100%;
+    max-inline-size: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  :global(.cds--tabs.cds--tabs--vertical) {
+    flex: 0 0 13rem;
+    inline-size: 13rem;
+    grid-column: auto;
+    max-block-size: none;
+    overflow: auto;
+  }
+
+  :global(.cds--tabs--vertical ~ .cds--tab-content) {
+    flex: 1 1 auto;
+    grid-column: auto;
+    inline-size: auto;
+    min-inline-size: 0;
+  }
+
+  :global(.cds--tab-content) {
+    padding: 0;
+    overflow: auto;
+  }
+}
