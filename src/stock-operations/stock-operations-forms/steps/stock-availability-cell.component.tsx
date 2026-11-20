@@ -4,12 +4,17 @@ import React, { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useStockItemBatchInformationHook } from '../../../stock-items/add-stock-item/batch-information/batch-information.resource';
 import styles from './stock-operation-items-form-step.scc.scss';
-const StockAvailability: React.FC<{ stockItemUuid: string }> = ({ stockItemUuid }) => {
-  const { items, isLoading, error } = useStockItemBatchInformationHook({
+const StockAvailability: React.FC<{ stockItemUuid: string; partyUuid?: string }> = ({ stockItemUuid, partyUuid }) => {
+  const { items, isLoading, error, setPartyUuid } = useStockItemBatchInformationHook({
     stockItemUuid: stockItemUuid,
+    partyUuid: partyUuid,
     includeBatchNo: true,
   });
   const { t } = useTranslation();
+
+  useEffect(() => {
+    setPartyUuid(partyUuid);
+  }, [partyUuid, setPartyUuid]);
 
   const totalQuantity = useMemo(() => {
     if (!items?.length) return 0;

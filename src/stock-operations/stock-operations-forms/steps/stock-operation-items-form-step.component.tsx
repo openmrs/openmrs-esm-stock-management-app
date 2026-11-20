@@ -14,8 +14,11 @@ import {
 import { useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { showSnackbar } from '@openmrs/esm-framework';
+import { APP_STOCKMANAGEMENT_STOCKITEMS } from '../../../constants';
+import { LocationTypeLocation } from '../../../core/api/types/stockOperation/LocationType';
 import { type StockOperationDTO } from '../../../core/api/types/stockOperation/StockOperationDTO';
 import { type StockOperationType } from '../../../core/api/types/stockOperation/StockOperationType';
+import { useStockManagementSession } from '../../../stock-lookups/stock-lookups.resource';
 import { getStockOperationUniqueId } from '../../stock-operation.utils';
 import { type BaseStockOperationItemFormData, type StockOperationItemDtoSchema } from '../../validation-schema';
 import useOperationTypePermisions from '../hooks/useOperationTypePermisions';
@@ -48,6 +51,16 @@ const StockOperationItemsFormStep: React.FC<StockOperationItemsFormStepProps> = 
 
   const form = useFormContext<StockOperationItemDtoSchema>();
   const observableOperationItems = form.watch('stockOperationItems');
+  // Show stock at the source. A receipt's source is a supplier, so use where it's received.
+  // A requisition's source is the location asking for stock, so requesters see their own stock.
+  const drawsFromSource = stockOperationType?.sourceType === LocationTypeLocation;
+  const drawnFromUuid = form.watch(drawsFromSource ? 'sourceUuid' : 'destinationUuid');
+  // Inventory leaves out stock the user can't see, so only ask for a party whose stock they can see.
+  const { privilegeScopes } = useStockManagementSession();
+  const canSeeStock = privilegeScopes?.some(
+    (scope) => scope.partyUuid === drawnFromUuid && scope.privilege === APP_STOCKMANAGEMENT_STOCKITEMS,
+  );
+  const availabilityPartyUuid = canSeeStock ? drawnFromUuid : undefined;
   const headers = useMemo(() => {
     return [
       {
@@ -122,7 +135,12 @@ const StockOperationItemsFormStep: React.FC<StockOperationItemsFormStepProps> = 
       return {
         id: uuid || `${uniqueId}-${index}`,
         item: stockItemUuid ? <StockOperationItemCell stockItemUuid={stockItemUuid} /> : '--',
-        itemDetails: stockItemUuid ? <StockAvailability stockItemUuid={stockItemUuid} /> : '--',
+        itemDetails:
+          stockItemUuid && availabilityPartyUuid ? (
+            <StockAvailability stockItemUuid={stockItemUuid} partyUuid={availabilityPartyUuid} />
+          ) : (
+            '--'
+          ),
         batch: (
           <StockOperationItemBatchNoCell
             operation={stockOperationType}
@@ -174,7 +192,7 @@ const StockOperationItemsFormStep: React.FC<StockOperationItemsFormStepProps> = 
         ),
       };
     });
-  }, [observableOperationItems, onLaunchItemsForm, stockOperationType, t, uniqueId]);
+  }, [availabilityPartyUuid, observableOperationItems, onLaunchItemsForm, stockOperationType, t, uniqueId]);
 
   const handleNext = async () => {
     const valid = await form.trigger(['stockOperationItems']);

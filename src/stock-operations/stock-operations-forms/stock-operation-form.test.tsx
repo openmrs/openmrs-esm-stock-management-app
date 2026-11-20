@@ -1,6 +1,6 @@
 import React from 'react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useConfig, useSession } from '@openmrs/esm-framework';
 import { mockWorkspace2Props, stockIssueOperationtypeMock } from '@mocks';
@@ -20,6 +20,7 @@ vi.mock('../../stock-lookups/stock-lookups.resource', () => ({
   useStockOperationTypes: vi.fn().mockReturnValue({ types: { results: [] }, isLoading: false, error: null }),
   useUsers: vi.fn().mockReturnValue({ items: { results: [] }, isLoading: false }),
   useUser: vi.fn().mockReturnValue({ data: { display: 'Test User' }, isLoading: false, error: null }),
+  useStockManagementSession: vi.fn().mockReturnValue({ privilegeScopes: [], isLoading: false, error: undefined }),
   useConcept: vi.fn().mockReturnValue({ items: { answers: [] }, isLoading: false, error: null }),
 }));
 
@@ -29,6 +30,10 @@ vi.mock('../stock-operations.resource', () => ({
   useStockOperations: vi.fn().mockReturnValue({ items: { results: [] }, isLoading: false, error: null }),
   useStockOperation: vi.fn().mockReturnValue({ items: undefined, isLoading: false, error: null }),
   useStockOperationAndItems: vi.fn(),
+}));
+
+vi.mock('./input-components/batch-no-selector.component', () => ({
+  default: ({ partyUuid }: { partyUuid?: string }) => <span>Batches at {partyUuid}</span>,
 }));
 
 vi.mock('./hooks/useParties', () => ({
@@ -131,5 +136,23 @@ describe('StockOperationForm with a linked requisition', () => {
 
     expect(screen.getByRole('combobox', { name: /source/i })).toHaveValue('Requisition Store');
     expect(screen.getByRole('combobox', { name: /destination/i })).toHaveValue('Requisition Pharmacy');
+  });
+
+  it("opens the batch picker at the saved issue's source", async () => {
+    const user = userEvent.setup();
+    render(
+      <StockOperationForm
+        {...mockWorkspace2Props({
+          stockOperationType: stockIssueType,
+          stockOperation: savedIssue,
+          stockRequisitionUuid: requisitionUuid,
+        })}
+      />,
+    );
+
+    await user.click(screen.getByText(/stock items/i));
+    await user.click(within(screen.getAllByRole('row')[1]).getAllByRole('button')[0]);
+
+    expect(screen.getByText('Batches at issue-source-uuid')).toBeInTheDocument();
   });
 });

@@ -24,6 +24,7 @@ vi.mock('../../stock-lookups/stock-lookups.resource', () => ({
   useStockOperationTypes: vi.fn(),
   useUsers: vi.fn().mockReturnValue({ items: { results: [] }, isLoading: false }),
   useUser: vi.fn().mockReturnValue({ data: { display: 'Test User' }, isLoading: false, error: null }),
+  useStockManagementSession: vi.fn().mockReturnValue({ privilegeScopes: [], isLoading: false, error: undefined }),
 }));
 
 vi.mock('../stock-operations.resource', () => ({

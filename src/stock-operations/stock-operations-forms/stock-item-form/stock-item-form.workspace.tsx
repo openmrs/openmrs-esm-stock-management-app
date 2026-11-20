@@ -19,6 +19,7 @@ import { type z } from 'zod';
 import { type ConfigObject } from '../../../config-schema';
 import { DATE_PICKER_CONTROL_FORMAT, DATE_PICKER_FORMAT, formatForDatePicker, today } from '../../../constants';
 import {
+  OperationType,
   operationFromString,
   type StockOperationType,
 } from '../../../core/api/types/stockOperation/StockOperationType';
@@ -32,11 +33,19 @@ import styles from './stock-item-form.scss';
 export interface StockItemFormProps {
   stockOperationType: StockOperationType;
   stockOperationItem: BaseStockOperationItemFormData;
+  /** The operation's source party, where batches are picked from. */
+  sourcePartyUuid?: string;
   onSave?: (data: BaseStockOperationItemFormData) => void;
   onBack?: () => void;
 }
 
-const StockItemForm: React.FC<StockItemFormProps> = ({ stockOperationType, stockOperationItem, onSave, onBack }) => {
+const StockItemForm: React.FC<StockItemFormProps> = ({
+  stockOperationType,
+  stockOperationItem,
+  sourcePartyUuid,
+  onSave,
+  onBack,
+}) => {
   const isTablet = useLayoutType() === 'tablet';
   const operationType = useMemo(() => {
     return operationFromString(stockOperationType.operationType);
@@ -110,6 +119,11 @@ const StockItemForm: React.FC<StockItemFormProps> = ({ stockOperationType, stock
                   initialValue={stockOperationItem?.stockBatchUuid}
                   onValueChange={field.onChange}
                   stockItemUuid={stockOperationItem.stockItemUuid}
+                  partyUuid={sourcePartyUuid}
+                  includeEmptyBatches={
+                    operationType === OperationType.STOCK_TAKE_OPERATION_TYPE ||
+                    operationType === OperationType.ADJUSTMENT_OPERATION_TYPE
+                  }
                   error={error?.message}
                 />
               )}

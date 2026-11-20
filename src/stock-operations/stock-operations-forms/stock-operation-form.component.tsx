@@ -134,6 +134,7 @@ const StockOperationForm: React.FC<Workspace2DefinitionProps<StockOperationFormP
       setItemFormProps({
         stockOperationType,
         stockOperationItem,
+        sourcePartyUuid: form.getValues('sourceUuid'),
         onSave: (data) => {
           const items = (form.getValues('stockOperationItems') ?? []) as BaseStockOperationItemFormData[];
           const index = items.findIndex((i) => i.uuid === data.uuid);
