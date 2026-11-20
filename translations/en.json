@@ -346,6 +346,7 @@
   "searchStockOperations": "Search stock operations",
   "searchThisList": "Search this list",
   "searchUsers": "Search users",
+  "selectAll": "Select all",
   "selectedOperations_one": "{{count}} operations",
   "selectedOperations_other": "{{count}} operations",
   "selectedOperationsOfTotal_one": "{{count}} of {{total}}",
