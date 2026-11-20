@@ -1,13 +1,8 @@
-import { type StockOperationFilter, useStockOperations } from '../stock-operations/stock-operations.resource';
+import { StockOperationStatusCompleted } from '../core/api/types/stockOperation/StockOperationStatus';
+import { OperationType } from '../core/api/types/stockOperation/StockOperationType';
+import { type StockOperationFilter } from '../stock-operations/stock-operations.resource';
+import { useStockOperationsByType } from './stock-home-operations.resource';
 
 export function useDisposalList(filter: StockOperationFilter) {
-  const { items, isLoading, error } = useStockOperations(filter);
-
-  const receivedItems = items?.results?.filter((item) => item?.operationType === 'disposed');
-
-  return {
-    items: receivedItems,
-    isLoading,
-    error,
-  };
+  return useStockOperationsByType(filter, OperationType.DISPOSED_OPERATION_TYPE, StockOperationStatusCompleted, true);
 }

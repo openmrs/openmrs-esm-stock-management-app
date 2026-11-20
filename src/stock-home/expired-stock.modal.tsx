@@ -12,11 +12,11 @@ import {
 } from '@carbon/react';
 import { useTranslation } from 'react-i18next';
 import { formatDate as formatDisplayDate } from '@openmrs/esm-framework';
-import { getStockItemName } from '../stock-items/stock-item.utils';
+import { type StockInventoryRow } from './stock-home.utils';
 
 interface ExpiredStockModalProps {
   closeModal: () => void;
-  expiredStock: any[];
+  expiredStock: StockInventoryRow[];
 }
 
 const ExpiredStockModal = ({ closeModal, expiredStock }: ExpiredStockModalProps) => {
@@ -37,7 +37,7 @@ const ExpiredStockModal = ({ closeModal, expiredStock }: ExpiredStockModalProps)
 
   return (
     <>
-      <ModalHeader closeModal={closeModal} title={t('expiredStock', 'Expired stock')} />
+      <ModalHeader closeModal={closeModal} title={t('expiringStock', 'Expiring stock')} />
       <ModalBody>
         {expiredStock.length > 0 ? (
           <TableContainer>
@@ -51,12 +51,12 @@ const ExpiredStockModal = ({ closeModal, expiredStock }: ExpiredStockModalProps)
               </TableHead>
               <TableBody>
                 {expiredStock.map((item, index) => (
-                  <TableRow key={index}>
-                    <TableCell>{getStockItemName(item) || 'N/A'}</TableCell>
-                    <TableCell>{item?.batchNo || 'N/A'}</TableCell>
-                    <TableCell>{item?.quantity || 'N/A'}</TableCell>
-                    <TableCell>{item?.dispensingUnitName || 'N/A'}</TableCell>
-                    <TableCell>{formatDate(item?.expiration)}</TableCell>
+                  <TableRow key={`${item.stockItemUuid}-${item.stockBatchUuid}-${index}`}>
+                    <TableCell>{item.itemName || 'N/A'}</TableCell>
+                    <TableCell>{item.batchNumber || 'N/A'}</TableCell>
+                    <TableCell>{item.quantity ?? 'N/A'}</TableCell>
+                    <TableCell>{item.quantityUoM || item.dispensingUnitName || 'N/A'}</TableCell>
+                    <TableCell>{formatDate(item.expiration)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

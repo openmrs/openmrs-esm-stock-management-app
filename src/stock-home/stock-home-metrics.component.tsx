@@ -1,51 +1,40 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { ErrorState } from '@openmrs/esm-framework';
+import { ErrorState, useConfig } from '@openmrs/esm-framework';
 import { ResourceRepresentation } from '../core/api/api';
+import { type ConfigObject } from '../config-schema';
 import { useDisposalList } from './useDisposalList';
 import { useStockInventory } from './stock-home-inventory-expiry.resource';
 import { useStockInventoryItems } from './stock-home-inventory-items.resource';
-import { type StockOperationFilter } from '../stock-operations/stock-operations.resource';
-import useStockList from './useStockList';
 import MetricsCard from '../core/components/card/metrics-card-component';
+import {
+  getDisposalReasonCategory,
+  getStockLevels,
+  isExpiringStock,
+  isExpiringWithinSixMonths,
+} from './stock-home.utils';
 import styles from './stock-home.scss';
 
-const StockManagementMetrics: React.FC = (filter: StockOperationFilter) => {
+const StockManagementMetrics: React.FC = () => {
   const { t } = useTranslation();
-  const { stockList: allStocks, error } = useStockList();
-  const { items: expiryItems } = useStockInventory();
-  const { items: stockItems } = useStockInventoryItems();
-
-  const currentDate = new Date();
-
-  let mergedArray = expiryItems.map((batch) => {
-    const matchingItem = stockItems?.find((item) => batch?.stockItemUuid === item.uuid);
-    return { ...batch, ...matchingItem };
-  });
-
-  mergedArray = mergedArray.filter((item) => item.hasExpiration);
-
-  const filteredData = mergedArray.filter((item) => {
-    const expiryNotice = item.expiryNotice || 0;
-    const expirationDate = new Date(item.expiration);
-    const differenceInDays = Math.ceil((expirationDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24));
-    return differenceInDays <= expiryNotice || differenceInDays < 0;
-  });
-
-  const sixMonthsExpiryStocks = filteredData.filter((stock) => stock.hasExpiration && stock.expiryNotice <= 180);
-
-  const { items } = useDisposalList({
+  const config = useConfig<ConfigObject>();
+  const { items: inventoryItems, error: inventoryError } = useStockInventory();
+  const { items: stockItems, error: stockItemsError } = useStockInventoryItems();
+  const { items: disposedItems, error: disposedError } = useDisposalList({
     v: ResourceRepresentation.Full,
     totalCount: true,
   });
+  const now = new Date();
+  const expiringItems = inventoryItems.filter((item) => isExpiringStock(item, now));
+  const sixMonthsExpiryStocks = inventoryItems.filter((item) => isExpiringWithinSixMonths(item, now));
+  const { outOfStock, understocked } = getStockLevels(stockItems, inventoryItems, now);
+  const expiredItems = disposedItems.filter((item) => getDisposalReasonCategory(item, config) === 'expired');
+  const poorQualityItems = disposedItems.filter((item) => getDisposalReasonCategory(item, config) === 'poorQuality');
+  const error = inventoryError || stockItemsError || disposedError;
 
   if (error) {
     return <ErrorState headerTitle={t('errorStockMetric', 'Error fetching stock metrics')} error={error} />;
   }
-
-  const filteredItems =
-    items && items.filter((item) => item.reasonName === 'Drug not available due to expired medication');
-  const poorQualityItems = items && items.filter((item) => item.reasonName === 'Poor Quality');
 
   return (
     <div className={styles.cardContainer}>
@@ -55,25 +44,24 @@ const StockManagementMetrics: React.FC = (filter: StockOperationFilter) => {
         }}
         headerLabel={t('expiringStock', 'Expiring stock')}
         label={t('expiringStock', 'Expiring stock')}
-        value={filteredData?.length || 0}
+        value={expiringItems.length}
       />
       <MetricsCard
         label={t('outOfStock', 'Out of stock')}
         headerLabel={t('outOfStock', 'Out of stock')}
         outOfStockCount={{
-          itemsBelowMin: [],
-          itemsAboveMax: [],
+          itemsBelowMin: understocked,
         }}
-        value={allStocks?.length}
+        value={outOfStock.length}
       />
       <MetricsCard
         disposedCount={{
-          expired: filteredItems,
+          expired: expiredItems,
           poorQuality: poorQualityItems,
         }}
         headerLabel={t('disposedStock', 'Disposed stock')}
         label={t('disposedStock', 'Disposed stock')}
-        value={items?.length || 0}
+        value={disposedItems.length}
       />
     </div>
   );
