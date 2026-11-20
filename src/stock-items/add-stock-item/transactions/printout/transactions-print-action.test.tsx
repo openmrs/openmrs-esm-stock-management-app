@@ -25,8 +25,8 @@ const patientTransactions = [
 ];
 
 const clickPrintMenuItem = async (user: ReturnType<typeof userEvent.setup>, name: RegExp) => {
-  await user.click(screen.getByRole('button', { name: /additional actions/i }));
-  await user.click(screen.getByText(name));
+  await user.click(screen.getByRole('button', { name: /^print$/i }));
+  await user.click(screen.getByRole('menuitem', { name }));
 };
 
 describe('TransactionsPrintAction', () => {
@@ -42,6 +42,18 @@ describe('TransactionsPrintAction', () => {
       isLoading: false,
       error: null,
     } as ReturnType<typeof useStockItemTransactions>);
+  });
+
+  it('opens the print menu when the Print button is clicked', async () => {
+    const user = userEvent.setup();
+    render(<TransactionsPrintAction itemUuid={itemUuid} columns={[]} data={[]} />);
+
+    expect(screen.queryByRole('menuitem')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /^print$/i }));
+
+    expect(screen.getByRole('menuitem', { name: /print stock card/i })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: /print bin card/i })).toBeInTheDocument();
   });
 
   it('requests patient transactions for the current item only', () => {

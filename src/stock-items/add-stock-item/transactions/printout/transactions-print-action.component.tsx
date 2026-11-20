@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { ComboButton, MenuItem } from '@carbon/react';
+import { MenuButton, MenuItem } from '@carbon/react';
 import { Printer } from '@carbon/react/icons';
 import { useTranslation } from 'react-i18next';
 import { showModal, useConfig } from '@openmrs/esm-framework';
@@ -91,7 +91,7 @@ const TransactionsPrintAction: React.FC<Props> = ({ columns, data, itemUuid }) =
   return (
     <>
       {enablePrintButton && (
-        <ComboButton label="Print">
+        <MenuButton kind="ghost" label={t('print', 'Print')}>
           <MenuItem
             label={t('printStockCard', 'Print Stock Card')}
             renderIcon={(props) => <Printer size={24} {...props} />}
@@ -104,7 +104,7 @@ const TransactionsPrintAction: React.FC<Props> = ({ columns, data, itemUuid }) =
             onClick={handleBincardClick}
             disabled={isStockItemLoading}
           />
-        </ComboButton>
+        </MenuButton>
       )}
     </>
   );
