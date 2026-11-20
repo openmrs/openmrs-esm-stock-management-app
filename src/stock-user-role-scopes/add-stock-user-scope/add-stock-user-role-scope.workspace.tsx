@@ -40,7 +40,13 @@ import { type UserRoleScope } from '../../core/api/types/identity/UserRoleScope'
 import { createOrUpdateUserRoleScope } from '../stock-user-role-scopes.resource';
 import { type UserRoleScopeOperationType } from '../../core/api/types/identity/UserRoleScopeOperationType';
 import { type UserRoleScopeLocation } from '../../core/api/types/identity/UserRoleScopeLocation';
-import { DATE_PICKER_CONTROL_FORMAT, DATE_PICKER_FORMAT, formatForDatePicker, today } from '../../constants';
+import {
+  DATE_PICKER_CONTROL_FORMAT,
+  DATE_PICKER_FORMAT,
+  extractErrorMessagesFromResponse,
+  formatForDatePicker,
+  today,
+} from '../../constants';
 import { type Role } from '../../core/api/types/identity/Role';
 import { type StockOperationType } from '../../core/api/types/stockOperation/StockOperationType';
 import { type User } from '../../core/api/types/identity/User';
@@ -245,11 +251,12 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
         closeWorkspace();
       },
       (err) => {
+        const errorMessages = extractErrorMessagesFromResponse(err);
         showSnackbar({
           title: t('errorSavingUserRoleScope', 'Error Saving user role scope'),
           kind: 'error',
           isLowContrast: true,
-          subtitle: err?.message ?? err?.cause ?? t('unknownError', 'An unknown error occurred'),
+          subtitle: errorMessages.join(', '),
         });
       },
     );

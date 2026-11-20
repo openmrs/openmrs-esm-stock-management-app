@@ -12,7 +12,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { type FieldError, FormProvider, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { type ConfigObject } from '../../config-schema';
-import { today } from '../../constants';
+import { extractErrorMessagesFromResponse, today } from '../../constants';
 import { type StockOperationDTO } from '../../core/api/types/stockOperation/StockOperationDTO';
 import {
   operationFromString,
@@ -21,7 +21,7 @@ import {
   StockOperationTypeIsStockIssue,
 } from '../../core/api/types/stockOperation/StockOperationType';
 import { type TabItem } from '../../core/components/tabs/types';
-import { otherUser, pick } from '../../core/utils/utils';
+import { findFirstFieldErrorMessage, otherUser, pick } from '../../core/utils/utils';
 import {
   type BaseStockOperationItemFormData,
   getStockOperationFormSchema,
@@ -222,9 +222,20 @@ const StockOperationForm: React.FC<Workspace2DefinitionProps<StockOperationFormP
 
   useEffect(() => {
     // Display fields errors for stock operation items and operation type uuid
+    const fieldErrorTitles: Record<string, string> = {
+      stockOperationItems: t('stockOperationItemsErrorTitle', 'Stock item error'),
+      operationTypeUuid: t('operationTypeErrorTitle', 'Operation type error'),
+    };
     Object.entries(form.formState.errors ?? {}).forEach(([key, val]) => {
       if (['stockOperationItems', 'operationTypeUuid'].includes(key)) {
-        showSnackbar({ kind: 'error', title: key, subtitle: (val as FieldError)?.message });
+        showSnackbar({
+          kind: 'error',
+          title: fieldErrorTitles[key],
+          subtitle:
+            (val as FieldError)?.message ??
+            findFirstFieldErrorMessage(val) ??
+            t('reviewRequiredFields', 'Please review the required fields and try again.'),
+        });
       }
     });
 
@@ -248,7 +259,7 @@ const StockOperationForm: React.FC<Workspace2DefinitionProps<StockOperationFormP
         break;
       }
     }
-  }, [form.formState.errors]);
+  }, [form.formState.errors, t]);
 
   // Stock issue errors (while fetching related requisitio or if no supplied requisition)
   useEffect(() => {
@@ -259,10 +270,11 @@ const StockOperationForm: React.FC<Workspace2DefinitionProps<StockOperationFormP
         subtitle: t('relatedStockRequisitionRequired', 'Related stock requisition Required'),
       });
     if (error) {
+      const errorMessages = extractErrorMessagesFromResponse(error);
       showSnackbar({
         kind: 'error',
         title: t('stockIssueError', 'StockIssue error'),
-        subtitle: error?.message,
+        subtitle: errorMessages.join(', '),
       });
     }
   }, [stockRequisitionUuid, error, t, operationType]);

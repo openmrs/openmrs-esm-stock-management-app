@@ -252,7 +252,7 @@
   "operationModalTitle": "{{title}} Operation",
   "operationNumber": "Operation Number",
   "operations": "Operations",
-  "operationSuccessful": "You have successfully {{title}} operation",
+  "operationSuccessful": "Operation {{action}} successfully",
   "operationSuccessTitle": "{{title}} Operation",
   "operationType": "Operation Type",
   "orderLevel": "Reorder level",

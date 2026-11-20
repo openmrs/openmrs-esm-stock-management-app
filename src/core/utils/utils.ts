@@ -90,6 +90,30 @@ export const pick = <T extends object>(obj: T, fields: string[]): Partial<T> => 
   }, {} as Partial<T>);
 };
 
+// react-hook-form stores an array/object field's nested validation errors (e.g. one row in a
+// list of stock operation items) under the parent field's key rather than as a top-level message.
+// This digs through that structure for the first human-readable message so it can be surfaced
+// instead of the raw field key.
+export const findFirstFieldErrorMessage = (error: unknown): string | undefined => {
+  if (!error || typeof error !== 'object') {
+    return undefined;
+  }
+
+  const message = (error as { message?: unknown }).message;
+  if (typeof message === 'string' && message) {
+    return message;
+  }
+
+  for (const value of Object.values(error)) {
+    const nestedMessage = findFirstFieldErrorMessage(value);
+    if (nestedMessage) {
+      return nestedMessage;
+    }
+  }
+
+  return undefined;
+};
+
 export const otherUser: User = {
   uuid: 'Other',
   display: 'Other',
