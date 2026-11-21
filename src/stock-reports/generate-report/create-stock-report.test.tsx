@@ -42,10 +42,13 @@ const renderForm = () => {
 };
 
 const selectReport = async (user: ReturnType<typeof userEvent.setup>, name: string) => {
-  await user.click(screen.getByRole('combobox', { name: 'Report name' }));
-  await user.click(screen.getByRole('option', { name }));
+  // generous timeouts: under the pre-push hook the suite runs alongside lint and
+  // typescript, and the report list and form fields can take longer than the defaults
+  const options = { timeout: 15000 };
+  await user.click(await screen.findByRole('combobox', { name: 'Report name' }, options));
+  await user.click(await screen.findByRole('option', { name }, options));
   // The report's fields appear once the form has processed the selection
-  await screen.findByRole('combobox', { name: 'Location' });
+  await screen.findByRole('combobox', { name: 'Location' }, options);
 };
 
 const typeDate = (label: string, value: string) => {
