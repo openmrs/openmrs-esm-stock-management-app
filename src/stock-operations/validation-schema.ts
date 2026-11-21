@@ -122,7 +122,8 @@ export const baseStockOperationItemSchema = z.object({
   stockItemPackagingUOMUuid: z.string().min(1, { message: 'Required' }),
   batchNo: z.string().min(1, { message: 'Required' }),
   stockBatchUuid: z.string().optional(),
-  expiration: z.coerce.date({ required_error: 'Required' }),
+  // Required only for an item that expires, see getStockOperationItemValidationSchema
+  expiration: z.coerce.date().nullish(),
   quantity: z.coerce.number().min(1, { message: 'Required' }),
   purchasePrice: z.coerce.number().nullish(),
   hasExpiration: z.boolean().nullish(),
@@ -169,6 +170,23 @@ export const getStockOperationItemFormSchema = (operationType: OperationType) =>
       return baseStockOperationItemSchema;
   }
 };
+/**
+ * The line schema with its cross-field rules. getStockOperationItemFormSchema stays a plain object
+ * schema because callers read its keys.
+ */
+export const getStockOperationItemValidationSchema = (operationType: OperationType) => {
+  const schema = getStockOperationItemFormSchema(operationType);
+  if (!('expiration' in schema.shape)) {
+    return schema;
+  }
+  // An item that doesn't expire has no expiration date to enter
+  return schema.superRefine((item: Partial<BaseStockOperationItemFormData>, ctx) => {
+    if (item.hasExpiration !== false && !item.expiration) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Required', path: ['expiration'] });
+    }
+  });
+};
+
 export const stockOperationItemDtoSchema = z.object({
   operationDate: z.coerce.date(),
   sourceUuid: z.string({ required_error: 'Location Required' }).min(1, {
@@ -208,7 +226,7 @@ export const getStockOperationFormSchema = (operation: OperationType): z.Schema 
         })
         .merge(
           z.object({
-            stockOperationItems: getStockOperationItemFormSchema(operation)
+            stockOperationItems: getStockOperationItemValidationSchema(operation)
               .array()
               .nonempty('You must add atleast one stock item'),
           }),
@@ -245,7 +263,7 @@ export const getStockOperationFormSchema = (operation: OperationType): z.Schema 
           sourceUuid: z.string({ required_error: 'Source Required' }).min(1, {
             message: 'Source Required',
           }),
-          stockOperationItems: getStockOperationItemFormSchema(operation)
+          stockOperationItems: getStockOperationItemValidationSchema(operation)
             .array()
             .nonempty('You must add atleast one stock item'),
         }),

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import {
   Button,
   ButtonSet,
@@ -23,7 +23,11 @@ import {
   type StockOperationType,
 } from '../../../core/api/types/stockOperation/StockOperationType';
 import { useStockItem } from '../../../stock-items/stock-items.resource';
-import { type BaseStockOperationItemFormData, getStockOperationItemFormSchema } from '../../validation-schema';
+import {
+  type BaseStockOperationItemFormData,
+  getStockOperationItemFormSchema,
+  getStockOperationItemValidationSchema,
+} from '../../validation-schema';
 import useOperationTypePermisions from '../hooks/useOperationTypePermisions';
 import BatchNoSelector from '../input-components/batch-no-selector.component';
 import QtyUomSelector from '../input-components/quantity-uom-selector.component';
@@ -50,12 +54,19 @@ const StockItemForm: React.FC<StockItemFormProps> = ({ stockOperationType, stock
   const fields = formSchema.keyof().options;
   type FormData = z.infer<typeof formSchema>;
   const form = useForm<FormData>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(getStockOperationItemValidationSchema(operationType)),
     defaultValues: stockOperationItem,
     mode: 'all',
   });
   const { t } = useTranslation();
   const { item } = useStockItem(form.getValues('stockItemUuid'));
+  // A line from the item search knows whether its item expires. Otherwise it comes from the stock item.
+  const hasExpiration = form.watch('hasExpiration' as keyof FormData) ?? item?.hasExpiration;
+  useEffect(() => {
+    if (stockOperationItem?.hasExpiration == null && item?.hasExpiration != null) {
+      form.setValue('hasExpiration' as keyof FormData, item.hasExpiration as never);
+    }
+  }, [form, item?.hasExpiration, stockOperationItem?.hasExpiration]);
   const commonName = useMemo(() => {
     if (!useItemCommonNameAsDisplay) return;
     const drugName = item?.drugName ? `(Drug name: ${item.drugName})` : undefined;
@@ -117,7 +128,8 @@ const StockItemForm: React.FC<StockItemFormProps> = ({ stockOperationType, stock
           </Column>
         )}
         {(operationTypePermision.requiresActualBatchInfo || operationTypePermision.requiresBatchUuid) &&
-          fields.includes('expiration' as keyof FormData) && (
+          fields.includes('expiration' as keyof FormData) &&
+          hasExpiration !== false && (
             <Column>
               <Controller
                 control={form.control}
@@ -131,6 +143,8 @@ const StockItemForm: React.FC<StockItemFormProps> = ({ stockOperationType, stock
                       locale="en"
                       className={styles.datePickerInput}
                       dateFormat={DATE_PICKER_CONTROL_FORMAT}
+                      // The picker sets its input's invalid state, so it goes here and not on the input
+                      invalid={!!error?.message}
                       value={(value as unknown as Date) || null}
                       onChange={([newDate]) => {
                         onChange(newDate);
@@ -140,7 +154,6 @@ const StockItemForm: React.FC<StockItemFormProps> = ({ stockOperationType, stock
                         id={`expiration-input`}
                         placeholder={DATE_PICKER_FORMAT}
                         labelText={t('expiration', 'Expiration date')}
-                        invalid={!!error?.message}
                         invalidText={error?.message}
                       />
                     </DatePicker>
