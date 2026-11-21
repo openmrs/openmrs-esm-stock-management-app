@@ -73,9 +73,9 @@ export const configSchema = {
     _elements: {
       _type: Type.String,
     },
-    _default: ['Main Store', 'Main Pharmacy', 'Dispensary'],
+    _default: ['Main Store', 'Main Pharmacy', 'Dispensary', 'Sub Store'],
     _description:
-      "The names of the location tags for stock locations. Locations without one of these tags don't appear in the stock locations table, the user role scope form, stock rules, reports or the location filters. This doesn't change which locations stock operations accept. That comes from each operation type's location scopes in the backend, which default to Main Store, Main Pharmacy and Dispensary",
+      "The names of the location tags for stock locations. Locations without one of these tags don't appear in the stock locations table, the user role scope form, stock rules, reports or the location filters. This doesn't change which locations stock operations accept. That comes from each operation type's location scopes in the backend",
   },
   stockRoleUUIDs: {
     _type: Type.Array,

@@ -158,7 +158,7 @@ The defaults match the Reference Application. Set these to match your distributi
 
 - **`stockRoleUUIDs`** - UUIDs of the roles that identify stock roles in the user role scope form. The defaults are the Inventory Clerk, Inventory Manager, Inventory Dispensing, Inventory Reporting and Inventory Administrator roles from the Reference Application demo content.
 
-- **`stockLocationTags`** _(default: ["Main Store", "Main Pharmacy", "Dispensary"])_ - Names of the location tags for stock locations. Locations without one of these tags don't appear in the stock locations table, the user role scope form, stock rules, reports or the location filters. This doesn't change which locations stock operations accept. That comes from each operation type's location scopes in the backend, which default to `Main Store`, `Main Pharmacy` and `Dispensary`.
+- **`stockLocationTags`** _(default: ["Main Store", "Main Pharmacy", "Dispensary", "Sub Store"])_ - Names of the location tags for stock locations. Locations without one of these tags don't appear in the stock locations table, the user role scope form, stock rules, reports or the location filters. This doesn't change which locations stock operations accept. That comes from each operation type's location scopes in the backend.
 
 - **`mainStoreLocationTag`** _(default: "Main Store")_ - Name of the location tag for the main store. The source or destination of a new stock operation is prefilled when this is the only tag the operation type allows on that side. It needs to match a tag in the backend's operation type location scopes.
 
