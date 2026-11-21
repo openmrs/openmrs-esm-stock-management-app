@@ -119,6 +119,27 @@ describe('StockOperationForm with a linked requisition', () => {
     expect(lines).toHaveLength(2);
   });
 
+  it('puts the secondary Previous before the primary Next on the Stock items step', async () => {
+    const user = userEvent.setup();
+    render(
+      <StockOperationForm
+        {...mockWorkspace2Props({
+          stockOperationType: stockIssueType,
+          stockOperation: savedIssue,
+          stockRequisitionUuid: requisitionUuid,
+        })}
+      />,
+    );
+
+    await user.click(screen.getByText(/stock items/i));
+
+    // In page order, which is also the order the keyboard reaches them
+    expect(screen.getAllByRole('button', { name: /^(previous|next)$/i })).toEqual([
+      screen.getByRole('button', { name: 'Previous' }),
+      screen.getByRole('button', { name: 'Next' }),
+    ]);
+  });
+
   it('prefills a new issue from the requisition', () => {
     render(
       <StockOperationForm

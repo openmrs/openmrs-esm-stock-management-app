@@ -251,11 +251,6 @@ const StockOperationItemsFormStep: React.FC<StockOperationItemsFormStepProps> = 
           )}
         </DataTable>
         <div className={styles.btnSet}>
-          {typeof onNext === 'function' && (
-            <Button kind="primary" onClick={handleNext} renderIcon={ArrowRight}>
-              {t('nextButton', 'Next')}
-            </Button>
-          )}
           {typeof onPrevious === 'function' && (
             <Button
               kind="secondary"
@@ -265,6 +260,11 @@ const StockOperationItemsFormStep: React.FC<StockOperationItemsFormStepProps> = 
               data-testid="previous-btn"
               iconDescription={t('previousButton', 'Previous')}
             />
+          )}
+          {typeof onNext === 'function' && (
+            <Button kind="primary" onClick={handleNext} renderIcon={ArrowRight}>
+              {t('nextButton', 'Next')}
+            </Button>
           )}
         </div>
       </div>

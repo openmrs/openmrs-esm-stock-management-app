@@ -70,7 +70,8 @@
   width: 100%;
   flex: 1;
   display: flex;
-  flex-direction: row-reverse;
+  // Secondary buttons first, the primary one on the right
+  justify-content: flex-end;
   gap: layout.$spacing-03;
   align-items: center;
   margin-top: layout.$spacing-03;

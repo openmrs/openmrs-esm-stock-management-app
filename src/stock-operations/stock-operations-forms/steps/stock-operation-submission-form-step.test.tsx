@@ -144,3 +144,30 @@ describe('editing by permission', () => {
     );
   });
 });
+
+describe('while saving', () => {
+  it.each(actions)('$title and Save stay disabled until the save finishes', async ({ type, approval, label }) => {
+    let finishSave: (value: unknown) => void;
+    vi.mocked(updateStockOperation).mockReturnValue(new Promise((resolve) => (finishSave = resolve)) as never);
+    render(<Operation type={type} approval={approval} valid />);
+
+    const action = screen.getByRole('button', { name: label });
+    await userEvent.click(action);
+
+    await waitFor(() => expect(action).toBeDisabled());
+    for (const button of screen.getAllByRole('button')) {
+      expect(button).toBeDisabled();
+    }
+    await userEvent.click(action);
+    expect(updateStockOperation).toHaveBeenCalledTimes(1);
+
+    finishSave({ data: { uuid: 'saved-operation' } });
+    await waitFor(() => expect(action).toBeEnabled());
+  });
+
+  it.each(actions)('puts the secondary Save before $title', ({ type, approval, label }) => {
+    render(<Operation type={type} approval={approval} valid />);
+
+    expect(screen.getAllByRole('button').map((button) => button.textContent)).toEqual(['Save', label]);
+  });
+});
