@@ -14,7 +14,7 @@ import {
   Tag,
 } from '@carbon/react';
 import { Edit, TrashCan } from '@carbon/react/icons';
-import { restBaseUrl, showModal } from '@openmrs/esm-framework';
+import { ErrorState, restBaseUrl, showModal } from '@openmrs/esm-framework';
 import { type StockItemPackagingUomReference } from '../../../core/api/types/stockItem/StockItemPackagingUomReference';
 import { useStockItemPackagingUomReferences } from '../../stock-items.resource';
 import { useHandleMutate } from '../../../utils';
@@ -40,7 +40,7 @@ const PackagingUomReferenceList: React.FC<PackagingUomReferenceListProps> = ({
   const handleMutate = useHandleMutate();
   const [showVoided, setShowVoided] = useState(false);
 
-  const { items, isLoading } = useStockItemPackagingUomReferences({
+  const { items, isLoading, error } = useStockItemPackagingUomReferences({
     stockItemPackagingUomUuid: packagingUomUuid,
     includeAll: showVoided || null,
   });
@@ -93,6 +93,15 @@ const PackagingUomReferenceList: React.FC<PackagingUomReferenceListProps> = ({
 
   if (isLoading) {
     return <div className={styles.referenceListLoading}>{t('loading', 'Loading...')}</div>;
+  }
+
+  if (error) {
+    return (
+      <ErrorState
+        headerTitle={t('errorFetchingPackagingUomReferences', 'Error fetching packaging UOM references')}
+        error={error}
+      />
+    );
   }
 
   return (

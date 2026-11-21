@@ -139,6 +139,7 @@
   "errorDeletingUserScope": "Error deleting a user scope",
   "errorEditingRule": "Error editing a rule",
   "errorEditingStockItem": "Error editing a stock Item",
+  "errorFetchingPackagingUomReferences": "Error fetching packaging UOM references",
   "errorFetchingStockSourceTypes": "Error fetching stock source types",
   "errorLoadingPrintout": "Error loading the transactions to print",
   "errorLoadingStockOperation": "Error loading stock operation",
