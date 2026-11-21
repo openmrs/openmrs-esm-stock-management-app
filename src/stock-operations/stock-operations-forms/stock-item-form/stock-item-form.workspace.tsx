@@ -107,6 +107,7 @@ const StockItemForm: React.FC<StockItemFormProps> = ({ stockOperationType, stock
               name={'stockBatchUuid' as keyof FormData}
               render={({ field, fieldState: { error } }) => (
                 <BatchNoSelector
+                  includeExpiredBatches={operationTypePermision.allowExpiredBatchNumbers}
                   initialValue={stockOperationItem?.stockBatchUuid}
                   onValueChange={field.onChange}
                   stockItemUuid={stockOperationItem.stockItemUuid}
