@@ -52,7 +52,7 @@ const AddEditStockItem: React.FC<Workspace2DefinitionProps<AddStockItemProps>> =
     },
     {
       name: t('packagingUnits', 'Packaging Units'),
-      component: <PackagingUnits isEditing handleTabChange={handleTabChange} stockItemUuid={stockItem?.uuid} />,
+      component: <PackagingUnits stockItemUuid={stockItem?.uuid} />,
       disabled: !isEditing,
     },
     {

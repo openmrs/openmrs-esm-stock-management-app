@@ -1,26 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, ModalHeader, ModalBody, ModalFooter, TextArea } from '@carbon/react';
 import { showSnackbar } from '@openmrs/esm-framework';
 import { type StockItemPackagingUOMDTO } from '../../../core/api/types/stockItem/StockItemPackagingUOM';
 import { deleteStockItemPackagingUnit } from '../../stock-items.resource';
-import { useStockItemPackageUnitsHook } from './packaging-units.resource';
 import styles from '../packaging-units/packaging-units.scss';
 
 interface DeletePackagingUnitModalProps {
   row?: StockItemPackagingUOMDTO;
   closeModal: () => void;
+  /** Called after the unit was deleted, so list owners can refresh their data. */
+  onDeleted?: () => void;
 }
 
-const DeletePackagingUnitModal: React.FC<DeletePackagingUnitModalProps> = ({ row, closeModal }) => {
+const DeletePackagingUnitModal: React.FC<DeletePackagingUnitModalProps> = ({ row, closeModal, onDeleted }) => {
   const { t } = useTranslation();
-  const { mutate, setStockItemUuid } = useStockItemPackageUnitsHook();
-
-  useEffect(() => {
-    setStockItemUuid(row.stockItemUuid);
-  }, [row.stockItemUuid, setStockItemUuid]);
-
   const [reason, setReason] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleReasonChange = (e) => {
     setReason(e.target.value);
@@ -28,9 +24,13 @@ const DeletePackagingUnitModal: React.FC<DeletePackagingUnitModalProps> = ({ row
 
   const handleDelete = (e) => {
     e.preventDefault();
+    if (isDeleting) {
+      return;
+    }
+    setIsDeleting(true);
     deleteStockItemPackagingUnit(row.uuid).then(
       () => {
-        mutate();
+        onDeleted?.();
         closeModal();
         showSnackbar({
           isLowContrast: true,
@@ -40,6 +40,7 @@ const DeletePackagingUnitModal: React.FC<DeletePackagingUnitModalProps> = ({ row
         });
       },
       (error) => {
+        setIsDeleting(false);
         showSnackbar({
           title: t('deletePackingUnitErrorTitle', 'Error Deleting a stock item packing unit'),
           kind: 'error',
@@ -74,10 +75,10 @@ const DeletePackagingUnitModal: React.FC<DeletePackagingUnitModalProps> = ({ row
         />
       </ModalBody>
       <ModalFooter>
-        <Button kind="secondary" onClick={closeModal}>
+        <Button kind="secondary" onClick={closeModal} disabled={isDeleting}>
           {t('no', 'No')}
         </Button>
-        <Button kind="danger" type="submit" onClick={handleDelete} disabled={reason.length < 1}>
+        <Button kind="danger" type="submit" onClick={handleDelete} disabled={reason.length < 1 || isDeleting}>
           {t('yes', 'Yes')}
         </Button>
       </ModalFooter>

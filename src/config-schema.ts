@@ -45,8 +45,10 @@ export const configSchema = {
   },
   packingUnitsUUID: {
     _type: Type.ConceptUuid,
-    _description: 'UUID for the packaging unit',
-    _default: 'a6d438fe-05c1-4d4d-9755-c11cf6b0b3b9',
+    _description:
+      'UUID for the packaging unit concept set (its set members / answers are the selectable units). ' +
+      'Defaults to the stock management module’s own dispensing units concept',
+    _default: '162402AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
   },
   printBalanceOnHand: {
     _type: Type.Boolean,
