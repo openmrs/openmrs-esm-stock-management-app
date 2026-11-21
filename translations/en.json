@@ -133,6 +133,8 @@
   "errorLoadingPrintout": "Error loading the transactions to print",
   "errorLoadingStockOperation": "Error loading stock operation",
   "errorLoadingStockOperationTypes": "Error loading stock operation types",
+  "errorLoadingStockSources": "Error loading stock sources",
+  "errorLoadingUserRoleScopes": "Error loading user role scopes",
   "errorPrintingStockOperation": "Error printing stock operation",
   "errorSavingForm": "Error on saving form",
   "errorSavingUserRoleScope": "Error Saving user role scope",
