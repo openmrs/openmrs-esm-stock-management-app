@@ -1,3 +1,4 @@
+import dayjs from 'dayjs';
 import { z } from 'zod';
 import { StockOperationStatusTypes } from '../core/api/types/stockOperation/StockOperationStatus';
 import { OperationType } from '../core/api/types/stockOperation/StockOperationType';
@@ -170,7 +171,10 @@ export const getStockOperationItemFormSchema = (operationType: OperationType) =>
   }
 };
 export const stockOperationItemDtoSchema = z.object({
-  operationDate: z.coerce.date(),
+  // Checked against the current day on every validation, so a form left open past midnight allows the new day
+  operationDate: z.coerce.date().refine((date) => !dayjs(date).isAfter(dayjs(), 'day'), {
+    message: 'Operation date must not be in the future',
+  }),
   sourceUuid: z.string({ required_error: 'Location Required' }).min(1, {
     message: 'Location Required',
   }),

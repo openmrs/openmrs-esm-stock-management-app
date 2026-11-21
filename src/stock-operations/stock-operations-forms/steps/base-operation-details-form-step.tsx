@@ -1,21 +1,11 @@
 import React, { type ChangeEvent, type FC, useEffect, useMemo } from 'react';
-import {
-  Button,
-  Column,
-  ComboBox,
-  DatePicker,
-  DatePickerInput,
-  InlineLoading,
-  Stack,
-  TextArea,
-  TextInput,
-} from '@carbon/react';
+import { Button, Column, ComboBox, InlineLoading, Stack, TextArea, TextInput } from '@carbon/react';
 import { ArrowRight } from '@carbon/react/icons';
 import { Controller, useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { ErrorState, useConfig } from '@openmrs/esm-framework';
+import { ErrorState, OpenmrsDatePicker, useConfig } from '@openmrs/esm-framework';
 import { type ConfigObject } from '../../../config-schema';
-import { DATE_PICKER_CONTROL_FORMAT, DATE_PICKER_FORMAT } from '../../../constants';
+import { today } from '../../../constants';
 import { type Party } from '../../../core/api/types/Party';
 import { type StockOperationDTO } from '../../../core/api/types/stockOperation/StockOperationDTO';
 import { OperationType, type StockOperationType } from '../../../core/api/types/stockOperation/StockOperationType';
@@ -124,27 +114,19 @@ const BaseOperationDetailsFormStep: FC<BaseOperationDetailsFormStepProps> = ({
           control={form.control}
           name="operationDate"
           render={({ field, fieldState: { error } }) => (
-            <DatePicker
-              readOnly={field.disabled}
-              datePickerType="single"
-              locale="en"
-              className={styles.datePickerInput}
-              {...field}
+            <OpenmrsDatePicker
+              id="operationDate-input"
+              invalid={!!error?.message}
+              invalidText={error?.message}
+              isReadOnly={field.disabled}
+              labelText={t('operationDate', 'Operation Date')}
+              maxDate={today()}
+              onBlur={field.onBlur}
+              onChange={field.onChange}
+              ref={field.ref}
+              size="lg"
               value={field.value}
-              dateFormat={DATE_PICKER_CONTROL_FORMAT}
-              onChange={([newDate]) => {
-                field.onChange(newDate);
-              }}
-            >
-              <DatePickerInput
-                id={`operationDate-input`}
-                placeholder={DATE_PICKER_FORMAT}
-                labelText={t('operationDate', 'Operation Date')}
-                invalid={!!error?.message}
-                invalidText={error?.message}
-                size="lg"
-              />
-            </DatePicker>
+            />
           )}
         />
       </Column>

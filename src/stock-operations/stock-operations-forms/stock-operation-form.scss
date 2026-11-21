@@ -30,13 +30,6 @@
   width: 100%;
 }
 
-.datePickerInput span,
-.datePickerInput div,
-.datePickerInput input,
-.datePickerInput {
-  min-width: 100%;
-}
-
 .title {
   @include type.type-style('heading-02');
   padding: layout.$spacing-03;
