@@ -1,10 +1,13 @@
 @use '@carbon/colors';
 @use '@carbon/layout';
 @use '@carbon/type';
+@use '@openmrs/esm-styleguide/src/vars' as *;
 
+// keep the table a real table: display: block (which used to sit here) made the
+// thead/tbody shrink to fit their content and leave a gap on the right instead of
+// spanning the full width; the min-height stays for the sparse-table case
 .packingTable {
   min-height: 15rem;
-  display: block;
 }
 
 .packingTableCell {
@@ -17,13 +20,29 @@
 }
 
 .packagingTableContainer {
-  padding-bottom: 1rem;
   min-height: 15rem;
   display: block;
+  padding-bottom: 0;
 
   :global(.cds--data-table-content) {
     overflow-x: visible;
   }
+}
+
+.unitsTableFooter {
+  @include type.type-style('body-compact-01');
+
+  color: colors.$gray-60;
+  margin: 0;
+  padding: layout.$spacing-04 layout.$spacing-05;
+  border-top: 1px solid $ui-03;
+}
+
+.basePackLabel {
+  @include type.type-style('label-01');
+
+  display: block;
+  color: colors.$gray-60;
 }
 
 .searchAndSave {
@@ -49,4 +68,299 @@
   display: flex;
   justify-content: flex-end;
   margin-right: 2rem;
+}
+
+.packagingUnitsSection {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  // keep the section centered instead of stretching edge to edge, which reads
+  // especially badly across the full width of an expanded workspace
+  margin-left: auto;
+  margin-right: auto;
+  width: 95%;
+  padding-top: 1rem;
+}
+
+.packagingUnitsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: layout.$spacing-05;
+}
+
+.packagingUnitsHint {
+  @include type.type-style('body-compact-01');
+
+  color: colors.$gray-70;
+  margin: 0;
+}
+
+.packagingUnitsEmpty {
+  padding: layout.$spacing-07;
+  text-align: center;
+  color: colors.$gray-60;
+}
+
+// The unit list and the selected unit's details always stack while the workspace is
+// collapsed, however wide the extra-wide window is. They sit side by side only once
+// the workspace window itself is expanded — the section detects that state through
+// useWorkspaceMaximized and applies the wide layout class.
+.packagingUnitsLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: layout.$spacing-05;
+  align-items: start;
+}
+
+.packagingUnitsLayoutWide {
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+}
+
+// the selected unit row: light blue fill with a blue accent on the leading edge.
+// Text stays dark — a light fill with light text would be unreadable.
+.selectedRow td {
+  background-color: colors.$blue-10;
+}
+
+.selectedRow td:first-child {
+  box-shadow: inset 3px 0 colors.$blue-60;
+}
+
+.rowSelectButton {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  text-align: left;
+  font-weight: 600;
+  color: inherit;
+  cursor: pointer;
+}
+
+// styled like the app's other card surfaces (see metrics-card): a Carbon tile with
+// the same subtle border token and a muted header strip carrying the unit title.
+// The tab strip and tab panels are inset from the tile walls so text does not sit
+// on the border.
+.selectedUnitPanel {
+  background-color: colors.$white;
+  border: 1px solid $ui-03;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 0;
+
+  :global(.cds--tab--list) {
+    padding-inline-start: layout.$spacing-05;
+  }
+
+  :global(.cds--tab-content) {
+    padding: layout.$spacing-04 layout.$spacing-05 layout.$spacing-05;
+  }
+}
+
+.selectedUnitPanelHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: layout.$spacing-04;
+  padding: layout.$spacing-04 layout.$spacing-05;
+  background-color: colors.$gray-10;
+}
+
+.selectedUnitName {
+  @include type.type-style('heading-compact-01');
+}
+
+.selectedUnitPanelContent {
+  min-width: 0;
+}
+
+.detailRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: layout.$spacing-05;
+  padding: layout.$spacing-04 0;
+  // light per-row separator, matching the mockup's details list; $ui-03 is the
+  // same subtle line the tables and tiles in the app use
+  border-bottom: 1px solid $ui-03;
+
+  span {
+    @include type.type-style('body-compact-01');
+  }
+
+  strong {
+    @include type.type-style('body-compact-01');
+
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+}
+
+.referenceList {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-04;
+  min-width: 0;
+}
+
+.referenceListToolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: layout.$spacing-04;
+  flex-wrap: wrap;
+}
+
+.referenceListEmpty,
+.referenceListLoading {
+  padding: layout.$spacing-06;
+  text-align: center;
+  color: colors.$gray-60;
+}
+
+.referenceCodeCell {
+  overflow-wrap: anywhere;
+}
+
+.referenceActions {
+  display: flex;
+  gap: layout.$spacing-02;
+  justify-content: flex-end;
+}
+
+.referenceReadOnly {
+  color: colors.$gray-60;
+}
+
+.referenceModalContext {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-02;
+  padding-bottom: layout.$spacing-04;
+
+  span {
+    overflow-wrap: anywhere;
+  }
+}
+
+.referenceModalNotice {
+  border-left: 3px solid colors.$blue-60;
+  background: colors.$blue-10;
+  padding: layout.$spacing-03 layout.$spacing-04;
+  margin-bottom: layout.$spacing-04;
+}
+
+.referenceModalError {
+  border-left: 4px solid colors.$red-60;
+  background: colors.$red-10;
+  color: colors.$red-70;
+  padding: layout.$spacing-03 layout.$spacing-04;
+  margin-top: layout.$spacing-04;
+  overflow-wrap: anywhere;
+}
+
+.voidWarning {
+  border-left: 3px solid colors.$red-60;
+  background: colors.$red-10;
+  padding: layout.$spacing-03 layout.$spacing-04;
+  margin-bottom: layout.$spacing-04;
+}
+
+.unitModalHint {
+  @include type.type-style('label-01');
+
+  color: colors.$gray-70;
+  margin: 0 0 layout.$spacing-04;
+}
+
+// Modals render in a portal outside the section's container, so the fields area is its
+// own container: two columns when the modal itself is wide, one column when narrow.
+.unitModalFormArea {
+  container-type: inline-size;
+}
+
+.unitModalFields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: layout.$spacing-05;
+
+  @container (min-width: 42rem) {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+.unitModalReferencesHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: layout.$spacing-04;
+  margin: layout.$spacing-05 0 layout.$spacing-03;
+  border-bottom: 1px solid colors.$gray-20;
+  padding-bottom: layout.$spacing-03;
+
+  h4 {
+    margin: 0;
+  }
+}
+
+.draftList {
+  border: 1px solid colors.$gray-30;
+  margin-top: layout.$spacing-04;
+}
+
+.draftRow {
+  display: flex;
+  justify-content: space-between;
+  gap: layout.$spacing-04;
+  padding: layout.$spacing-03 layout.$spacing-04;
+  border-bottom: 1px solid colors.$gray-20;
+
+  &:last-child {
+    border-bottom: 0;
+  }
+}
+
+.draftRowDetails {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-02;
+  min-width: 0;
+}
+
+.draftRowMeta {
+  color: colors.$gray-60;
+  font-size: 0.75rem;
+  overflow-wrap: anywhere;
+}
+
+.draftRowError {
+  color: colors.$red-60;
+  font-size: 0.75rem;
+  overflow-wrap: anywhere;
+}
+
+// The unit modal's dropdown must drop down normally and paint over the footer.
+// The modal body clips overflowing descendants and the footer comes later in the
+// DOM, so the body lets the menu overflow and the menu is raised above the footer.
+.unitModal {
+  :global(.cds--modal-content) {
+    overflow: visible;
+  }
+
+  :global(.cds--list-box__menu) {
+    z-index: 10;
+  }
+}
+
+// same dropdown treatment as the unit modal: the stock source combobox drops down
+// over the footer instead of being clipped and painted behind it
+.referenceModal {
+  :global(.cds--modal-content) {
+    overflow: visible;
+  }
+
+  :global(.cds--list-box__menu) {
+    z-index: 10;
+  }
 }

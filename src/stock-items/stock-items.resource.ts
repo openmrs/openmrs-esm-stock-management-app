@@ -1,11 +1,16 @@
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import useSWR from 'swr';
-import { type ResourceFilterCriteria, toQueryParams } from '../core/api/api';
+import { ResourceRepresentation, type ResourceFilterCriteria, toQueryParams } from '../core/api/api';
 import { type PageableResult } from '../core/api/types/PageableResult';
 import { type StockBatchDTO } from '../core/api/types/stockItem/StockBatchDTO';
 import { type InventoryGroupBy, type StockItemDTO } from '../core/api/types/stockItem/StockItem';
 import { type StockItemInventory } from '../core/api/types/stockItem/StockItemInventory';
 import { type StockItemPackagingUOMDTO } from '../core/api/types/stockItem/StockItemPackagingUOM';
+import {
+  type StockItemPackagingUomReference,
+  type StockItemPackagingUomReferenceDTO,
+  type StockItemPackagingUomReferenceUpdateDTO,
+} from '../core/api/types/stockItem/StockItemPackagingUomReference';
 import { type StockItemReference, type StockItemReferenceDTO } from '../core/api/types/stockItem/StockItemReference';
 import { type StockItemTransactionDTO } from '../core/api/types/stockItem/StockItemTransaction';
 import { type StockRule } from '../core/api/types/stockItem/StockRule';
@@ -49,6 +54,11 @@ export interface StockItemPackagingUOMFilter extends ResourceFilterCriteria {
 
 export interface StockItemReferenceFilter extends ResourceFilterCriteria {
   stockItemUuid?: string | null | undefined;
+}
+
+export interface StockItemPackagingUomReferenceFilter extends ResourceFilterCriteria {
+  stockItemPackagingUomUuid?: string | null | undefined;
+  includeAll?: boolean | null;
 }
 
 export interface StockBatchFilter extends ResourceFilterCriteria {
@@ -456,6 +466,81 @@ export function updateStockItemReference(item: StockItemReference, uuid: string)
 // deleteStockItemReferemce
 export function deleteStockItemReference(id: string) {
   const apiUrl = `${restBaseUrl}/stockmanagement/stockitemreference/${id}`;
+  const abortController = new AbortController();
+
+  return openmrsFetch(apiUrl, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    signal: abortController.signal,
+  });
+}
+
+// stock item packaging UOM references
+// useStockItemPackagingUomReferences
+export function useStockItemPackagingUomReferences(filter: StockItemPackagingUomReferenceFilter) {
+  // request the default representation explicitly: without a v param the REST layer
+  // serves the ref representation, which omits name, description, stockSourceUuid
+  // and voided — all of which the reference list and edit modal rely on
+  const apiUrl = `${restBaseUrl}/stockmanagement/stockitempackaginguomreference${toQueryParams({
+    v: ResourceRepresentation.Default,
+    ...filter,
+  })}`;
+  const { data, error, isLoading, mutate } = useSWR<
+    {
+      data: PageableResult<StockItemPackagingUomReference>;
+    },
+    Error
+  >(apiUrl, openmrsFetch);
+
+  return {
+    items: data?.data?.results ?? [],
+    isLoading,
+    error,
+    mutate,
+  };
+}
+
+// createStockItemPackagingUomReference
+export function createStockItemPackagingUomReference(item: StockItemPackagingUomReferenceDTO) {
+  const apiUrl = `${restBaseUrl}/stockmanagement/stockitempackaginguomreference`;
+  const abortController = new AbortController();
+
+  return openmrsFetch<StockItemPackagingUomReference>(apiUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    signal: abortController.signal,
+    body: item,
+  });
+}
+
+// updateStockItemPackagingUomReference
+// The backend's updatable properties are only referenceCode, name and description — the
+// uuid, the stock source and the packaging UOM must never appear in an update body.
+export function updateStockItemPackagingUomReference(uuid: string, item: StockItemPackagingUomReferenceUpdateDTO) {
+  const apiUrl = `${restBaseUrl}/stockmanagement/stockitempackaginguomreference/${uuid}`;
+  const abortController = new AbortController();
+
+  return openmrsFetch<StockItemPackagingUomReference>(apiUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    signal: abortController.signal,
+    body: item,
+  });
+}
+
+// voidStockItemPackagingUomReference
+// Voiding suffixes the stored code server-side and frees the original code for reuse
+// within the source; the reference stays auditable through includeAll=true listings.
+export function voidStockItemPackagingUomReference(uuid: string, reason: string) {
+  const apiUrl = `${restBaseUrl}/stockmanagement/stockitempackaginguomreference/${uuid}?reason=${encodeURIComponent(
+    reason,
+  )}`;
   const abortController = new AbortController();
 
   return openmrsFetch(apiUrl, {

@@ -24,10 +24,11 @@ interface PackagingUnitsConceptSelectorProps<T> {
 const PackagingUnitsConceptSelector = <T,>(props: PackagingUnitsConceptSelectorProps<T>) => {
   const { packingUnitsUUID } = useConfig<ConfigObject>();
 
-  const {
-    items: { answers: dispensingUnits },
-    isLoading,
-  } = useConcept(packingUnitsUUID);
+  const { items: conceptSet, isLoading } = useConcept(packingUnitsUUID);
+
+  // deployments may model the units either as a question concept (its answers) or as a
+  // concept set (its set members); also tolerate a failed lookup with an empty list
+  const unitOptions = conceptSet?.answers?.length ? conceptSet.answers : conceptSet?.setMembers ?? [];
 
   if (isLoading) return <TextInputSkeleton />;
 
@@ -41,9 +42,9 @@ const PackagingUnitsConceptSelector = <T,>(props: PackagingUnitsConceptSelectorP
           id={`${props.name}-${props.row.id}-${props.row.uuid}`}
           size="md"
           items={
-            props.row?.packagingUomUuid !== undefined
+            props.row?.packagingUomUuid
               ? [
-                  ...(dispensingUnits.some((x) => x.uuid === props.row?.packagingUomUuid)
+                  ...(unitOptions.some((x) => x.uuid === props.row?.packagingUomUuid)
                     ? []
                     : [
                         {
@@ -51,16 +52,16 @@ const PackagingUnitsConceptSelector = <T,>(props: PackagingUnitsConceptSelectorP
                           display: props.row?.packagingUomName,
                         },
                       ]),
-                  ...(dispensingUnits ?? []),
+                  ...unitOptions,
                 ]
-              : dispensingUnits || []
+              : unitOptions
           }
           onChange={(data: { selectedItem: { uuid: string; display: string } }) => {
             props.onPackageUnitChange?.(data?.selectedItem);
             onChange(data?.selectedItem?.uuid || ''); // Provide a default value if needed
           }}
           initialSelectedItem={
-            props.row?.packagingUomUuid !== undefined
+            props.row?.packagingUomUuid
               ? {
                   uuid: props.row?.packagingUomUuid,
                   display: props.row?.packagingUomName,
@@ -68,7 +69,7 @@ const PackagingUnitsConceptSelector = <T,>(props: PackagingUnitsConceptSelectorP
               : null
           }
           selectedItem={
-            props.row?.packagingUomUuid !== undefined
+            props.row?.packagingUomUuid
               ? {
                   uuid: props.row?.packagingUomUuid,
                   display: props.row?.packagingUomName,

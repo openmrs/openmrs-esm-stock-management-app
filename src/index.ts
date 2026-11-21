@@ -47,6 +47,30 @@ export const deletePackagingUnitModal = getAsyncLifecycle(
   },
 );
 
+export const packagingUnitFormModal = getAsyncLifecycle(
+  () => import('./stock-items/add-stock-item/packaging-units/packaging-unit-form.modal'),
+  {
+    featureName: 'packaging-unit-form-modal',
+    moduleName,
+  },
+);
+
+export const packagingUomReferenceFormModal = getAsyncLifecycle(
+  () => import('./stock-items/add-stock-item/packaging-units/packaging-uom-reference-form.modal'),
+  {
+    featureName: 'packaging-uom-reference-form-modal',
+    moduleName,
+  },
+);
+
+export const packagingUomReferenceVoidModal = getAsyncLifecycle(
+  () => import('./stock-items/add-stock-item/packaging-units/packaging-uom-reference-void.modal'),
+  {
+    featureName: 'packaging-uom-reference-void-modal',
+    moduleName,
+  },
+);
+
 export const deletePackagingUnitButton = getSyncLifecycle(deletePackagingUnitModalButtonComponent, {
   featureName: 'delete-packaging-unit-button',
   moduleName,

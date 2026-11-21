@@ -13,3 +13,17 @@ global.ResizeObserver = class ResizeObserver {
   unobserve = vi.fn();
   disconnect = vi.fn();
 };
+
+// jsdom lacks matchMedia, which Carbon components (e.g. Tabs) rely on
+if (!window.matchMedia) {
+  window.matchMedia = ((query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addEventListener: () => undefined,
+    removeEventListener: () => undefined,
+    addListener: () => undefined,
+    removeListener: () => undefined,
+    dispatchEvent: () => false,
+  })) as unknown as typeof window.matchMedia;
+}

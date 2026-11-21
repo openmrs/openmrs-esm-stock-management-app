@@ -20,10 +20,13 @@ interface DispensingUnitSelectorProps<T> {
 
 const DispensingUnitSelector = <T,>(props: DispensingUnitSelectorProps<T>) => {
   const { packingUnitsUUID } = useConfig<ConfigObject>();
-  const {
-    items: { answers: packingUnits },
-    isLoading,
-  } = useConcept(packingUnitsUUID);
+  const { items: packingUnitsConcept, isLoading } = useConcept(packingUnitsUUID);
+
+  // deployments may model the units either as a question concept (its answers) or as
+  // a concept set (its set members); also tolerate a failed lookup with an empty list
+  const packingUnits = packingUnitsConcept?.answers?.length
+    ? packingUnitsConcept.answers
+    : packingUnitsConcept?.setMembers ?? [];
 
   if (isLoading) {
     return <TextInputSkeleton />;
