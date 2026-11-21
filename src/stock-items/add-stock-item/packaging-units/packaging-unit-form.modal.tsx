@@ -86,9 +86,16 @@ const PackagingUnitFormModal: React.FC<PackagingUnitFormModalProps> = ({
   }, [form, session]);
 
   const handleCancel = useCallback(() => {
+    // block dismissal while a save is in flight: dismissing now would orphan the
+    // request — the staged session keeps no persistedUnitUuid yet, so saving the
+    // same draft after reopening would create the unit a second time. This guard
+    // also covers the header close button, which Carbon cannot disable via props.
+    if (isSaving) {
+      return;
+    }
     onDismiss?.(snapshotSession());
     closeModal();
-  }, [onDismiss, snapshotSession, closeModal]);
+  }, [isSaving, onDismiss, snapshotSession, closeModal]);
 
   // handleSubmit runs the zod resolver: invalid fields populate errors (which the
   // concept selector and pack size input render) and the handler below only runs
