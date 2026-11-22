@@ -122,24 +122,6 @@
       "component": "stockReports"
     },
     {
-      "name": "settings-db-link",
-      "slot": "stock-page-dashboard-slot",
-      "component": "stockSettingsLink",
-      "meta": {
-        "name": "settings",
-        "slot": "settings-dashboard-slot",
-        "title": "Settings"
-      },
-      "order": 6,
-      "online": true,
-      "offline": true
-    },
-    {
-      "name": "stock-settings-db",
-      "slot": "settings-dashboard-slot",
-      "component": "stockSettings"
-    },
-    {
       "name": "stock-management-admin-card-link",
       "slot": "system-admin-page-card-link-slot",
       "component": "stockManagementAdminCardLink"
@@ -147,9 +129,9 @@
     {
       "name": "stock-management-app-menu-item",
       "component": "stockManagementAppMenuItem",
-      "slot": "app-menu-item-slot",
+      "slot": "app-menu-slot",
       "meta": {
-        "name": " Stock Management"
+        "name": "Stock Management"
       }
     },
     {
@@ -181,6 +163,10 @@
     {
       "name": "import-bulk-stock-items",
       "component": "importBulkStockItemsModal"
+    },
+    {
+      "name": "issuing-stock-modal",
+      "component": "issuingStockModal"
     },
     {
       "name": "receiving-stock-modal",

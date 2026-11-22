@@ -106,6 +106,33 @@ export function useStockItemTransactions(filter: StockItemTransactionFilter) {
   };
 }
 
+// The backend caps a page at 100 results and reads startIndex as a page number, not a row offset
+const ALL_TRANSACTIONS_PAGE_SIZE = 100;
+
+export async function fetchAllStockItemTransactions(filter: StockItemInventoryFilter) {
+  const transactions: Array<StockItemTransactionDTO> = [];
+
+  for (let page = 0; ; page++) {
+    const { data } = await openmrsFetch<PageableResult<StockItemTransactionDTO>>(
+      `${restBaseUrl}/stockmanagement/stockitemtransaction${toQueryParams({
+        ...filter,
+        startIndex: page,
+        limit: ALL_TRANSACTIONS_PAGE_SIZE,
+        totalCount: true,
+      })}`,
+    );
+    const results = data?.results ?? [];
+    transactions.push(...results);
+
+    if (
+      results.length < ALL_TRANSACTIONS_PAGE_SIZE ||
+      (data?.totalCount != null && transactions.length >= data.totalCount)
+    ) {
+      return transactions;
+    }
+  }
+}
+
 // getStockItemInventory
 export function useStockItemInventory(filter: StockItemInventoryFilter) {
   const apiUrl = `${restBaseUrl}/stockmanagement/stockiteminventory${toQueryParams(filter)}`;
@@ -242,19 +269,41 @@ export function createStockItem(item: StockItemFormData) {
   });
 }
 
+// The properties StockItemResource accepts on update. The REST layer rejects any other property that has a value,
+// such as the display names the item is loaded with.
+const UPDATABLE_STOCK_ITEM_PROPERTIES = [
+  'hasExpiration',
+  'preferredVendorUuid',
+  'purchasePrice',
+  'purchasePriceUoMUuid',
+  'dispensingUnitUuid',
+  'dispensingUnitPackagingUoMUuid',
+  'defaultStockOperationsUoMUuid',
+  'categoryUuid',
+  'commonName',
+  'acronym',
+  'reorderLevel',
+  'reorderLevelUoMUuid',
+  'expiryNotice',
+] as const;
+
 // updateStockItem
 export function updateStockItem(stockItemUuid: string, item: StockItemFormData) {
   const apiUrl = `${restBaseUrl}/stockmanagement/stockitem/${stockItemUuid}`;
   const abortController = new AbortController();
-  delete item.isDrug;
-  delete item.dateCreated;
+  const body = Object.fromEntries(
+    UPDATABLE_STOCK_ITEM_PROPERTIES.filter((property) => property in item).map((property) => [
+      property,
+      item[property],
+    ]),
+  );
   return openmrsFetch<StockItemDTO>(apiUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     signal: abortController.signal,
-    body: item,
+    body,
   });
 }
 

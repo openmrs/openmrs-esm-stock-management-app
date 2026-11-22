@@ -7,7 +7,8 @@ import { type StockItemInventory } from '../../core/api/types/stockItem/StockIte
 import { type StockOperationDTO } from '../../core/api/types/stockOperation/StockOperationDTO';
 import { type StockOperationItemCost } from '../../core/api/types/stockOperation/StockOperationItemCost';
 
-import { showSnackbar } from '@openmrs/esm-framework';
+import { showSnackbar, useConfig } from '@openmrs/esm-framework';
+import { type ConfigObject } from '../../config-schema';
 import { extractErrorMessagesFromResponse } from '../../constants';
 import { ResourceRepresentation } from '../../core/api/api';
 import { OperationType } from '../../core/api/types/stockOperation/StockOperationType';
@@ -29,6 +30,7 @@ interface StockOperationCancelButtonProps {
 
 const StockOperationPrintButton: React.FC<StockOperationCancelButtonProps> = ({ operation: _operation }) => {
   const { t } = useTranslation();
+  const { printBalanceOnHand, printItemCost } = useConfig<ConfigObject>();
   const { isLoading, items: operation, error } = useStockOperationAndItems(_operation.uuid);
   const [loading, setLoading] = useState(false);
   const onPrintStockOperation = async () => {
@@ -47,31 +49,19 @@ const StockOperationPrintButton: React.FC<StockOperationCancelButtonProps> = ({ 
         }
       }
 
-      if (
-        parentOperation ||
-        parentOperation?.operationType === 'stockissue' ||
-        parentOperation?.operationType === 'transferout'
-      ) {
-        const enableOperationPrintCosts = true;
-        if (enableOperationPrintCosts) {
-          const inventoryFilter: StockItemInventoryFilter = {};
-          if (operation?.uuid) {
-            inventoryFilter.stockOperationUuid = operation.uuid;
-          }
-          const res = await getStockOperationItemsCost(inventoryFilter);
-          itemsCost = res.data?.results;
-        }
+      // A goods received note shows neither costs nor balances, and a transfer out document shows only costs.
+      const isReceipt = operation.operationType === OperationType.RECEIPT_OPERATION_TYPE;
+      const isTransferOut = operation.operationType === OperationType.TRANSFER_OUT_OPERATION_TYPE;
+
+      if (printItemCost && !isReceipt) {
+        const res = await getStockOperationItemsCost(operation.uuid);
+        itemsCost = res.data?.results;
       }
-      const enableBalance = true;
-      if (enableBalance && (parentOperation || parentOperation?.operationType === 'requisition')) {
+      if (printBalanceOnHand && !isReceipt && !isTransferOut) {
         const inventoryFilter: StockItemInventoryFilter = {};
-        if (operation?.uuid) {
-          inventoryFilter.locationUuid = operation.atLocationUuid;
-          inventoryFilter.stockOperationUuid = operation.uuid;
-        } else {
-          inventoryFilter.locationUuid = operation.atLocationUuid;
-          inventoryFilter.stockOperationUuid = operation.uuid;
-        }
+        // The printout shows the requisition's location for an issue made from one, so the balance comes from there too.
+        inventoryFilter.locationUuid = parentOperation?.atLocationUuid ?? operation.atLocationUuid;
+        inventoryFilter.stockOperationUuid = operation.uuid;
         inventoryFilter.v = ResourceRepresentation.Default;
         inventoryFilter.groupBy = 'LocationStockItem';
         inventoryFilter.includeStockItemName = 'true';
