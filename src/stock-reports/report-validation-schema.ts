@@ -9,7 +9,6 @@ export const reportSchema = z
       message: 'Report Name Required',
     }),
     mostLeastMoving: z.string().optional(),
-    mostLeastMovingName: z.string().optional(),
     stockItemUuid: z.string().optional(),
     stockItemName: z.string().optional(),
     patientUuid: z.string().optional(),
@@ -27,7 +26,7 @@ export const reportSchema = z
     reportSystemName: z.string().optional(),
     maxReorderLevelRatio: z.number().optional(),
     fullFillment: z.string().array().optional(),
-    limit: z.string().optional(),
+    limit: z.number().optional(),
     date: z.coerce.date().optional(),
   })
   .superRefine((data, ctx) => {
@@ -62,6 +61,18 @@ export const reportSchema = z
           path: ['inventoryGroupBy'],
         });
       }
+    }
+  });
+
+// Which reports need a location comes from the backend's report definition
+export const getReportSchema = (requiresLocation: boolean) =>
+  reportSchema.superRefine((data, ctx) => {
+    if (requiresLocation && !data.locationUuid) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Location is required',
+        path: ['locationUuid'],
+      });
     }
   });
 

@@ -3,10 +3,8 @@ import { uniqBy } from 'lodash-es';
 import useSWR from 'swr';
 import {
   type FetchResponse,
-  type OpenmrsResource,
   fhirBaseUrl,
   openmrsFetch,
-  useSession,
   restBaseUrl,
   useConfig,
   useFhirFetchAll,
@@ -20,6 +18,7 @@ import { type Party } from '../core/api/types/Party';
 import { type Patient } from '../core/api/types/identity/Patient';
 import { type ResourceFilterCriteria, type ResourceRepresentation, toQueryParams } from '../core/api/api';
 import { type Role } from '../core/api/types/identity/Role';
+import { type StockManagementSession } from '../core/api/types/identity/Session';
 import { type StockOperationType } from '../core/api/types/stockOperation/StockOperationType';
 import { type User } from '../core/api/types/identity/User';
 import { type UserRoleScope } from '../core/api/types/identity/UserRoleScope';
@@ -279,25 +278,12 @@ export function usePatient(patientUuid: string) {
   return { isLoading, error, patient: data?.data };
 }
 
-type UserRole = {
-  results: Array<{
-    userUuid: string;
-    locations: Array<OpenmrsResource>;
-    operationTypes: Array<{
-      uuid: string;
-      operationTypeName: string;
-      operationTypeUuid: string;
-    }>;
-  }>;
-};
-
-export const useUserRoles = () => {
-  const { user: loggedInUser } = useSession();
-  const url = `${restBaseUrl}/stockmanagement/userrolescope`;
-  const { data, isLoading, error } = useSWR<{ data: UserRole }>(url, openmrsFetch);
-  const currentUserRoles = data?.data?.results.find((user) => user.userUuid === loggedInUser.uuid);
+// The current user's active privilege scopes. Any signed-in user can read these.
+export const useStockManagementSession = () => {
+  const url = `${restBaseUrl}/stockmanagement/session`;
+  const { data, isLoading, error } = useSWR<{ data: StockManagementSession }>(url, openmrsFetch);
   return {
-    userRoles: currentUserRoles,
+    privilegeScopes: data?.data?.privileges,
     isLoading,
     error,
   };

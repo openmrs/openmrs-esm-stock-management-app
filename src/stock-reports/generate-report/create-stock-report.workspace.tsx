@@ -30,15 +30,9 @@ import {
   Workspace2,
   type Workspace2DefinitionProps,
 } from '@openmrs/esm-framework';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, type FieldErrors, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  getParamDefaultLimit,
-  getReportEndDateLabel,
-  getReportLimitLabel,
-  getReportStartDateLabel,
-  ReportParameter,
-} from '../ReportType';
+import { getParamDefaultLimit, isForecastReport, ReportParameter } from '../ReportType';
 import { DATE_PICKER_CONTROL_FORMAT, DATE_PICKER_FORMAT, formatForDatePicker, today } from '../../constants';
 import { BatchJobTypeReport } from '../../core/api/types/BatchJob';
 import { createBatchJob } from '../../stock-batch/stock-batch.resource';
@@ -47,7 +41,7 @@ import { useHandleMutate } from '../../utils';
 import { type Concept } from '../../core/api/types/concept/Concept';
 import { type Patient } from '../../core/api/types/identity/Patient';
 import { type StockItemDTO } from '../../core/api/types/stockItem/StockItem';
-import { type StockReportSchema, reportSchema } from '../report-validation-schema';
+import { type StockReportSchema, getReportSchema } from '../report-validation-schema';
 import { useConcept, useStockTagLocations } from '../../stock-lookups/stock-lookups.resource';
 import { ResourceRepresentation } from '../../core/api/api';
 import { useReportTypes } from '../stock-reports.resource';
@@ -82,7 +76,6 @@ export interface ReportModel {
   patientName?: string;
   limit?: number | null;
   mostLeastMoving?: string;
-  mostLeastMovingName?: string;
   fullFillment?: string[];
 }
 
@@ -254,7 +247,7 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
     setValue,
   } = useForm<StockReportSchema>({
     mode: 'all',
-    resolver: zodResolver(reportSchema),
+    resolver: zodResolver(getReportSchema(displayLocation)),
   });
 
   if (isLoading) {
@@ -271,17 +264,6 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
         title: t('error', 'Error'),
         kind: 'error',
         subtitle: t('reportTypeNotFound', 'Report type not found. Please select a valid report.'),
-      });
-      return;
-    }
-
-    const reportType = Array.isArray(reportTypes) ? reportTypes.find((p) => p.systemName === reportSystemName) : null;
-
-    if (reportType?.parameters?.includes(ReportParameter.Location) && !report.locationUuid) {
-      showSnackbar({
-        title: t('error', 'Error'),
-        kind: 'error',
-        subtitle: t('locationRequired', 'Location is required for this report type.'),
       });
       return;
     }
@@ -384,8 +366,8 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
         parameters += getReportParameter(
           ReportParameter.MostLeastMoving,
           report.mostLeastMoving ?? 'MostMoving',
-          report.mostLeastMovingName?.trim() ?? 'Most Moving',
-          t('mostMoving', 'Most moving'),
+          report.mostLeastMoving === 'LeastMoving' ? t('leastMoving', 'Least Moving') : t('mostMoving', 'Most moving'),
+          t('rank', 'Rank'),
           newLine,
         );
       }
@@ -394,7 +376,7 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
           ReportParameter.Limit,
           (report.limit ?? getParamDefaultLimit(reportSystemName) ?? 20).toString(),
           (report.limit ?? getParamDefaultLimit(reportSystemName) ?? 20).toString(),
-          t(getReportLimitLabel(reportSystemName)),
+          isForecastReport(reportSystemName) ? t('months', 'Months') : t('limit', 'Limit'),
           newLine,
         );
       }
@@ -412,7 +394,9 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
           ReportParameter.StartDate,
           report.startDate ? JSON.stringify(report.startDate).replaceAll('"', '') : '',
           formatDisplayDate(report.startDate) ?? '',
-          t(getReportStartDateLabel(reportSystemName)),
+          isForecastReport(reportSystemName)
+            ? t('historicalStartDate', 'Historical start date')
+            : t('startDate', 'Start date'),
           newLine,
         );
       }
@@ -421,7 +405,7 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
           ReportParameter.EndDate,
           report.endDate ? JSON.stringify(report.endDate).replaceAll('"', '') : '',
           formatDisplayDate(report.endDate) ?? '',
-          t(getReportEndDateLabel(reportSystemName)),
+          isForecastReport(reportSystemName) ? t('historicalEndDate', 'Historical end date') : t('endDate', 'End date'),
           newLine,
         );
       }
@@ -467,6 +451,38 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
     }
   };
 
+  const handleInvalid = (fieldErrors: FieldErrors<StockReportSchema>) => {
+    const fieldLabels: Partial<Record<keyof StockReportSchema, string>> = {
+      reportName: t('reportName', 'Report name'),
+      date: t('date', 'Date'),
+      startDate: t('startDate', 'Start date'),
+      endDate: t('endDate', 'End date'),
+      inventoryGroupBy: t('inventoryBy', 'Inventory by'),
+      locationUuid: t('location', 'Location'),
+    };
+    const missingFields = Object.keys(fieldErrors)
+      .map((field) => fieldLabels[field])
+      .filter(Boolean);
+
+    showSnackbar({
+      title: t('reportNotSaved', 'Report not saved'),
+      kind: 'error',
+      isLowContrast: true,
+      subtitle: t('completeRequiredFields', 'Complete the required fields: {{fields}}', {
+        fields: missingFields.join(', '),
+      }),
+    });
+  };
+
+  // Enter in a date field commits the typed date, it shouldn't also submit the form. This has to run in the
+  // capture phase because Carbon's DatePicker stops the keydown from bubbling.
+  const handleFormKeyDown = (event: React.KeyboardEvent<HTMLFormElement>) => {
+    const isDateField = ['date', 'startDate', 'endDate'].includes((event.target as HTMLElement).id);
+    if (event.key === 'Enter' && isDateField) {
+      event.preventDefault();
+    }
+  };
+
   const getReportParameter = (
     name: string,
     value: string,
@@ -479,7 +495,11 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
 
   return (
     <Workspace2 title={t('newReport', 'New Report')}>
-      <Form className={styles.container} onSubmit={handleSubmit(handleSave)}>
+      <Form
+        className={styles.container}
+        onKeyDownCapture={handleFormKeyDown}
+        onSubmit={handleSubmit(handleSave, handleInvalid)}
+      >
         <Stack className={styles.form} gap={5}>
           <>
             <FormGroup legendText={t('reportName', 'Report name')}>
@@ -489,6 +509,8 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
                 render={({ field: { onChange } }) => (
                   <ComboBox
                     id="report"
+                    invalid={!!errors?.reportName?.message}
+                    invalidText={errors?.reportName?.message}
                     titleText={t('reportName', 'Report name')}
                     items={Array.isArray(reportTypes) ? reportTypes : [reportTypes]}
                     itemToString={(item) => `${item?.name ?? item?.name ?? ''}`}
@@ -537,6 +559,7 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
                   maxDate={formatForDatePicker(today())}
                   locale="en"
                   dateFormat={DATE_PICKER_CONTROL_FORMAT}
+                  invalid={!!errors?.startDate?.message}
                   onChange={onChange}
                   value={value}
                 >
@@ -544,7 +567,6 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
                     id="startDate"
                     placeholder={DATE_PICKER_FORMAT}
                     labelText={t('startDate', 'Start date')}
-                    invalid={!!errors?.startDate?.message}
                     invalidText={errors?.startDate?.message}
                   />
                 </DatePicker>
@@ -561,6 +583,7 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
                   maxDate={formatForDatePicker(today())}
                   locale="en"
                   dateFormat={DATE_PICKER_CONTROL_FORMAT}
+                  invalid={!!errors?.endDate?.message}
                   onChange={onChange}
                   value={value}
                 >
@@ -568,7 +591,6 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
                     id="endDate"
                     placeholder={DATE_PICKER_FORMAT}
                     labelText={t('endDate', 'End date')}
-                    invalid={!!errors?.endDate?.message}
                     invalidText={errors?.endDate?.message}
                   />
                 </DatePicker>
@@ -582,7 +604,11 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
               invalid={!!errors?.inventoryGroupBy?.message}
               invalidText={errors?.inventoryGroupBy?.message}
               labelText={t('inventoryBy', 'Inventory by')}
-              onChange={(e) => setValue('inventoryGroupBy', e.target.value)}
+              onChange={(e) => {
+                const selectedOption = e.target.selectedOptions[0];
+                setValue('inventoryGroupBy', e.target.value, { shouldValidate: true });
+                setValue('inventoryGroupByName', selectedOption?.text ?? '');
+              }}
             >
               <SelectItem value="" text={t('selectOption', 'Select an option')} />
               <SelectItem value="StockItemOnly" text={t('stockItem', 'Stock Item')} />
@@ -659,12 +685,12 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
               id="location"
               onChange={(e) => {
                 const selectedLocation = stockLocations?.find((loc) => loc.id === e.target.value);
-                setValue('locationUuid', e.target.value);
+                setValue('locationUuid', e.target.value, { shouldValidate: true });
                 setValue('location', selectedLocation?.name || '');
               }}
               defaultValue=""
-              invalid={!!errors?.location?.message}
-              invalidText={errors?.location?.message}
+              invalid={!!errors?.locationUuid?.message}
+              invalidText={errors?.locationUuid?.message}
             >
               <SelectItem disabled hidden value="" text={t('chooseALocation', 'Choose a location')} />
               {(stockLocations ?? [])?.map((loc) => {
@@ -717,8 +743,8 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
                   allowEmpty
                   disableWheel
                   hideSteppers
-                  value={value}
-                  onChange={onChange}
+                  value={value ?? ''}
+                  onChange={(_, { value: limit }) => onChange(limit === '' ? undefined : Number(limit))}
                   label={t('limit', 'Limit')}
                 />
               )}
@@ -798,6 +824,7 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
                   maxDate={formatForDatePicker(today())}
                   locale="en"
                   dateFormat={DATE_PICKER_CONTROL_FORMAT}
+                  invalid={!!errors?.date?.message}
                   onChange={onChange}
                   value={value}
                 >
@@ -805,7 +832,6 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
                     id="date"
                     placeholder={DATE_PICKER_FORMAT}
                     labelText={t('date', 'Date')}
-                    invalid={!!errors?.date?.message}
                     invalidText={errors?.date?.message}
                   />
                 </DatePicker>
