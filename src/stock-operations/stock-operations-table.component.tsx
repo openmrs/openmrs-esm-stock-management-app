@@ -27,10 +27,10 @@ import {
 } from '@carbon/react';
 import { ArrowRight } from '@carbon/react/icons';
 import { useTranslation } from 'react-i18next';
-import { isDesktop, restBaseUrl, useConfig } from '@openmrs/esm-framework';
+import { isDesktop, restBaseUrl, useConfig, useSession } from '@openmrs/esm-framework';
 import { type ConfigObject } from '../config-schema';
 import { DATE_PICKER_CONTROL_FORMAT, DATE_PICKER_FORMAT, StockFilters } from '../constants';
-import { formatDisplayDate } from '../core/utils/datetimeUtils';
+import { formatDisplayDate, getDatePickerLocale } from '../core/utils/datetimeUtils';
 import { useHandleMutate } from '../utils';
 import { ResourceRepresentation } from '../core/api/api';
 import { useDebounce } from '../core/hooks/debounce-hook';
@@ -47,6 +47,7 @@ interface StockOperationsTableProps {
 
 const StockOperations: React.FC<StockOperationsTableProps> = () => {
   const { t } = useTranslation();
+  const session = useSession();
   const handleMutate = useHandleMutate();
   const { stockSourceTypeUUID } = useConfig<ConfigObject>();
 
@@ -197,15 +198,12 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
       <DataTable headers={tableHeaders} isSortable rows={error ? [] : tableRows} useZebraStyles>
         {({ expandRow, getExpandedRowProps, getHeaderProps, getRowProps, getTableProps, headers, rows }) => (
           <TableContainer>
-            <TableToolbar
-              style={{
-                position: 'static',
-                overflow: 'visible',
-                backgroundColor: 'color',
-              }}
-            >
+            {/* TableToolbar doesn't accept a className. A global rule positions toolbars absolutely over the table,
+                and Carbon fixes their height, so the toolbar couldn't grow to fit its wrapped controls */}
+            <TableToolbar style={{ position: 'static', overflow: 'visible', blockSize: 'auto' }}>
               <TableToolbarContent className={styles.toolbarContent}>
                 <TableToolbarSearch
+                  className={styles.search}
                   expanded
                   labelText={t('searchStockOperations', 'Search stock operations')}
                   onChange={(e) =>
@@ -215,23 +213,25 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
                 />
                 <div className={styles.container}>
                   <DatePicker
-                    className={styles.datePicker}
                     datePickerType="range"
                     dateFormat={DATE_PICKER_CONTROL_FORMAT}
+                    locale={getDatePickerLocale(session?.locale)}
                     onChange={([startDate, endDate]) => handleDateFilterChange([startDate, endDate])}
                     value={[selectedFromDate, selectedToDate]}
                   >
                     <DatePickerInput
                       id="stock-operations-start-date"
-                      labelText={t('startDate', 'Start date')}
+                      labelText={`${t('startDate', 'Start date')} (${DATE_PICKER_FORMAT})`}
                       placeholder={DATE_PICKER_FORMAT}
                     />
+
                     <DatePickerInput
                       id="stock-operations-end-date"
-                      labelText={t('endDate', 'End date')}
+                      labelText={`${t('endDate', 'End date')} (${DATE_PICKER_FORMAT})`}
                       placeholder={DATE_PICKER_FORMAT}
                     />
                   </DatePicker>
+
                   <StockOperationsFilters
                     conceptUuid={stockSourceTypeUUID}
                     filterName={StockFilters.SOURCES}

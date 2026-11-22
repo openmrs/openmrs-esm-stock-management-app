@@ -66,3 +66,13 @@ export const ParseDate = (value: string | null | undefined) => {
   }
   return date;
 };
+export const getDatePickerLocale = (locale?: string | null) => {
+  const [lang, region] = locale?.toLowerCase().split(/[-_]/) ?? [];
+  if (!lang) {
+    return undefined;
+  }
+  if (lang === 'zh' && region === 'tw') {
+    return 'zh_tw';
+  }
+  return lang === 'vi' ? 'vn' : lang;
+};
