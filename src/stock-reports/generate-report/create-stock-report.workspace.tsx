@@ -27,22 +27,17 @@ import {
   showSnackbar,
   useConfig,
   useLayoutType,
+  useSession,
   Workspace2,
   type Workspace2DefinitionProps,
 } from '@openmrs/esm-framework';
 import { Controller, type FieldErrors, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  getParamDefaultLimit,
-  getReportEndDateLabel,
-  getReportLimitLabel,
-  getReportStartDateLabel,
-  ReportParameter,
-} from '../ReportType';
+import { getParamDefaultLimit, isForecastReport, ReportParameter } from '../ReportType';
 import { DATE_PICKER_CONTROL_FORMAT, DATE_PICKER_FORMAT, formatForDatePicker, today } from '../../constants';
 import { BatchJobTypeReport } from '../../core/api/types/BatchJob';
 import { createBatchJob } from '../../stock-batch/stock-batch.resource';
-import { formatDisplayDate } from '../../core/utils/datetimeUtils';
+import { formatDisplayDate, getDatePickerLocale } from '../../core/utils/datetimeUtils';
 import { useHandleMutate } from '../../utils';
 import { type Concept } from '../../core/api/types/concept/Concept';
 import { type Patient } from '../../core/api/types/identity/Patient';
@@ -82,13 +77,13 @@ export interface ReportModel {
   patientName?: string;
   limit?: number | null;
   mostLeastMoving?: string;
-  mostLeastMovingName?: string;
   fullFillment?: string[];
 }
 
 const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ workspaceProps, closeWorkspace }) => {
   const { model } = workspaceProps ?? {};
   const { t } = useTranslation();
+  const session = useSession();
   const handleMutate = useHandleMutate();
   const { stockItemCategoryUUID } = useConfig<ConfigObject>();
   const isTablet = useLayoutType() === 'tablet';
@@ -373,8 +368,8 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
         parameters += getReportParameter(
           ReportParameter.MostLeastMoving,
           report.mostLeastMoving ?? 'MostMoving',
-          report.mostLeastMovingName?.trim() ?? 'Most Moving',
-          t('mostMoving', 'Most moving'),
+          report.mostLeastMoving === 'LeastMoving' ? t('leastMoving', 'Least Moving') : t('mostMoving', 'Most moving'),
+          t('rank', 'Rank'),
           newLine,
         );
       }
@@ -383,7 +378,7 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
           ReportParameter.Limit,
           (report.limit ?? getParamDefaultLimit(reportSystemName) ?? 20).toString(),
           (report.limit ?? getParamDefaultLimit(reportSystemName) ?? 20).toString(),
-          t(getReportLimitLabel(reportSystemName)),
+          isForecastReport(reportSystemName) ? t('months', 'Months') : t('limit', 'Limit'),
           newLine,
         );
       }
@@ -401,7 +396,9 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
           ReportParameter.StartDate,
           report.startDate ? JSON.stringify(report.startDate).replaceAll('"', '') : '',
           formatDisplayDate(report.startDate) ?? '',
-          t(getReportStartDateLabel(reportSystemName)),
+          isForecastReport(reportSystemName)
+            ? t('historicalStartDate', 'Historical start date')
+            : t('startDate', 'Start date'),
           newLine,
         );
       }
@@ -410,7 +407,7 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
           ReportParameter.EndDate,
           report.endDate ? JSON.stringify(report.endDate).replaceAll('"', '') : '',
           formatDisplayDate(report.endDate) ?? '',
-          t(getReportEndDateLabel(reportSystemName)),
+          isForecastReport(reportSystemName) ? t('historicalEndDate', 'Historical end date') : t('endDate', 'End date'),
           newLine,
         );
       }
@@ -562,7 +559,7 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
                 <DatePicker
                   datePickerType="single"
                   maxDate={formatForDatePicker(today())}
-                  locale="en"
+                  locale={getDatePickerLocale(session?.locale)}
                   dateFormat={DATE_PICKER_CONTROL_FORMAT}
                   invalid={!!errors?.startDate?.message}
                   onChange={onChange}
@@ -571,7 +568,7 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
                   <DatePickerInput
                     id="startDate"
                     placeholder={DATE_PICKER_FORMAT}
-                    labelText={t('startDate', 'Start date')}
+                    labelText={`${t('startDate', 'Start date')} (${DATE_PICKER_FORMAT})`}
                     invalidText={errors?.startDate?.message}
                   />
                 </DatePicker>
@@ -586,7 +583,7 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
                 <DatePicker
                   datePickerType="single"
                   maxDate={formatForDatePicker(today())}
-                  locale="en"
+                  locale={getDatePickerLocale(session?.locale)}
                   dateFormat={DATE_PICKER_CONTROL_FORMAT}
                   invalid={!!errors?.endDate?.message}
                   onChange={onChange}
@@ -595,7 +592,7 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
                   <DatePickerInput
                     id="endDate"
                     placeholder={DATE_PICKER_FORMAT}
-                    labelText={t('endDate', 'End date')}
+                    labelText={`${t('endDate', 'End date')} (${DATE_PICKER_FORMAT})`}
                     invalidText={errors?.endDate?.message}
                   />
                 </DatePicker>
@@ -609,7 +606,11 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
               invalid={!!errors?.inventoryGroupBy?.message}
               invalidText={errors?.inventoryGroupBy?.message}
               labelText={t('inventoryBy', 'Inventory by')}
-              onChange={(e) => setValue('inventoryGroupBy', e.target.value, { shouldValidate: true })}
+              onChange={(e) => {
+                const selectedOption = e.target.selectedOptions[0];
+                setValue('inventoryGroupBy', e.target.value, { shouldValidate: true });
+                setValue('inventoryGroupByName', selectedOption?.text ?? '');
+              }}
             >
               <SelectItem value="" text={t('selectOption', 'Select an option')} />
               <SelectItem value="StockItemOnly" text={t('stockItem', 'Stock Item')} />
@@ -823,7 +824,7 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
                 <DatePicker
                   datePickerType="single"
                   maxDate={formatForDatePicker(today())}
-                  locale="en"
+                  locale={getDatePickerLocale(session?.locale)}
                   dateFormat={DATE_PICKER_CONTROL_FORMAT}
                   invalid={!!errors?.date?.message}
                   onChange={onChange}
@@ -832,7 +833,7 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
                   <DatePickerInput
                     id="date"
                     placeholder={DATE_PICKER_FORMAT}
-                    labelText={t('date', 'Date')}
+                    labelText={`${t('date', 'Date')} (${DATE_PICKER_FORMAT})`}
                     invalidText={errors?.date?.message}
                   />
                 </DatePicker>
