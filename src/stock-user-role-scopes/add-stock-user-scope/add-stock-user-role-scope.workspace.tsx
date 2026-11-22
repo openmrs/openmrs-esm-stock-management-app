@@ -371,14 +371,17 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
             </span>
           </FormGroup>
           <CheckboxGroup className={styles.checkboxGrid} legendText="">
-            <Checkbox
-              checked={operationSelection.checked}
-              indeterminate={operationSelection.indeterminate}
-              id="chk-all-stock-operations"
-              labelText={t('selectAll', 'Select all')}
-              onChange={onAllOperationsChanged}
-              value="all-stock-operations"
-            />
+            {stockOperations?.length > 0 && (
+              <Checkbox
+                checked={operationSelection.checked}
+                className={styles.selectAll}
+                indeterminate={operationSelection.indeterminate}
+                id="chk-all-stock-operations"
+                labelText={t('selectAll', 'Select all')}
+                onChange={onAllOperationsChanged}
+                value="all-stock-operations"
+              />
+            )}
             {stockOperations?.length > 0 &&
               stockOperations.map((type) => {
                 return (
