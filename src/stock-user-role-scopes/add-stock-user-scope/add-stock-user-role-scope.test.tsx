@@ -107,8 +107,8 @@ describe('AddStockUserRoleScope', () => {
     it('shows the saved active dates, even when they are in the past', () => {
       renderForm(savedScope);
 
-      expect(screen.getByLabelText('Active From')).toHaveValue('15/01/2020');
-      expect(screen.getByLabelText('Active To')).toHaveValue('20/02/2020');
+      expect(screen.getByLabelText(/^Active From/)).toHaveValue('15/01/2020');
+      expect(screen.getByLabelText(/^Active To/)).toHaveValue('20/02/2020');
     });
 
     it('keeps a saved role selectable when it is no longer a configured stock role', () => {
