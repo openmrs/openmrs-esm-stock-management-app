@@ -143,6 +143,7 @@ const StockReferences: React.FC<StockReferencesProps> = ({ stockItemUuid }) => {
         title: t('saveStockItemReferenceErrorTitle', 'Stock Item Reference'),
         subtitle: t('saveStockItemReferenceError', 'Error saving stock item reference: {{reason}}', {
           reason: failures.flatMap((failure) => extractErrorMessagesFromResponse(failure.reason)).join(', '),
+          interpolation: { escapeValue: false },
         }),
         kind: 'error',
       });
@@ -220,7 +221,7 @@ const StockReferencesRow: React.FC<{ row: StockItemReferenceDTO }> = ({ row }) =
     control,
     formState: { errors },
     unregister,
-  } = useFormContext();
+  } = useFormContext<StockItemReferencesFormData>();
   const codeError = errors.codes?.[row.uuid];
 
   const handleDelete = (e) => {
@@ -259,7 +260,7 @@ const StockReferencesRow: React.FC<{ row: StockItemReferenceDTO }> = ({ row }) =
             controllerName={`codes.${row.uuid}`}
             hideLabel
             invalid={!!codeError}
-            invalidText={codeError?.message as string}
+            invalidText={codeError?.message}
             labelText={t('code', 'Code')}
           />
           <Button
@@ -282,10 +283,8 @@ const NewStockReferenceRow: React.FC = () => {
   const {
     control,
     formState: { errors },
-  } = useFormContext();
-  const newReferenceErrors = errors.newReference as
-    | { stockSourceUuid?: { message?: string }; referenceCode?: { message?: string } }
-    | undefined;
+  } = useFormContext<StockItemReferencesFormData>();
+  const newReferenceErrors = errors.newReference;
 
   return (
     <TableRow>
