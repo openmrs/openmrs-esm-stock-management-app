@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { usePagination } from '@openmrs/esm-framework';
 import { useStockSources } from './stock-sources.resource';
@@ -17,6 +17,15 @@ export default function useStockSourcesPage(filter: StockOperationFilter) {
   const { items, isLoading, error } = useStockSources(
     isPagedOnServer ? { ...filter, limit: currentPageSize, startIndex: serverPage - 1 } : filter,
   );
+
+  // Deleting the last rows on the last page would otherwise leave the table past the end
+  const totalCount = items.totalCount;
+  useEffect(() => {
+    const lastPage = Math.max(1, Math.ceil((totalCount ?? 0) / currentPageSize));
+    if (isPagedOnServer && totalCount != null && serverPage > lastPage) {
+      setServerPage(lastPage);
+    }
+  }, [isPagedOnServer, totalCount, currentPageSize, serverPage]);
 
   const clientPages = usePagination(isPagedOnServer ? [] : items.results, currentPageSize);
   const paginatedItems = isPagedOnServer ? items.results ?? [] : clientPages.results;

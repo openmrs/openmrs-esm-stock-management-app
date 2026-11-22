@@ -75,6 +75,26 @@ describe('useStockSourcesPage', () => {
       expect(lastFilter()).toEqual(expect.objectContaining({ limit: 20, startIndex: 0 }));
     });
 
+    it('moves back to the last page when the page it was on no longer exists', () => {
+      vi.mocked(useStockSources).mockReturnValue({
+        items: { results: serverPage, totalCount: 11 },
+        isLoading: false,
+      } as never);
+      const { result, rerender } = renderHook(() => useStockSourcesPage({ sourceTypeUuid: 'other-uuid' }));
+      act(() => result.current.goTo(2));
+      expect(lastFilter()).toEqual(expect.objectContaining({ startIndex: 1 }));
+
+      // The only source on page 2 is deleted
+      vi.mocked(useStockSources).mockReturnValue({
+        items: { results: [], totalCount: 10 },
+        isLoading: false,
+      } as never);
+      rerender();
+
+      expect(result.current.currentPage).toBe(1);
+      expect(lastFilter()).toEqual(expect.objectContaining({ startIndex: 0 }));
+    });
+
     it('pages in the browser when no source type is chosen, as the backend then returns every source', () => {
       const all = Array.from({ length: 15 }, (_, i) => ({ uuid: `s-${i}`, name: `Source ${i}` }));
       vi.mocked(useStockSources).mockReturnValue({
