@@ -1,4 +1,6 @@
-import { CLOSE_PRINT_AFTER_PRINT, STOCK_OPERATION_PRINT_DISABLE_COSTS } from '../../constants';
+import { getConfig } from '@openmrs/esm-framework';
+import { type ConfigObject } from '../../config-schema';
+import { CLOSE_PRINT_AFTER_PRINT, moduleName } from '../../constants';
 import { GetHeaderSection, GetPrintTemplate } from '../../core/print/PrintTemplate';
 import { printDocument } from '../../core/print/printUtils';
 import { formatDisplayDate } from '../../core/utils/datetimeUtils';
@@ -7,6 +9,7 @@ import { type StockOperationPrintData } from './StockOperationReport';
 export const FormatTransferDocument = async (data: StockOperationPrintData): Promise<string> => {
   const emptyRowCount: number = Math.max(0, 25 - (data?.items?.length ?? 0));
   const headerSection = await GetHeaderSection();
+  const { printItemCost } = await getConfig<ConfigObject>(moduleName);
   return `
     <div>
         ${headerSection}
@@ -69,12 +72,12 @@ export const FormatTransferDocument = async (data: StockOperationPrintData): Pro
                         p.quantityRequiredUoM ?? ''
                       }</td>
                     <td valign="middle" class="center">${
-                      STOCK_OPERATION_PRINT_DISABLE_COSTS
-                        ? ''
-                        : `${p.unitCost?.toLocaleString() ?? ''}${p.unitCostUoM ? `/${p.unitCostUoM}` : ''}`
+                      printItemCost
+                        ? `${p.unitCost?.toLocaleString() ?? ''}${p.unitCostUoM ? `/${p.unitCostUoM}` : ''}`
+                        : ''
                     }</td>
                     <td valign="middle" class="center">${
-                      STOCK_OPERATION_PRINT_DISABLE_COSTS ? '' : `${p.totalCost?.toLocaleString() ?? ''}`
+                      printItemCost ? `${p.totalCost?.toLocaleString() ?? ''}` : ''
                     }</td>
                 </tr> 
                 `;
