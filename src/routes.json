@@ -123,24 +123,6 @@
       "component": "stockReports"
     },
     {
-      "name": "settings-db-link",
-      "slot": "stock-page-dashboard-slot",
-      "component": "stockSettingsLink",
-      "meta": {
-        "name": "settings",
-        "slot": "settings-dashboard-slot",
-        "title": "Settings"
-      },
-      "order": 6,
-      "online": true,
-      "offline": true
-    },
-    {
-      "name": "stock-settings-db",
-      "slot": "settings-dashboard-slot",
-      "component": "stockSettings"
-    },
-    {
       "name": "stock-management-admin-card-link",
       "slot": "system-admin-page-card-link-slot",
       "component": "stockManagementAdminCardLink"

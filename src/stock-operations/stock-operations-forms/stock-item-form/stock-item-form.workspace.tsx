@@ -14,7 +14,7 @@ import classNames from 'classnames';
 import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useConfig, useLayoutType } from '@openmrs/esm-framework';
+import { useConfig, useLayoutType, useSession } from '@openmrs/esm-framework';
 import { type z } from 'zod';
 import { type ConfigObject } from '../../../config-schema';
 import { DATE_PICKER_CONTROL_FORMAT, DATE_PICKER_FORMAT, formatForDatePicker, today } from '../../../constants';
@@ -28,6 +28,7 @@ import useOperationTypePermisions from '../hooks/useOperationTypePermisions';
 import BatchNoSelector from '../input-components/batch-no-selector.component';
 import QtyUomSelector from '../input-components/quantity-uom-selector.component';
 import styles from './stock-item-form.scss';
+import { getDatePickerLocale } from '../../../core/utils/datetimeUtils';
 
 export interface StockItemFormProps {
   stockOperationType: StockOperationType;
@@ -55,6 +56,7 @@ const StockItemForm: React.FC<StockItemFormProps> = ({ stockOperationType, stock
     mode: 'all',
   });
   const { t } = useTranslation();
+  const session = useSession();
   const { item } = useStockItem(form.getValues('stockItemUuid'));
   const commonName = useMemo(() => {
     if (!useItemCommonNameAsDisplay) return;
@@ -128,7 +130,7 @@ const StockItemForm: React.FC<StockItemFormProps> = ({ stockOperationType, stock
                     <DatePicker
                       datePickerType="single"
                       minDate={formatForDatePicker(today())}
-                      locale="en"
+                      locale={getDatePickerLocale(session?.locale)}
                       className={styles.datePickerInput}
                       dateFormat={DATE_PICKER_CONTROL_FORMAT}
                       value={(value as unknown as Date) || null}
@@ -139,7 +141,7 @@ const StockItemForm: React.FC<StockItemFormProps> = ({ stockOperationType, stock
                       <DatePickerInput
                         id={`expiration-input`}
                         placeholder={DATE_PICKER_FORMAT}
-                        labelText={t('expiration', 'Expiration date')}
+                        labelText={`${t('expiration', 'Expiration date')} (${DATE_PICKER_FORMAT})`}
                         invalid={!!error?.message}
                         invalidText={error?.message}
                       />
