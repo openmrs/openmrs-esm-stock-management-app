@@ -246,4 +246,28 @@ describe('User Selector', () => {
 
     expect(screen.getByText('Betty Okonkwo (bokonkwo)')).toBeInTheDocument();
   });
+
+  it('does not search when only spaces are typed', async () => {
+    const user = userEvent.setup();
+
+    const setSearchString = vi.fn();
+    mockUseSearchUser.mockReturnValue({
+      isLoading: false,
+      hasSearchTerm: false,
+      userList: [],
+      setSearchString,
+      setLimit: vi.fn(),
+      setRepresentation: vi.fn(),
+    });
+    mockUseUser.mockReturnValue({ isLoading: false, data: null, error: null });
+
+    render(<UsersSelector />);
+
+    const combobox = screen.getByRole('combobox');
+    await user.click(combobox);
+    await user.type(combobox, '   ');
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    expect(setSearchString).toHaveBeenCalledWith(null);
+    expect(setSearchString).not.toHaveBeenCalledWith('   ');
+  });
 });

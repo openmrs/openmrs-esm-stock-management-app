@@ -20,4 +20,8 @@ describe('getUserOptionLabel', () => {
     expect(getUserOptionLabel(null)).toBe('');
     expect(getUserName(undefined)).toBe('');
   });
+
+  it('falls back to display as the identifier when there is no username', () => {
+    expect(getUserOptionLabel({ display: '1', person: { display: 'Super User' } })).toBe('Super User (1)');
+  });
 });

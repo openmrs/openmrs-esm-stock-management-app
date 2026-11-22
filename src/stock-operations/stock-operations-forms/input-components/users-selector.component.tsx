@@ -14,7 +14,7 @@ const UsersSelector = () => {
   const { isLoading, userList, setSearchString, hasSearchTerm } = useSearchUser();
   const { t } = useTranslation();
   const debouncedSearch = useDebounce((query: string) => {
-    setSearchString(query);
+    setSearchString(query?.trim() || null);
   }, 300);
 
   const form = useFormContext<{ responsiblePersonUuid: string; responsiblePersonOther: string }>();
