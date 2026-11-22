@@ -34,7 +34,7 @@ const StockOperationSubmissionFormStep: React.FC<StockOperationSubmissionFormSte
   const { t } = useTranslation();
   const handleMutate = useHandleMutate();
   const operationTypePermision = useOperationTypePermisions(stockOperationType);
-  const editable = useMemo(() => !stockOperation || stockOperation.status === 'NEW', [stockOperation]);
+  const editable = !stockOperation || stockOperation.permission?.canEdit === true;
   const form = useFormContext<StockOperationItemDtoSchema>();
   const [approvalRequired, setApprovalRequired] = useState<boolean | null>(stockOperation?.approvalRequired);
   const isStockIssueOperation = useMemo(
@@ -161,7 +161,7 @@ const StockOperationSubmissionFormStep: React.FC<StockOperationSubmissionFormSte
       <Column>
         <RadioButtonGroup
           name="rbgApprovelRequired"
-          legendText={t('doesThisTransactionRequireApproval', 'Does the transaction require approval ?')}
+          legendText={t('doesThisTransactionRequireApproval', 'Does the transaction require approval?')}
           onChange={(value) => handleRadioButtonChange(value === 'true')}
           readOnly={!editable}
           valueSelected={approvalRequired === true ? 'true' : approvalRequired === false ? 'false' : null}

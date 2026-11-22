@@ -24,20 +24,6 @@ export const isForecastReport = (reportSystemName: string | undefined | null) =>
   return reportSystemName === 'STOCK_FORECAST_REPORT' || reportSystemName === 'STOCK_EXPIRY_FORECAST_REPORT';
 };
 
-export const getReportLimitLabel = (reportSystemName: string | undefined | null) => {
-  return isForecastReport(reportSystemName)
-    ? 'stockmanagement.report.edit.months'
-    : 'stockmanagement.report.edit.limit';
-};
-
-export const getReportStartDateLabel = (reportSystemName: string | undefined | null) => {
-  return isForecastReport(reportSystemName) ? 'stockmanagement.report.edit.historicalstartdate' : 'Start Date';
-};
-
-export const getReportEndDateLabel = (reportSystemName: string | undefined | null) => {
-  return isForecastReport(reportSystemName) ? 'stockmanagement.report.edit.historicalenddate' : 'End Date';
-};
-
 export interface ReportType {
   order: number;
   name: string;

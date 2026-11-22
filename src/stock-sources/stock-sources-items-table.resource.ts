@@ -40,7 +40,8 @@ export default function useStockSourcesPage(filter: StockOperationFilter) {
 
   return {
     items: paginatedItems,
-    totalItems: items?.totalCount,
+    // The backend returns a null totalCount for an unfiltered request
+    totalItems: items?.totalCount ?? items?.results?.length ?? 0,
     currentPage,
     currentPageSize,
     paginatedItems,
