@@ -374,6 +374,7 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
           <CheckboxGroup className={styles.checkboxGrid} legendText="">
             {stockOperations?.length > 0 && (
               <Checkbox
+                aria-label={t('selectAllStockOperations', 'Select all stock operations')}
                 checked={operationSelection.checked}
                 className={styles.selectAll}
                 indeterminate={operationSelection.indeterminate}
@@ -407,6 +408,7 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
           <CheckboxGroup className={styles.checkboxGrid} legendText="">
             {stockLocations?.length > 0 && (
               <Checkbox
+                aria-label={t('selectAllLocations', 'Select all locations')}
                 checked={locationSelection.checked}
                 className={styles.selectAll}
                 indeterminate={locationSelection.indeterminate}
