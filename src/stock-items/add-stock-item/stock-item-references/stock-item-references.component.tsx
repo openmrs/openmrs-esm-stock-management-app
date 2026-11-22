@@ -94,10 +94,18 @@ const StockReferences: React.FC<StockReferencesProps> = ({ stockItemUuid }) => {
       (error) => {
         handleMutate(`${restBaseUrl}/stockmanagement/stockitemreference`);
 
-        const err = extractErrorMessagesFromResponse(error);
+        const err = extractErrorMessagesFromResponse(
+          error,
+          t(
+            'unexpectedErrorMessage',
+            'An unexpected error occurred. Please try again or contact support if the problem persists.',
+          ),
+        );
         showSnackbar({
           title: t('saveStockItemReferenceErrorTitle', 'Stock Item Reference'),
-          subtitle: t('saveStockItemReferenceErrorMessage', 'Error saving stock item reference' + err.join(',')),
+          subtitle: t('saveStockItemReferenceErrorMessage', 'Error saving stock item reference: {{message}}', {
+            message: err.join(', '),
+          }),
           kind: 'error',
         });
       },
@@ -187,7 +195,13 @@ const StockReferencesRow: React.FC<{
         });
       },
       (error) => {
-        const err = extractErrorMessagesFromResponse(error);
+        const err = extractErrorMessagesFromResponse(
+          error,
+          t(
+            'unexpectedErrorMessage',
+            'An unexpected error occurred. Please try again or contact support if the problem persists.',
+          ),
+        );
         showSnackbar({
           title: t('deleteStockItemReferenceTitle', `Error Deleting a stockitem reference`),
           kind: 'error',

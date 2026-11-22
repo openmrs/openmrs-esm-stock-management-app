@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { extractErrorMessagesFromResponse } from '../constants';
+import { extractErrorMessagesFromResponse } from './constants';
 
 describe('extractErrorMessagesFromResponse', () => {
   it('extracts the server error message from the response body', () => {
@@ -24,6 +24,31 @@ describe('extractErrorMessagesFromResponse', () => {
       },
     };
     expect(extractErrorMessagesFromResponse(error)).toEqual(['Source is required']);
+  });
+
+  it('extracts global errors raised via errors.reject()', () => {
+    const error = {
+      responseBody: {
+        error: {
+          message: 'Validation failed',
+          fieldErrors: {},
+          globalErrors: [{ message: 'The quantity issued cannot exceed the stock on hand' }],
+        },
+      },
+    };
+    expect(extractErrorMessagesFromResponse(error)).toEqual(['The quantity issued cannot exceed the stock on hand']);
+  });
+
+  it('combines global and field errors', () => {
+    const error = {
+      responseBody: {
+        error: {
+          globalErrors: [{ message: 'Operation has no items' }],
+          fieldErrors: { destinationUuid: [{ message: 'Destination is required' }] },
+        },
+      },
+    };
+    expect(extractErrorMessagesFromResponse(error)).toEqual(['Operation has no items', 'Destination is required']);
   });
 
   it('falls back when field errors contain only blank messages', () => {

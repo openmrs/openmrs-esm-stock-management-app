@@ -108,7 +108,13 @@ const StockOperationPrintButton: React.FC<StockOperationCancelButtonProps> = ({ 
       showSnackbar({
         kind: 'error',
         title: t('errorPrintingStockOperation', 'Error printing stock operation'),
-        subtitle: extractErrorMessagesFromResponse(e).join(', '),
+        subtitle: extractErrorMessagesFromResponse(
+          e,
+          t(
+            'unexpectedErrorMessage',
+            'An unexpected error occurred. Please try again or contact support if the problem persists.',
+          ),
+        ).join(', '),
       });
     } finally {
       setLoading(false);

@@ -111,7 +111,13 @@ const StockOperationSubmissionFormStep: React.FC<StockOperationSubmissionFormSte
             : t('stockOperationAdded', 'Stock operation added successfully'),
         });
       } catch (error) {
-        const errorMessages = extractErrorMessagesFromResponse(error);
+        const errorMessages = extractErrorMessagesFromResponse(
+          error,
+          t(
+            'unexpectedErrorMessage',
+            'An unexpected error occurred. Please try again or contact support if the problem persists.',
+          ),
+        );
         showSnackbar({
           subtitle: errorMessages.join(', '),
           title: t('errorSavingForm', 'Error on saving form'),

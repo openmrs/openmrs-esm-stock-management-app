@@ -166,14 +166,16 @@ const DEFAULT_FALLBACK_ERROR_MESSAGE =
   'An unexpected error occurred. Please try again or contact support if the problem persists.';
 
 export function extractErrorMessagesFromResponse(errorObject, fallbackErrorMessage = DEFAULT_FALLBACK_ERROR_MESSAGE) {
-  const fieldErrors = errorObject?.responseBody?.error?.fieldErrors;
-  if (!fieldErrors) {
-    const message = errorObject?.responseBody?.error?.message ?? errorObject?.message;
-    // never render a null/blank message to users when the server cannot describe the failure
-    return [typeof message === 'string' && message.trim() !== '' ? message : fallbackErrorMessage];
+  const isUsable = (message: unknown): message is string => typeof message === 'string' && message.trim() !== '';
+  const error = errorObject?.responseBody?.error;
+  // a REST validation error always carries fieldErrors (possibly empty), and errors raised via
+  // errors.reject() land in globalErrors, so both collections must be consulted before falling back
+  const validationMessages = [
+    ...(error?.globalErrors ?? []).map((globalError) => globalError?.message),
+    ...Object.values(error?.fieldErrors ?? {}).flatMap((errors: Array<Error>) => errors.map((e) => e?.message)),
+  ].filter(isUsable);
+  if (validationMessages.length > 0) {
+    return validationMessages;
   }
-  const messages = Object.values(fieldErrors)
-    .flatMap((errors: Array<Error>) => errors.map((error) => error.message))
-    .filter((message) => typeof message === 'string' && message.trim() !== '');
-  return messages.length > 0 ? messages : [fallbackErrorMessage];
+  return [[error?.message, errorObject?.message].find(isUsable) ?? fallbackErrorMessage];
 }
