@@ -68,24 +68,24 @@ const TransactionsStockcardPrintout: React.FC<Props> = ({ columns, items, title 
               stockItemTransaction.quantity > 0 ? (
                 <>
                   <span className="transaction-location">{stockItemTransaction.operationSourcePartyName}</span>
-                  <ArrowLeft size={16} /> {stockItemTransaction.operationDestinationPartyName}
+                  <ArrowLeft className={styles.locationArrow} /> {stockItemTransaction.operationDestinationPartyName}
                 </>
               ) : (
                 <>
                   <span className="transaction-location">{stockItemTransaction.operationSourcePartyName}</span>
-                  <ArrowLeft size={16} /> {stockItemTransaction.operationDestinationPartyName}
+                  <ArrowLeft className={styles.locationArrow} /> {stockItemTransaction.operationDestinationPartyName}
                 </>
               )
             ) : stockItemTransaction.operationDestinationPartyName === stockItemTransaction?.partyName ? (
               stockItemTransaction.quantity > 0 ? (
                 <>
                   <span className="transaction-location">{stockItemTransaction.operationDestinationPartyName}</span>
-                  <ArrowLeft size={16} /> {stockItemTransaction.operationSourcePartyName}
+                  <ArrowLeft className={styles.locationArrow} /> {stockItemTransaction.operationSourcePartyName}
                 </>
               ) : (
                 <>
                   <span className="transaction-location">{stockItemTransaction.operationDestinationPartyName}</span>
-                  <ArrowLeft size={16} /> {stockItemTransaction.operationSourcePartyName}
+                  <ArrowLeft className={styles.locationArrow} /> {stockItemTransaction.operationSourcePartyName}
                 </>
               )
             ) : (
