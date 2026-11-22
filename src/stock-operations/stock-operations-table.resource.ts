@@ -1,15 +1,33 @@
 import { type StockOperationFilter, useStockOperations } from './stock-operations.resource';
-import { useMemo, useState } from 'react';
-import { usePagination } from '@openmrs/esm-framework';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 export function useStockOperationPages(filter: StockOperationFilter) {
-  const { items, isLoading, error } = useStockOperations(filter);
-
   const pageSizes = [10, 20, 30, 40, 50];
   const [currentPageSize, setPageSize] = useState(10);
+  const [currentPage, goTo] = useState(1);
 
-  const { goTo, results: paginatedItems, currentPage } = usePagination(items.results, currentPageSize);
+  const filterKey = JSON.stringify({ ...filter, pageSize: currentPageSize });
+  const [lastFilterKey, setLastFilterKey] = useState(filterKey);
+  if (lastFilterKey !== filterKey) {
+    setLastFilterKey(filterKey);
+    goTo(1);
+  }
+
+  const { items, isLoading, error } = useStockOperations({
+    ...filter,
+    limit: currentPageSize,
+    startIndex: currentPage - 1,
+  });
+
+  const totalCount = items?.totalCount;
+
+  useEffect(() => {
+    const lastPage = Math.max(1, Math.ceil((totalCount ?? 0) / currentPageSize));
+    if (totalCount != null && currentPage > lastPage) {
+      goTo(lastPage);
+    }
+  }, [currentPage, currentPageSize, totalCount]);
 
   const { t } = useTranslation();
 
@@ -61,11 +79,10 @@ export function useStockOperationPages(filter: StockOperationFilter) {
   );
 
   return {
-    items: paginatedItems,
-    totalItems: items?.totalCount,
+    items: items.results ?? [],
+    totalItems: totalCount,
     currentPage,
     currentPageSize,
-    paginatedItems,
     goTo,
     pageSizes,
     isLoading,

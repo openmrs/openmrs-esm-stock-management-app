@@ -35,8 +35,16 @@ const StockOperationStepper: React.FC<StockOperationStepperProps> = ({
               role="button"
               className={`${styles.stepperItem} ${active ? styles.stepperItemActive : ''}`}
               key={index}
+              tabIndex={disabled ? -1 : 0}
               onClick={!disabled ? () => onChange?.(index) : undefined}
+              onKeyDown={(event) => {
+                if (!disabled && (event.key === 'Enter' || event.key === ' ')) {
+                  event.preventDefault();
+                  onChange?.(index);
+                }
+              }}
               aria-disabled={disabled}
+              aria-current={selectedIndex === index ? 'step' : undefined}
             >
               <p className={styles.title}>{title}</p>
             </li>
