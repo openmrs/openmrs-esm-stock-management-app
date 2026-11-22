@@ -1,8 +1,7 @@
-import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import { openmrsFetch, restBaseUrl, type FetchResponse } from '@openmrs/esm-framework';
 import { describe, expect, it, vi } from 'vitest';
 import { deleteStockItemPackagingUnit, updateStockItem, fetchAllStockItemTransactions } from './stock-items.resource';
 import { type StockItemFormData } from './validationSchema';
-import { type FetchResponse, openmrsFetch } from '@openmrs/esm-framework';
 
 describe('deleteStockItemPackagingUnit', () => {
   it('sends the void reason as a query parameter', () => {
