@@ -136,6 +136,8 @@ describe('StockUserRoleScopesItems', () => {
     render(<StockUserRoleScopesItems />);
 
     expect(screen.getByRole('button', { name: /add new user role scope/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /edit user role scope/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /delete user role scope/i })).toBeInTheDocument();
   });
 
   it('hides the add button when the user lacks the mutate privilege', () => {
