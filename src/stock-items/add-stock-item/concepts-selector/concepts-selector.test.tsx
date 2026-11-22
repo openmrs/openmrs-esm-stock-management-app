@@ -15,9 +15,10 @@ const mockUseConcepts = vi.mocked(useConcepts);
 const mockUseConfig = vi.mocked(useConfig);
 
 const conceptSetUuid = 'concept-set-uuid';
-const gloves = { uuid: 'gloves-uuid', display: 'Gloves', conceptClass: { name: 'Medical supply' } };
-const syringe = { uuid: 'syringe-uuid', display: 'Syringe', conceptClass: { name: 'Medical supply' } };
-const diagnosis = { uuid: 'diagnosis-uuid', display: 'Glove allergy', conceptClass: { name: 'Diagnosis' } };
+const supplyClassUuid = 'supply-class-uuid';
+const gloves = { uuid: 'gloves-uuid', display: 'Gloves' };
+const syringe = { uuid: 'syringe-uuid', display: 'Syringe' };
+const diagnosis = { uuid: 'diagnosis-uuid', display: 'Glove allergy' };
 
 const mockResults = (results: Array<object>, isLoading = false) =>
   mockUseConcepts.mockReturnValue({ items: { results }, isLoading } as ReturnType<typeof useConcepts>);
@@ -26,10 +27,12 @@ function ConceptsSelectorWrapper({
   defaultConceptUuid = '',
   initialConceptName,
   onConceptUuidChange,
+  readOnly,
 }: {
   defaultConceptUuid?: string;
   initialConceptName?: string;
   onConceptUuidChange?: Mock;
+  readOnly?: boolean;
 }) {
   const methods = useForm<FieldValues>({ defaultValues: { conceptUuid: defaultConceptUuid } });
   return (
@@ -41,20 +44,21 @@ function ConceptsSelectorWrapper({
       placeholder="Choose an item"
       initialConceptName={initialConceptName}
       onConceptUuidChange={onConceptUuidChange}
+      readOnly={readOnly}
     />
   );
 }
 
 describe('ConceptsSelector', () => {
   beforeEach(() => {
-    mockUseConfig.mockReturnValue({ nonDrugItemsConceptSetUUID: '' });
+    mockUseConfig.mockReturnValue({ nonDrugItemsConceptSetUUID: '', nonDrugItemsConceptClassUUID: supplyClassUuid });
     mockResults([]);
   });
 
   it('does not search until something is typed', () => {
     render(<ConceptsSelectorWrapper />);
 
-    expect(mockUseConcepts).toHaveBeenLastCalledWith(expect.objectContaining({ q: '' }), false);
+    expect(mockUseConcepts).toHaveBeenLastCalledWith(expect.objectContaining({ name: '' }), false);
   });
 
   it('searches the server within the configured concept set', async () => {
@@ -82,18 +86,21 @@ describe('ConceptsSelector', () => {
     expect(screen.getByRole('option', { name: 'Glove allergy' })).toBeInTheDocument();
   });
 
-  it('only keeps Medical supply concepts when no concept set is configured', async () => {
+  it('searches by name within the configured class on the server when no concept set is configured', async () => {
     const user = userEvent.setup();
-    mockResults([gloves, diagnosis]);
+    mockResults([gloves, syringe]);
     render(<ConceptsSelectorWrapper />);
 
-    await user.type(screen.getByRole('combobox'), 'glove');
+    await user.type(screen.getByRole('combobox'), 'test');
 
+    // q ignores class, but the name search filters by class on the server
     const lastFilter = mockUseConcepts.mock.lastCall[0];
-    expect(lastFilter).toMatchObject({ q: 'glove' });
+    expect(lastFilter).toMatchObject({ name: 'test', searchType: 'fuzzy', class: supplyClassUuid });
+    expect(lastFilter).not.toHaveProperty('q');
     expect(lastFilter).not.toHaveProperty('memberOf');
+    // The server has already filtered by class, so every result is listed
     expect(screen.getByRole('option', { name: 'Gloves' })).toBeInTheDocument();
-    expect(screen.queryByRole('option', { name: 'Glove allergy' })).not.toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Syringe' })).toBeInTheDocument();
   });
 
   it('keeps the field usable and shows a searching indicator while loading', () => {
@@ -108,7 +115,7 @@ describe('ConceptsSelector', () => {
     const user = userEvent.setup();
     const onConceptUuidChange = vi.fn();
     mockResults([gloves]);
-    render(<ConceptsSelectorWrapper onConceptUuidChange={onConceptUuidChange} />);
+    const { rerender } = render(<ConceptsSelectorWrapper onConceptUuidChange={onConceptUuidChange} />);
 
     const input = screen.getByRole('combobox');
     await user.type(input, 'glove');
@@ -116,9 +123,13 @@ describe('ConceptsSelector', () => {
 
     expect(onConceptUuidChange).toHaveBeenCalledWith(expect.objectContaining({ uuid: 'gloves-uuid' }));
 
+    // A later search that doesn't return the selected concept
     mockResults([syringe]);
-    await user.click(input);
+    rerender(<ConceptsSelectorWrapper onConceptUuidChange={onConceptUuidChange} />);
+    await user.click(screen.getByRole('button', { name: /open/i }));
 
+    expect(screen.getByRole('option', { name: 'Syringe' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Gloves' })).toBeInTheDocument();
     expect(input).toHaveValue('Gloves');
   });
 
@@ -126,6 +137,15 @@ describe('ConceptsSelector', () => {
     render(<ConceptsSelectorWrapper defaultConceptUuid="syringe-uuid" initialConceptName="Syringe" />);
 
     expect(screen.getByRole('combobox')).toHaveValue('Syringe');
+  });
+
+  it("is read-only and doesn't search when the saved concept can't be changed", () => {
+    render(<ConceptsSelectorWrapper defaultConceptUuid="syringe-uuid" initialConceptName="Syringe" readOnly />);
+
+    const input = screen.getByRole('combobox');
+    expect(input).toHaveValue('Syringe');
+    expect(input).toBeDisabled();
+    expect(mockUseConcepts).toHaveBeenLastCalledWith(expect.anything(), false);
   });
 
   it('clears the selection', async () => {

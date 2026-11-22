@@ -16,6 +16,7 @@ interface ConceptsSelectorProps<T> {
   name: string;
   onConceptUuidChange?: (unit: Concept) => void;
   placeholder?: string;
+  readOnly?: boolean;
   title?: string;
 }
 
@@ -23,7 +24,8 @@ const ConceptsSelector = <T,>(props: ConceptsSelectorProps<T>) => {
   const { t } = useTranslation();
   const [inputValue, setInputValue] = useState('');
   const debouncedInputValue = useDebounce(inputValue);
-  const { concepts, isLoading } = useNonDrugConcepts(debouncedInputValue);
+  // The concept of a saved stock item can't be changed, so there's nothing to search for
+  const { concepts, isLoading } = useNonDrugConcepts(props.readOnly ? '' : debouncedInputValue);
   const [selectedConcept, setSelectedConcept] = useState<Concept | null>(null);
 
   return (
@@ -44,6 +46,7 @@ const ConceptsSelector = <T,>(props: ConceptsSelectorProps<T>) => {
 
           return (
             <ComboBox
+              disabled={props.readOnly}
               id={props.name}
               invalid={props.invalid}
               invalidText={props.invalidText}

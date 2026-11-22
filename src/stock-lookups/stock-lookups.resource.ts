@@ -23,7 +23,12 @@ import { type StockOperationType } from '../core/api/types/stockOperation/StockO
 import { type User } from '../core/api/types/identity/User';
 import { type UserRoleScope } from '../core/api/types/identity/UserRoleScope';
 
-export type ConceptFilterCriteria = ResourceFilterCriteria & { memberOf?: string };
+export type ConceptFilterCriteria = ResourceFilterCriteria & {
+  memberOf?: string;
+  name?: string;
+  searchType?: 'fuzzy' | 'equal';
+  class?: string;
+};
 export type DrugFilterCriteria = ResourceFilterCriteria;
 export type LocationFilterCriteria = ResourceFilterCriteria;
 export type PatientFilterCriteria = ResourceFilterCriteria;

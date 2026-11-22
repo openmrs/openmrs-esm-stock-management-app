@@ -134,6 +134,7 @@ const StockItemDetails = ({
             title={t('pleaseSpecify', 'Please specify')}
             placeholder={t('chooseAnItem', 'Choose an item')}
             initialConceptName={stockItem?.conceptName ?? undefined}
+            readOnly={!!stockItem}
             invalid={!!errors.conceptUuid}
             invalidText={errors.conceptUuid && errors?.conceptUuid?.message}
           />

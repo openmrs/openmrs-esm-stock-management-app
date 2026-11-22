@@ -97,7 +97,9 @@ These must be configured to match your OpenMRS concept dictionary. These UUIDs l
 
 - **`stockItemCategoryUUID`** - UUID of the concept set for categorizing stock items (e.g., "Drug", "Medical Supply", "Laboratory Supply"). Used for organizing and filtering stock items.
 
-- **`nonDrugItemsConceptSetUUID`** _(optional)_ - UUID of the concept set that non-drug stock items are chosen from (e.g., gloves, syringes, lab consumables). If empty, the item search keeps concepts of class `Medical supply`.
+- **`nonDrugItemsConceptSetUUID`** _(optional)_ - UUID of the concept set that non-drug stock items are chosen from (e.g., gloves, syringes, lab consumables). If empty, the item search finds concepts of the class in `nonDrugItemsConceptClassUUID`.
+
+- **`nonDrugItemsConceptClassUUID`** - UUID of the concept class that non-drug stock items are chosen from when `nonDrugItemsConceptSetUUID` is empty. Defaults to the CIEL Medical supply class (`0dcf23d4-3008-4d8e-b12c-4ec95d1cfd97`).
 
 ```json
 {
