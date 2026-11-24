@@ -1,7 +1,15 @@
 import { describe, expect, it, vi } from 'vitest';
 import { type FetchResponse, openmrsFetch } from '@openmrs/esm-framework';
+import { renderHook } from '@testing-library/react';
 import { type StockItemFormData } from './validationSchema';
-import { fetchAllStockItemTransactions, updateStockItem } from './stock-items.resource';
+import {
+  createStockItemPackagingUomReference,
+  fetchAllStockItemTransactions,
+  updateStockItem,
+  updateStockItemPackagingUomReference,
+  useStockItemPackagingUomReferences,
+  voidStockItemPackagingUomReference,
+} from './stock-items.resource';
 
 describe('updateStockItem', () => {
   // An item as it is loaded for editing, with every packaging unit assigned
@@ -108,5 +116,76 @@ describe('fetchAllStockItemTransactions', () => {
 
     expect(result).toHaveLength(3);
     expect(vi.mocked(openmrsFetch)).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('stock item packaging UOM reference API', () => {
+  const referencePayload = {
+    stockItemPackagingUomUuid: 'uom-uuid',
+    stockSourceUuid: 'source-uuid',
+    referenceCode: 'M221680001EP30T',
+    name: 'UNHTS packaging reference',
+    description: 'Code for the 30-unit pack',
+  };
+
+  it('createStockItemPackagingUomReference posts the create payload to the collection resource', () => {
+    createStockItemPackagingUomReference(referencePayload);
+
+    const [url, init] = vi.mocked(openmrsFetch).mock.lastCall;
+    expect(url).toBe('/ws/rest/v1/stockmanagement/stockitempackaginguomreference');
+    expect(init.method).toBe('POST');
+    expect(init.body).toEqual(referencePayload);
+  });
+
+  it('updateStockItemPackagingUomReference posts only the updatable properties', () => {
+    updateStockItemPackagingUomReference('reference-uuid', {
+      referenceCode: 'M221680001EP30T',
+      name: 'Renamed',
+      description: null,
+    });
+
+    const [url, init] = vi.mocked(openmrsFetch).mock.lastCall;
+    expect(url).toBe('/ws/rest/v1/stockmanagement/stockitempackaginguomreference/reference-uuid');
+    expect(init.method).toBe('POST');
+    // the uuid, the stock source and the packaging UOM must never be sent on an update
+    expect(init.body).toEqual({
+      referenceCode: 'M221680001EP30T',
+      name: 'Renamed',
+      description: null,
+    });
+    expect(init.body).not.toHaveProperty('uuid');
+    expect(init.body).not.toHaveProperty('stockSourceUuid');
+    expect(init.body).not.toHaveProperty('stockItemPackagingUomUuid');
+  });
+
+  it('voidStockItemPackagingUomReference DELETEs with the url-encoded reason', () => {
+    voidStockItemPackagingUomReference('reference-uuid', 'Superseded by new code & reused');
+
+    const [url, init] = vi.mocked(openmrsFetch).mock.lastCall;
+    expect(url).toBe(
+      '/ws/rest/v1/stockmanagement/stockitempackaginguomreference/reference-uuid?reason=' +
+        encodeURIComponent('Superseded by new code & reused'),
+    );
+    expect(init.method).toBe('DELETE');
+  });
+});
+
+describe('useStockItemPackagingUomReferences', () => {
+  it('requests the default representation so name, description and voided are present', () => {
+    renderHook(() => useStockItemPackagingUomReferences({ stockItemPackagingUomUuid: 'uom-uuid' }));
+
+    const [url] = vi.mocked(openmrsFetch).mock.calls[0];
+    // without a v parameter the REST layer serves the ref representation, which omits
+    // name, description, stockSourceUuid and voided
+    expect(url).toContain('v=default');
+    expect(url).toContain('stockItemPackagingUomUuid=uom-uuid');
+  });
+
+  it('passes includeAll through when voided references are requested', () => {
+    renderHook(() => useStockItemPackagingUomReferences({ stockItemPackagingUomUuid: 'uom-uuid', includeAll: true }));
+
+    const [url] = vi.mocked(openmrsFetch).mock.calls[0];
+    expect(url).toContain('includeAll=true');
+    expect(url).toContain('v=default');
   });
 });

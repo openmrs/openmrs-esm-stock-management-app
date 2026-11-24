@@ -187,7 +187,19 @@
     {
       "name": "stock-create-location-modal",
       "component": "createLocationModal"
-    }
+    },
+   {
+    "name": "packaging-unit-form-modal",
+    "component": "packagingUnitFormModal"
+   },
+   {
+    "name": "packaging-uom-reference-form-modal",
+    "component": "packagingUomReferenceFormModal"
+   },
+   {
+    "name": "packaging-uom-reference-void-modal",
+    "component": "packagingUomReferenceVoidModal"
+   }
   ],
   "workspaceGroups2": [
     {

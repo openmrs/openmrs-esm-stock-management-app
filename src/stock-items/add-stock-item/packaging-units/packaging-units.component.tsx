@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Button,
   DataTable,
@@ -10,313 +11,306 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  Tag,
+  Tabs,
+  Tab,
+  TabList,
+  TabPanels,
+  TabPanel,
+  Tile,
 } from '@carbon/react';
-import { Save } from '@carbon/react/icons';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { FormProvider, useForm, useFormContext } from 'react-hook-form';
-import { useTranslation } from 'react-i18next';
-import { getCoreTranslation, restBaseUrl, showSnackbar } from '@openmrs/esm-framework';
-import { createStockItemPackagingUnit, updateStockItemPackagingUnit } from '../../stock-items.resource';
-import { useHandleMutate } from '../../../utils';
-import { type PackageUnitFormData, packageUnitSchema } from './validationSchema';
+import { Edit, TrashCan, Add } from '@carbon/react/icons';
+import { restBaseUrl, showModal, useSession, userHasAccess } from '@openmrs/esm-framework';
 import { type StockItemPackagingUOMDTO } from '../../../core/api/types/stockItem/StockItemPackagingUOM';
+import { useStockItemPackagingUomReferences } from '../../stock-items.resource';
 import { useStockItemPackageUnitsHook } from './packaging-units.resource';
-import ControlledNumberInput from '../../../core/components/carbon/controlled-number-input.component';
+import { useHandleMutate } from '../../../utils';
+import { TASK_STOCKMANAGEMENT_STOCKITEMS_MUTATE } from '../../../constants';
 import DeletePackagingUnitActionButton from './delete-packaging-unit-action-button.component';
-import PackagingUnitsConceptSelector from '../packaging-units-concept-selector/packaging-units-concept-selector.component';
+import PackagingUomReferenceList from './packaging-uom-reference-list.component';
+import { type PackagingUnitModalSession } from './packaging-unit-form.modal';
 import { type CustomTableHeader, type CustomTableRow } from '../../../core/components/table/types';
+import { useWorkspaceMaximized } from './use-workspace-maximized.hook';
 import styles from './packaging-units.scss';
 
 interface PackagingUnitsProps {
-  isEditing?: boolean;
-  onSubmit?: () => void;
   stockItemUuid: string;
-  handleTabChange: (index) => void;
 }
 
-const PackagingUnits: React.FC<PackagingUnitsProps> = ({ stockItemUuid, handleTabChange }) => {
+const PackagingUnits: React.FC<PackagingUnitsProps> = ({ stockItemUuid }) => {
+  const { t } = useTranslation();
+  const { user } = useSession();
+  const canMutate = userHasAccess(TASK_STOCKMANAGEMENT_STOCKITEMS_MUTATE, user);
   const { items, isLoading, setStockItemUuid, mutate } = useStockItemPackageUnitsHook();
-
-  const [packagingUnits, setPackagingUnits] = useState<StockItemPackagingUOMDTO[]>(items);
-
-  const [newUnit, setNewUnit] = useState<{
-    factor: number;
-    packagingUomUuid: string;
-    packagingUomName: string;
-  }>({
-    packagingUomUuid: undefined,
-    factor: 0,
-    packagingUomName: '',
-  });
+  const handleMutate = useHandleMutate();
 
   useEffect(() => {
     setStockItemUuid(stockItemUuid);
   }, [stockItemUuid, setStockItemUuid]);
 
-  useEffect(() => {
-    setPackagingUnits(items);
-  }, [items]);
+  // Selected unit for the details/reference subview; defaults to the first unit.
+  const [selectedUnitUuid, setSelectedUnitUuid] = useState<string | null>(null);
+  const selectedUnit = useMemo(
+    () => items.find((unit) => unit.uuid === selectedUnitUuid) ?? items[0],
+    [items, selectedUnitUuid],
+  );
 
-  const { t } = useTranslation();
-  const handleMutate = useHandleMutate();
+  // Staged packaging-unit modal sessions retained across modal dismissal, keyed by
+  // unit uuid or 'new', so unsaved unit values survive dismissing the modal.
+  const [stagedSessions, setStagedSessions] = useState<Record<string, PackagingUnitModalSession>>({});
+
+  const retainSession = useCallback((key: string, session: PackagingUnitModalSession) => {
+    // only a session with something entered (or a partially persisted unit) is worth keeping
+    if (session.packagingUomUuid || session.factor || session.persistedUnitUuid) {
+      setStagedSessions((current) => ({ ...current, [key]: session }));
+    } else {
+      setStagedSessions((current) => {
+        const next = { ...current };
+        delete next[key];
+        return next;
+      });
+    }
+  }, []);
+
+  const openUnitModal = useCallback(
+    (unit: StockItemPackagingUOMDTO | null) => {
+      const key = unit?.uuid ?? 'new';
+      const dispose = showModal('packaging-unit-form-modal', {
+        closeModal: () => dispose(),
+        stockItemUuid,
+        unit,
+        stagedSession: stagedSessions[key] ?? null,
+        onSaved: () => {
+          setStagedSessions((current) => {
+            const next = { ...current };
+            delete next[key];
+            return next;
+          });
+          mutate();
+          // the broad stockitem sweep is the app-wide convention (the item payload
+          // caches packaging-unit fields); it also revalidates the reference keys,
+          // which is accepted collateral rather than something to out-scope here
+          handleMutate(`${restBaseUrl}/stockmanagement/stockitem`);
+        },
+        onDismiss: (session) => retainSession(key, session),
+      });
+    },
+    [stockItemUuid, stagedSessions, mutate, handleMutate, retainSession],
+  );
+
   const tableHeaders = useMemo<CustomTableHeader[]>(
     () => [
       {
         key: 'packaging',
         header: t('packagingUnit', 'Packaging Unit'),
-        styles: { width: '50%' },
       },
       {
         key: 'quantity',
         header: t('packSize', 'Pack Size'),
-        styles: { width: '50%' },
+      },
+      {
+        key: 'references',
+        header: t('referencesCount', 'References'),
       },
       {
         key: 'action',
         header: t('action', 'Actions'),
-        styles: { width: '50%' },
       },
     ],
     [t],
   );
 
-  const packageUnitForm = useForm<PackageUnitFormData>({
-    defaultValues: {},
-    mode: 'all',
-    resolver: zodResolver(packageUnitSchema),
-  });
-
-  const handleSavePackageUnits = () => {
-    const { reset } = packageUnitForm;
-
-    const newPayload = newUnit
-      ? {
-          factor: newUnit.factor,
-          packagingUomUuid: newUnit.packagingUomUuid,
-          stockItemUuid,
-        }
-      : null;
-
-    // Filter changed units
-    const updatedUnits = packagingUnits.filter((unit) => {
-      const originalUnit = items.find((item) => item.uuid === unit.uuid);
-      return originalUnit && originalUnit.factor !== unit.factor;
-    });
-
-    // Create new unit
-    const createPromises = newPayload.packagingUomUuid
-      ? createStockItemPackagingUnit(newPayload).then(
-          () => {
-            showSnackbar({
-              title: t('savePackingUnitTitle', 'Package Unit'),
-              subtitle: t('savePackingUnitMessage', 'Package Unit saved successfully'),
-              kind: 'success',
-            });
-            setNewUnit({
-              factor: 0,
-              packagingUomUuid: undefined,
-              packagingUomName: '',
-            }); // Reset new unit
-          },
-          () => {
-            showSnackbar({
-              title: t('savePackagingUnitErrorTitle', 'Package Unit'),
-              subtitle: t('savePackagingUnitErrorMessage', 'Error saving package unit'),
-              kind: 'error',
-            });
-          },
-        )
-      : Promise.resolve({ status: 'no-create' });
-
-    // Update existing units
-    const updatePromises = updatedUnits.map((unit) =>
-      updateStockItemPackagingUnit(unit, unit.uuid).then(
-        () => {
-          showSnackbar({
-            title: t('updatePackingUnitTitle', 'Package Unit'),
-            subtitle: t('updatePackingUnitMessage', 'Package Unit {{ name }} updated successfully', {
-              name: unit.packagingUomName,
-            }),
-            kind: 'success',
-          });
-        },
-        () => {
-          showSnackbar({
-            title: t('updatePackagingUnitErrorTitle', 'Package Unit'),
-            subtitle: t('updatePackagingUnitErrorMessage', 'Error updating package unit {{name}}', {
-              name: unit.packagingUomName,
-            }),
-            kind: 'error',
-          });
-        },
-      ),
-    );
-
-    // Wait for all requests to complete
-    Promise.all([createPromises, ...updatePromises]).then(() => {
-      mutate();
-      handleMutate(`${restBaseUrl}/stockmanagement/stockitem`);
-      reset();
-      handleTabChange(0);
-    });
-  };
-  const handleCancelPackagingUnits = () => {
-    handleTabChange(0);
-  };
-  const handleNewUnitFactorChange = (value: string | number) => {
-    setNewUnit({
-      ...newUnit,
-      factor: Number(value),
-    });
-  };
-
-  const handleNewUnitPackageUnitChange = (unit: { uuid: string; display: string }) => {
-    setNewUnit({
-      ...newUnit,
-      packagingUomUuid: unit.uuid,
-      packagingUomName: unit.display,
-    });
-  };
-
-  const onFactorFieldUpdate = (row: StockItemPackagingUOMDTO, value: string | number) => {
-    const qtyValue = typeof value === 'number' ? value : parseFloat(value);
-
-    setPackagingUnits((prevState) =>
-      prevState.map((item) => (item.uuid === row.uuid ? { ...item, factor: qtyValue } : item)),
-    );
-  };
+  // the two panels sit side by side only while the workspace window is expanded.
+  // CAVEAT: the hook treats any fixed-positioned ancestor as "expanded", so if this
+  // section is ever reused inside a modal or fixed drawer it will false-positive into
+  // the wide two-pane layout
+  const [sectionElement, setSectionElement] = useState<HTMLElement | null>(null);
+  const workspaceMaximized = useWorkspaceMaximized(sectionElement);
 
   if (isLoading) return <DataTableSkeleton showHeader={false} rowCount={5} columnCount={5} zebra />;
 
   return (
-    <FormProvider {...packageUnitForm}>
-      <DataTable
-        rows={
-          [
-            ...items.map((item, idx) => ({ ...item, id: item.uuid || `item-${idx}` })),
-            { id: 'new-row' },
-          ] as CustomTableRow[]
-        }
-        headers={tableHeaders as any}
-        isSortable={false}
-        useZebraStyles
-      >
-        {({ headers, getHeaderProps, getTableProps }) => (
-          <TableContainer className={styles.packagingTableContainer}>
-            <Table {...getTableProps()} className={styles.packingTable}>
-              <TableHead>
-                <TableRow>
-                  {headers.map((header) => {
-                    const customHeader = header as CustomTableHeader;
-                    return (
-                      <TableHeader
-                        {...getHeaderProps({
-                          header,
-                          isSortable: false,
-                        })}
-                        style={customHeader.styles}
-                        key={header.key}
-                      >
-                        {typeof customHeader.header === 'object' &&
-                        customHeader.header !== null &&
-                        'content' in customHeader.header
-                          ? (customHeader.header.content as React.ReactNode)
-                          : (customHeader.header as React.ReactNode)}
-                      </TableHeader>
-                    );
-                  })}
-                  <TableHeader style={{ width: '70%' }} />
-                </TableRow>
-              </TableHead>
-              <TableBody className={styles.packingTableBody}>
-                {items?.map((row: StockItemPackagingUOMDTO, index) => (
-                  <PackagingUnitRow
-                    row={row}
-                    id={`${index}-${row?.uuid}`}
-                    onChange={(value) => onFactorFieldUpdate(row, value)}
-                  />
-                ))}
-                <PackagingUnitRow
-                  row={newUnit || {}}
-                  id="new-package-unit"
-                  isEditing
-                  onChangePackageUnit={(value) => handleNewUnitPackageUnitChange(value)}
-                  onChange={(value) => handleNewUnitFactorChange(value)}
-                />
-              </TableBody>
-            </Table>
-          </TableContainer>
-        )}
-      </DataTable>
-      <div className={styles.packageUnitsBtn}>
-        <Button kind="secondary" onClick={handleCancelPackagingUnits}>
-          {getCoreTranslation('cancel')}
-        </Button>
-        <Button
-          name="save"
-          type="submit"
-          className="submitButton"
-          onClick={handleSavePackageUnits}
-          kind="primary"
-          renderIcon={Save}
-        >
-          {getCoreTranslation('save')}
-        </Button>
+    <div ref={setSectionElement} className={styles.packagingUnitsSection}>
+      <div className={styles.packagingUnitsHeader}>
+        <p className={styles.packagingUnitsHint}>
+          {t('packagingUnitsHint', 'Manage pack sizes and their stock-source-specific external reference codes.')}
+        </p>
+        {canMutate ? (
+          <Button renderIcon={Add} kind="primary" onClick={() => openUnitModal(null)}>
+            {t('addPackagingUnit', 'Add packaging unit')}
+          </Button>
+        ) : null}
       </div>
-    </FormProvider>
+
+      {items.length === 0 ? (
+        <div className={styles.packagingUnitsEmpty}>{t('noPackagingUnits', 'No packaging units yet.')}</div>
+      ) : (
+        <div className={`${styles.packagingUnitsLayout} ${workspaceMaximized ? styles.packagingUnitsLayoutWide : ''}`}>
+          <DataTable
+            rows={items.map((item, idx) => ({ ...item, id: item.uuid || `item-${idx}` })) as CustomTableRow[]}
+            headers={tableHeaders as any}
+            isSortable={false}
+            useZebraStyles
+          >
+            {({ headers, getHeaderProps, getTableProps }) => (
+              <TableContainer
+                className={styles.packagingTableContainer}
+                title={t('packagingUnitsCountTitle', 'Packaging units ({{count}})', { count: items.length })}
+              >
+                <Table {...getTableProps()} className={styles.packingTable}>
+                  <TableHead>
+                    <TableRow>
+                      {headers.map((header) => {
+                        const customHeader = header as CustomTableHeader;
+                        return (
+                          <TableHeader {...getHeaderProps({ header, isSortable: false })} key={header.key}>
+                            {typeof customHeader.header === 'object' &&
+                            customHeader.header !== null &&
+                            'content' in customHeader.header
+                              ? (customHeader.header.content as React.ReactNode)
+                              : (customHeader.header as React.ReactNode)}
+                          </TableHeader>
+                        );
+                      })}
+                    </TableRow>
+                  </TableHead>
+                  <TableBody className={styles.packingTableBody}>
+                    {items.map((row, index) => {
+                      const isSelected = selectedUnit?.uuid === row.uuid;
+                      return (
+                        <TableRow
+                          key={`${index}-${row?.uuid}`}
+                          className={isSelected ? styles.selectedRow : undefined}
+                          onClick={() => setSelectedUnitUuid(row.uuid)}
+                        >
+                          <TableCell>
+                            <button
+                              type="button"
+                              className={styles.rowSelectButton}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                setSelectedUnitUuid(row.uuid);
+                              }}
+                            >
+                              {row?.packagingUomName}
+                            </button>
+                            {Number(row?.factor) === 1 ? (
+                              <span className={styles.basePackLabel}>{t('basePack', 'Base pack')}</span>
+                            ) : null}
+                          </TableCell>
+                          <TableCell>{row?.factor}</TableCell>
+                          <TableCell>
+                            <PackagingUnitReferenceCount packagingUomUuid={row.uuid} />
+                          </TableCell>
+                          <TableCell>
+                            {canMutate ? (
+                              <div className={styles.referenceActions}>
+                                <Button
+                                  kind="ghost"
+                                  size="sm"
+                                  renderIcon={Edit}
+                                  iconDescription={t('edit', 'Edit')}
+                                  hasIconOnly
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    openUnitModal(row);
+                                  }}
+                                />
+                                <DeletePackagingUnitActionButton
+                                  row={row}
+                                  onDeleted={() => {
+                                    // a discarded staged session for a deleted unit is dead state
+                                    setStagedSessions((current) => {
+                                      const next = { ...current };
+                                      delete next[row.uuid];
+                                      return next;
+                                    });
+                                    mutate();
+                                    handleMutate(`${restBaseUrl}/stockmanagement/stockitem`);
+                                  }}
+                                />
+                              </div>
+                            ) : null}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+                <p className={styles.unitsTableFooter}>
+                  {t('selectUnitHint', 'Select a unit to inspect or manage its source-specific references.')}
+                </p>
+              </TableContainer>
+            )}
+          </DataTable>
+
+          {selectedUnit ? (
+            <Tile className={styles.selectedUnitPanel}>
+              <div className={styles.selectedUnitPanelHeader}>
+                <span className={styles.selectedUnitName}>
+                  {selectedUnit.packagingUomName} — {selectedUnit.factor}
+                </span>
+              </div>
+              <Tabs>
+                <TabList aria-label={t('packagingUnitTabs', 'Packaging unit details')}>
+                  <Tab>{t('details', 'Details')}</Tab>
+                  <Tab>
+                    <PackagingUnitReferenceCountLabel packagingUomUuid={selectedUnit.uuid} />
+                  </Tab>
+                </TabList>
+                <TabPanels>
+                  <TabPanel className={styles.selectedUnitPanelContent}>
+                    <div className={styles.detailRow}>
+                      <span>{t('packagingUnit', 'Packaging Unit')}</span>
+                      <strong>{selectedUnit.packagingUomName}</strong>
+                    </div>
+                    <div className={styles.detailRow}>
+                      <span>{t('packSize', 'Pack Size')}</span>
+                      <strong>{selectedUnit.factor}</strong>
+                    </div>
+                    <div className={styles.detailRow}>
+                      <span>{t('referenceCodesLabel', 'Reference codes')}</span>
+                      <PackagingUnitReferenceCount packagingUomUuid={selectedUnit.uuid} />
+                    </div>
+                    <p className={styles.packagingUnitsHint}>
+                      {t(
+                        'selectedUnitHint',
+                        'Edit the unit with its row action, and manage its source reference codes in the References tab.',
+                      )}
+                    </p>
+                  </TabPanel>
+                  <TabPanel className={styles.selectedUnitPanelContent}>
+                    <PackagingUomReferenceList
+                      packagingUomUuid={selectedUnit.uuid}
+                      packagingUomLabel={`${selectedUnit.packagingUomName} — ${selectedUnit.factor}`}
+                      canMutate={canMutate}
+                    />
+                  </TabPanel>
+                </TabPanels>
+              </Tabs>
+            </Tile>
+          ) : null}
+        </div>
+      )}
+    </div>
+  );
+};
+
+/** Compact reference count for one unit row; fetches that unit's active references. */
+const PackagingUnitReferenceCount: React.FC<{ packagingUomUuid: string }> = ({ packagingUomUuid }) => {
+  const { items, isLoading } = useStockItemPackagingUomReferences({ stockItemPackagingUomUuid: packagingUomUuid });
+  if (isLoading) return <Tag size="sm">…</Tag>;
+  return <Tag size="sm">{items.length}</Tag>;
+};
+
+const PackagingUnitReferenceCountLabel: React.FC<{ packagingUomUuid: string }> = ({ packagingUomUuid }) => {
+  const { t } = useTranslation();
+  const { items, isLoading } = useStockItemPackagingUomReferences({ stockItemPackagingUomUuid: packagingUomUuid });
+  return (
+    <>
+      {t('referencesLabel', 'References')} ({isLoading ? '…' : items.length})
+    </>
   );
 };
 
 export default PackagingUnits;
-
-const PackagingUnitRow: React.FC<{
-  isEditing?: boolean;
-  row: StockItemPackagingUOMDTO;
-  id?: string;
-  onChange?: (value: string | number) => void;
-  onChangePackageUnit?: (value: { uuid: string; display: string }) => void;
-}> = ({ isEditing, row, id, onChange, onChangePackageUnit }) => {
-  const {
-    control,
-    formState: { errors },
-  } = useFormContext();
-  const minPackagingQuantity = 0;
-
-  return (
-    <>
-      <TableRow>
-        <TableCell>
-          {isEditing ? (
-            <PackagingUnitsConceptSelector
-              row={row}
-              controllerName={'packagingUomUuid'}
-              name="packagingUomUuid"
-              placeholder="Filter"
-              control={control}
-              onPackageUnitChange={(concept) => onChangePackageUnit(concept)}
-              invalid={!!errors.packagingUomUuid}
-            />
-          ) : (
-            (!isEditing || !row.uuid.startsWith('new-item')) && row?.packagingUomName
-          )}
-        </TableCell>
-        <TableCell>
-          <ControlledNumberInput
-            row={row}
-            controllerName="factor"
-            name="factor"
-            min={minPackagingQuantity}
-            control={control}
-            id={id}
-            invalid={!!errors.factor}
-            hideSteppers={true}
-            onChange={(e, state) => onChange(state.value)}
-          />
-        </TableCell>
-        <TableCell>
-          <DeletePackagingUnitActionButton row={row} />
-        </TableCell>
-      </TableRow>
-    </>
-  );
-};

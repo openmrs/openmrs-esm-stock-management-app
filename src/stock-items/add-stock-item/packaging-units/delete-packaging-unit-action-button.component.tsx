@@ -7,16 +7,19 @@ import { type StockItemPackagingUOMDTO } from '../../../core/api/types/stockItem
 
 interface DeletePackagingUnitActionButtonProps {
   row?: StockItemPackagingUOMDTO;
+  /** Called after the unit was deleted, so list owners can refresh their data. */
+  onDeleted?: () => void;
 }
 
-const DeletePackagingUnitActionButton: React.FC<DeletePackagingUnitActionButtonProps> = ({ row }) => {
+const DeletePackagingUnitActionButton: React.FC<DeletePackagingUnitActionButtonProps> = ({ row, onDeleted }) => {
   const { t } = useTranslation();
   const launchDeleteModal = useCallback(() => {
     const dispose = showModal('delete-packaging-unit-modal', {
       closeModal: () => dispose(),
       row,
+      onDeleted,
     });
-  }, [row]);
+  }, [row, onDeleted]);
 
   return (
     <Button
