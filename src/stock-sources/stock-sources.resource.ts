@@ -12,7 +12,10 @@ export interface StockSourceFilter extends ResourceFilterCriteria {
 export function useStockSources(filter: StockSourceFilter) {
   const apiUrl = `${restBaseUrl}/stockmanagement/stocksource${toQueryParams(filter)}`;
 
-  const { data, error, isLoading } = useSWR<{ data: PageableResult<StockSource> }, Error>(apiUrl, openmrsFetch);
+  // Keeps the current page on screen while the next one loads, instead of an empty table
+  const { data, error, isLoading } = useSWR<{ data: PageableResult<StockSource> }, Error>(apiUrl, openmrsFetch, {
+    keepPreviousData: true,
+  });
 
   return {
     items: data?.data || <PageableResult<StockSource>>{},

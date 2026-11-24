@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   DataTable,
   DataTableSkeleton,
@@ -16,6 +16,7 @@ import {
   TableToolbarMenu,
   TableToolbarSearch,
   Tile,
+  InlineLoading,
 } from '@carbon/react';
 import { useTranslation } from 'react-i18next';
 import { isDesktop, restBaseUrl } from '@openmrs/esm-framework';
@@ -32,7 +33,8 @@ import styles from './stock-sources.scss';
 const StockSourcesItems: React.FC = () => {
   const { t } = useTranslation();
   const handleMutate = useHandleMutate();
-  const [selectedSourceType, setSelectedSourceType] = React.useState('');
+  const [selectedSourceTypeUuid, setSelectedSourceTypeUuid] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
 
   const handleRefresh = () => {
     handleMutate(`${restBaseUrl}/stockmanagement/stocksource`);
@@ -43,6 +45,7 @@ const StockSourcesItems: React.FC = () => {
     useStockSourcesPage({
       v: ResourceRepresentation.Default,
       totalCount: true,
+      sourceTypeUuid: selectedSourceTypeUuid || undefined,
     });
 
   const tableRows = useMemo(() => {
@@ -65,18 +68,13 @@ const StockSourcesItems: React.FC = () => {
     });
   }, [items]);
 
-  const handleFilterChange = (selectedSourceType: string) => {
-    setSelectedSourceType(selectedSourceType);
+  const handleFilterChange = (sourceTypeUuid: string) => {
+    setSelectedSourceTypeUuid(sourceTypeUuid);
+    goTo(1);
   };
 
-  const filteredTableRows = useMemo(() => {
-    if (!selectedSourceType) {
-      return tableRows;
-    }
-    return tableRows.filter((row) => row.sourceType === selectedSourceType);
-  }, [tableRows, selectedSourceType]);
-
-  if (isLoading) {
+  // Keep the table mounted while a filter loads, so the search and the filter keep their values
+  if (isLoading && !selectedSourceTypeUuid) {
     return <DataTableSkeleton role="progressbar" />;
   }
 
@@ -85,7 +83,7 @@ const StockSourcesItems: React.FC = () => {
       <h2 className={styles.tableHeader}>
         {t('stockSourcesTableHeader', 'List of partners who provide stock to the facility.')}
       </h2>
-      <DataTable rows={filteredTableRows} headers={tableHeaders} isSortable useZebraStyles>
+      <DataTable rows={tableRows ?? []} headers={tableHeaders} isSortable useZebraStyles>
         {({ rows, headers, getHeaderProps, getTableProps, getRowProps, onInputChange }) => (
           <TableContainer>
             <TableToolbar
@@ -96,14 +94,23 @@ const StockSourcesItems: React.FC = () => {
               }}
             >
               <TableToolbarContent className={styles.toolbarContent}>
-                <TableToolbarSearch persistent onChange={onInputChange} />
+                <TableToolbarSearch
+                  persistent
+                  onChange={(event, value) => {
+                    setIsSearching(Boolean(value));
+                    onInputChange(event as React.ChangeEvent<HTMLInputElement>);
+                  }}
+                />
                 <div
                   style={{
                     display: 'flex',
                     alignItems: 'center',
                   }}
                 >
-                  <StockSourcesFilter onFilterChange={handleFilterChange} />
+                  <StockSourcesFilter
+                    selectedSourceTypeUuid={selectedSourceTypeUuid}
+                    onFilterChange={handleFilterChange}
+                  />
                 </div>
                 <TableToolbarMenu>
                   <TableToolbarAction className={styles.toolbarMenuAction} onClick={handleRefresh}>
@@ -157,12 +164,15 @@ const StockSourcesItems: React.FC = () => {
                 })}
               </TableBody>
             </Table>
-            {rows.length === 0 ? (
+            {isLoading && <InlineLoading description={t('loadingPlaceholder', 'Loading...')} />}
+            {rows.length === 0 && !isLoading ? (
               <div className={styles.tileContainer}>
                 <Tile className={styles.tile}>
                   <div className={styles.tileContent}>
                     <p className={styles.content}>{t('noSourcesToDisplay', 'No stock sources to display')}</p>
-                    <p className={styles.helper}>{t('checkFilters', 'Check the filters above')}</p>
+                    {(selectedSourceTypeUuid || isSearching) && (
+                      <p className={styles.helper}>{t('checkFilters', 'Check the filters above')}</p>
+                    )}
                   </div>
                 </Tile>
               </div>
