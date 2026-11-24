@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import classNames from 'classnames';
+import dayjs from 'dayjs';
 import { debounce } from 'lodash-es';
 import { useTranslation } from 'react-i18next';
 import {
@@ -385,7 +386,7 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
       if (displayDate) {
         parameters += getReportParameter(
           ReportParameter.Date,
-          report.date ? JSON.stringify(report.date).replaceAll('"', '') : '',
+          report.date ? dayjs(report.date).format('YYYY-MM-DD') : '',
           formatDisplayDate(report.date) ?? '',
           t('date', 'Date'),
           newLine,
@@ -394,7 +395,7 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
       if (displayStartDate) {
         parameters += getReportParameter(
           ReportParameter.StartDate,
-          report.startDate ? JSON.stringify(report.startDate).replaceAll('"', '') : '',
+          report.startDate ? dayjs(report.startDate).format('YYYY-MM-DD') : '',
           formatDisplayDate(report.startDate) ?? '',
           isForecastReport(reportSystemName)
             ? t('historicalStartDate', 'Historical start date')
@@ -405,7 +406,7 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
       if (displayEndDate) {
         parameters += getReportParameter(
           ReportParameter.EndDate,
-          report.endDate ? JSON.stringify(report.endDate).replaceAll('"', '') : '',
+          report.endDate ? dayjs(report.endDate).format('YYYY-MM-DD') : '',
           formatDisplayDate(report.endDate) ?? '',
           isForecastReport(reportSystemName) ? t('historicalEndDate', 'Historical end date') : t('endDate', 'End date'),
           newLine,

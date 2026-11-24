@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import dayjs from 'dayjs';
 import {
   DataTable,
   DataTableSkeleton,
@@ -85,8 +86,8 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
   } = useStockOperationPages({
     v: ResourceRepresentation.Full,
     totalCount: true,
-    operationDateMin: selectedFromDate?.toISOString(),
-    operationDateMax: selectedToDate?.toISOString(),
+    operationDateMin: selectedFromDate ? dayjs(selectedFromDate).startOf('day').toISOString() : undefined,
+    operationDateMax: selectedToDate ? dayjs(selectedToDate).endOf('day').toISOString() : undefined,
     status: selectedStatus.join(','),
     sourceTypeUuid: selectedSources.join(','),
     operationTypeUuid: selectedOperations.join(','),

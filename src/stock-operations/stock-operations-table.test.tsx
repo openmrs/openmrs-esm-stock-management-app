@@ -1,9 +1,9 @@
 import React from 'react';
-import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { vi, describe, it, expect, beforeEach, beforeAll, afterAll } from 'vitest';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useConfig } from '@openmrs/esm-framework';
-import { StockFilters } from '../constants';
+import { DATE_PICKER_FORMAT, StockFilters } from '../constants';
 import StockOperationsFilters from './stock-operations-filters.component';
 import { useStockOperationPages } from './stock-operations-table.resource';
 import StockOperations from './stock-operations-table.component';
@@ -109,5 +109,41 @@ describe('StockOperations', () => {
 
     expect(screen.getByText('Server unavailable')).toBeInTheDocument();
     expect(screen.queryByText('RCPT-0049')).not.toBeInTheDocument();
+  });
+
+  describe('date filter', () => {
+    const originalTimeZone = process.env.TZ;
+
+    beforeAll(() => {
+      // Ahead of UTC, so local midnight falls on the previous UTC day
+      process.env.TZ = 'Africa/Nairobi';
+    });
+
+    afterAll(() => {
+      process.env.TZ = originalTimeZone;
+    });
+
+    const typeDate = (label: string, value: string) => {
+      const input = screen.getByRole('textbox', { name: `${label} (${DATE_PICKER_FORMAT})` });
+      fireEvent.change(input, { target: { value } });
+      // flatpickr commits a typed date on Enter
+      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter', keyCode: 13 });
+    };
+
+    it('asks for operations from the start of the first day to the end of the last day picked', async () => {
+      render(<StockOperations />);
+
+      typeDate('Start date', '23/11/2026');
+      typeDate('End date', '23/11/2026');
+
+      await waitFor(() =>
+        expect(mockUseStockOperationPages).toHaveBeenLastCalledWith(
+          expect.objectContaining({
+            operationDateMin: '2026-11-22T21:00:00.000Z',
+            operationDateMax: '2026-11-23T20:59:59.999Z',
+          }),
+        ),
+      );
+    });
   });
 });
