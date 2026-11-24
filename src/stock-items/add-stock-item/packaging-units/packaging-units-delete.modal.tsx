@@ -28,7 +28,7 @@ const DeletePackagingUnitModal: React.FC<DeletePackagingUnitModalProps> = ({ row
 
   const handleDelete = (e) => {
     e.preventDefault();
-    deleteStockItemPackagingUnit(row.uuid).then(
+    deleteStockItemPackagingUnit(row.uuid, reason).then(
       () => {
         mutate();
         closeModal();
