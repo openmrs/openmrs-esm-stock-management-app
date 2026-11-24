@@ -133,8 +133,10 @@ const StockItemDetails = ({
             control={control}
             title={t('pleaseSpecify', 'Please specify')}
             placeholder={t('chooseAnItem', 'Choose an item')}
-            invalid={!!errors.drugUuid}
-            invalidText={errors.drugUuid && errors?.drugUuid?.message}
+            initialConceptName={stockItem?.conceptName ?? undefined}
+            readOnly={!!stockItem}
+            invalid={!!errors.conceptUuid}
+            invalidText={errors.conceptUuid && errors?.conceptUuid?.message}
           />
         ) : null}
         <ControlledTextInput

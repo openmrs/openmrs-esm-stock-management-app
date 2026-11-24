@@ -43,6 +43,18 @@ export const configSchema = {
     _description:
       "The name of the location tag for the main store. The source or destination of a new stock operation is prefilled when this is the only tag the operation type allows on that side. It needs to match a tag in the backend's operation type location scopes",
   },
+  nonDrugItemsConceptClassUUID: {
+    _type: Type.UUID,
+    _description:
+      'UUID of the concept class that non-drug stock items are chosen from, when nonDrugItemsConceptSetUUID is empty. Defaults to the CIEL Medical supply class',
+    _default: '0dcf23d4-3008-4d8e-b12c-4ec95d1cfd97',
+  },
+  nonDrugItemsConceptSetUUID: {
+    _type: Type.ConceptUuid,
+    _description:
+      'UUID of the concept set that non-drug stock items are chosen from. If empty, the search finds concepts of the class in nonDrugItemsConceptClassUUID',
+    _default: '',
+  },
   packingUnitsUUID: {
     _type: Type.ConceptUuid,
     _description: 'UUID for the packaging unit',
@@ -119,6 +131,8 @@ export type ConfigObject = {
     name: string;
   };
   mainStoreLocationTag: string;
+  nonDrugItemsConceptClassUUID: string;
+  nonDrugItemsConceptSetUUID: string;
   packingUnitsUUID: string;
   printBalanceOnHand: boolean;
   printItemCost: boolean;
