@@ -1,7 +1,18 @@
+import { openmrsFetch, restBaseUrl, type FetchResponse } from '@openmrs/esm-framework';
 import { describe, expect, it, vi } from 'vitest';
-import { type FetchResponse, openmrsFetch } from '@openmrs/esm-framework';
+import { deleteStockItemPackagingUnit, updateStockItem, fetchAllStockItemTransactions } from './stock-items.resource';
 import { type StockItemFormData } from './validationSchema';
-import { fetchAllStockItemTransactions, updateStockItem } from './stock-items.resource';
+
+describe('deleteStockItemPackagingUnit', () => {
+  it('sends the void reason as a query parameter', () => {
+    deleteStockItemPackagingUnit('packaging-uuid', 'No longer used');
+
+    expect(openmrsFetch).toHaveBeenCalledWith(
+      `${restBaseUrl}/stockmanagement/stockitempackaginguom/packaging-uuid?reason=No%20longer%20used`,
+      expect.objectContaining({ method: 'DELETE' }),
+    );
+  });
+});
 
 describe('updateStockItem', () => {
   // An item as it is loaded for editing, with every packaging unit assigned

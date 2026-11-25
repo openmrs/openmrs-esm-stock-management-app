@@ -15,7 +15,11 @@ import { useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { showSnackbar } from '@openmrs/esm-framework';
 import { type StockOperationDTO } from '../../../core/api/types/stockOperation/StockOperationDTO';
-import { type StockOperationType } from '../../../core/api/types/stockOperation/StockOperationType';
+import {
+  type StockOperationType,
+  operationFromString,
+  StockOperationTypeTakesStockFromSource,
+} from '../../../core/api/types/stockOperation/StockOperationType';
 import { getStockOperationUniqueId } from '../../stock-operation.utils';
 import { type BaseStockOperationItemFormData, type StockOperationItemDtoSchema } from '../../validation-schema';
 import useOperationTypePermisions from '../hooks/useOperationTypePermisions';
@@ -48,6 +52,14 @@ const StockOperationItemsFormStep: React.FC<StockOperationItemsFormStepProps> = 
 
   const form = useFormContext<StockOperationItemDtoSchema>();
   const observableOperationItems = form.watch('stockOperationItems');
+  const formSourceUuid = form.watch('sourceUuid');
+  // Only scope "Available" to the source when the source is a location that holds the stock
+  // (not a supplier, as on a Receipt)
+  const availabilitySourceUuid = StockOperationTypeTakesStockFromSource(
+    operationFromString(stockOperationType?.operationType),
+  )
+    ? formSourceUuid
+    : undefined;
   const headers = useMemo(() => {
     return [
       {
@@ -122,7 +134,11 @@ const StockOperationItemsFormStep: React.FC<StockOperationItemsFormStepProps> = 
       return {
         id: uuid || `${uniqueId}-${index}`,
         item: stockItemUuid ? <StockOperationItemCell stockItemUuid={stockItemUuid} /> : '--',
-        itemDetails: stockItemUuid ? <StockAvailability stockItemUuid={stockItemUuid} /> : '--',
+        itemDetails: stockItemUuid ? (
+          <StockAvailability stockItemUuid={stockItemUuid} sourceUuid={availabilitySourceUuid} />
+        ) : (
+          '--'
+        ),
         batch: (
           <StockOperationItemBatchNoCell
             operation={stockOperationType}
@@ -174,7 +190,7 @@ const StockOperationItemsFormStep: React.FC<StockOperationItemsFormStepProps> = 
         ),
       };
     });
-  }, [observableOperationItems, onLaunchItemsForm, stockOperationType, t, uniqueId]);
+  }, [availabilitySourceUuid, observableOperationItems, onLaunchItemsForm, stockOperationType, t, uniqueId]);
 
   const handleNext = async () => {
     const valid = await form.trigger(['stockOperationItems']);

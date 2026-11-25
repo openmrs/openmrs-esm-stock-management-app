@@ -10,8 +10,11 @@ export function useStockItemBatchInformationHook(filter?: StockItemInventoryFilt
     q: filter?.q,
     totalCount: true,
     includeBatchNo: true,
+    excludeExpired: filter?.excludeExpired,
   });
 
+  // stockiteminventory leaves out expired batches unless excludeExpired=false is sent.
+  const excludeExpired = filter?.excludeExpired;
   const pageSizes = [10, 20, 30, 40, 50];
   const [currentPageSize, setPageSize] = useState(10);
   const [searchString, setSearchString] = useState(null);
@@ -35,8 +38,18 @@ export function useStockItemBatchInformationHook(filter?: StockItemInventoryFilt
       locationUuid: locationUuid,
       stockBatchUuid: stockBatchUuid,
       includeBatchNo: true,
+      excludeExpired,
     });
-  }, [searchString, currentPage, currentPageSize, stockItemUuid, partyUuid, locationUuid, stockBatchUuid]);
+  }, [
+    searchString,
+    currentPage,
+    currentPageSize,
+    stockItemUuid,
+    partyUuid,
+    locationUuid,
+    stockBatchUuid,
+    excludeExpired,
+  ]);
 
   const { items, isLoading, error } = useStockItemInventory(stockItemFilter);
 
