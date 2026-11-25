@@ -194,4 +194,39 @@ describe('BatchNoSelector', () => {
 
     expect(mockUseStockItemBatchInformationHook.mock.lastCall[0]?.excludeExpired).toBeUndefined();
   });
+
+  it('shows the expiry date the server saved when the browser is behind the server', async () => {
+    const user = userEvent.setup();
+    const originalTimeZone = process.env.TZ;
+    process.env.TZ = 'America/Los_Angeles';
+    mockUseStockItemBatchNumbers.mockReturnValue({
+      isLoading: false,
+      stockItemBatchNos: [
+        {
+          uuid: '1',
+          batchNo: 'BATCH-001',
+          quantity: '10',
+          expiration: '2027-12-31T00:00:00.000+0500' as unknown as Date,
+          stockItemUuid: 'item1',
+          voided: false,
+        },
+      ],
+      setLimit: vi.fn(),
+      setRepresentation: vi.fn(),
+      setSearchString: vi.fn(),
+    });
+
+    try {
+      render(<BatchNoSelector stockItemUuid={mockStockItemUuid} onValueChange={mockOnValueChange} />);
+      await user.click(screen.getByRole('combobox'));
+
+      expect(screen.getByText('BATCH-001 | Qty: 10 | Expiry: 31/12/2027')).toBeInTheDocument();
+    } finally {
+      if (originalTimeZone === undefined) {
+        delete process.env.TZ;
+      } else {
+        process.env.TZ = originalTimeZone;
+      }
+    }
+  });
 });

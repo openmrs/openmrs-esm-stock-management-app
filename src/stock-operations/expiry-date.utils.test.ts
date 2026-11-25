@@ -42,6 +42,12 @@ describe.each(timeZones)('stock batch expiry calendar dates in %s', (timeZone) =
     expect([restored.getFullYear(), restored.getMonth() + 1, restored.getDate()]).toEqual([2027, 12, 31]);
   });
 
+  it('does not corrupt non-ISO Date strings when falling back to parseDate', () => {
+    const selected = new Date(2027, 11, 31);
+    const restored = parseStockExpiryDate(String(selected));
+    expect([restored.getFullYear(), restored.getMonth() + 1, restored.getDate()]).toEqual([2027, 12, 31]);
+  });
+
   it('does not mutate a selected Date', () => {
     const selected = new Date(2027, 11, 31);
     const before = selected.getTime();
