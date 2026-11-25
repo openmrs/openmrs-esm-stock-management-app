@@ -49,8 +49,10 @@ const selectUser = async (user: ReturnType<typeof userEvent.setup>) => {
   await user.click(screen.getByRole('option', { name: 'Jane Doe' }));
 };
 
-const expectValidationError = async (subtitle: string) => {
-  await waitFor(() => expect(showSnackbar).toHaveBeenCalledWith(expect.objectContaining({ kind: 'error', subtitle })));
+// The error shows on its field, not in a toast
+const expectValidationError = async (message: string) => {
+  expect(await screen.findByText(message)).toBeInTheDocument();
+  expect(showSnackbar).not.toHaveBeenCalled();
   expect(createOrUpdateUserRoleScope).not.toHaveBeenCalled();
 };
 
@@ -208,7 +210,9 @@ describe('AddStockUserRoleScope', () => {
       await fillRequiredFieldsExceptDates(user);
       await user.click(screen.getByRole('button', { name: /save/i }));
 
-      await expectValidationError('Active From and Active To are required unless the scope is permanent');
+      await expectValidationError('Active From is required');
+      expect(screen.getByText('Active To is required')).toBeInTheDocument();
+      expect(screen.getByRole('textbox', { name: /^Active From/ })).toHaveAttribute('data-invalid', 'true');
     });
 
     it('requires at least one stock operation', async () => {
@@ -232,6 +236,41 @@ describe('AddStockUserRoleScope', () => {
       await user.click(screen.getByRole('button', { name: /save/i }));
 
       await expectValidationError('Select at least one location');
+    });
+
+    it('marks every missing field at once and takes the user to the first one', async () => {
+      const user = userEvent.setup();
+      renderForm();
+
+      await user.click(screen.getByRole('button', { name: /save/i }));
+
+      await expectValidationError('User is required');
+      for (const message of [
+        'Role is required',
+        'Active From is required',
+        'Active To is required',
+        'Select at least one stock operation',
+        'Select at least one location',
+      ]) {
+        expect(screen.getByText(message)).toBeInTheDocument();
+      }
+      expect(screen.getByRole('combobox', { name: 'User' })).toHaveFocus();
+    });
+
+    it('drops an error once its field is filled in', async () => {
+      const user = userEvent.setup();
+      renderForm();
+      await user.click(screen.getByRole('button', { name: /save/i }));
+      expect(await screen.findByText('User is required')).toBeInTheDocument();
+
+      await selectUser(user);
+      await user.selectOptions(screen.getByRole('combobox', { name: 'Role' }), 'Inventory Clerk');
+      await user.click(screen.getByRole('checkbox', { name: 'Permanent' }));
+
+      expect(screen.queryByText('User is required')).not.toBeInTheDocument();
+      expect(screen.queryByText('Role is required')).not.toBeInTheDocument();
+      expect(screen.queryByText('Active From is required')).not.toBeInTheDocument();
+      expect(screen.getByText('Select at least one stock operation')).toBeInTheDocument();
     });
 
     it('saves a complete permanent scope', async () => {
