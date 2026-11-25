@@ -312,6 +312,24 @@ describe('BatchNoSelector', () => {
     expect(mockUseStockItemBatchNumbers).toHaveBeenLastCalledWith(mockStockItemUuid, false);
   });
 
+  it('keeps expired batches in the list when both empty and expired batches are asked for', () => {
+    render(
+      <BatchNoSelector
+        stockItemUuid={mockStockItemUuid}
+        partyUuid="main-store"
+        includeEmptyBatches
+        includeExpiredBatches
+        onValueChange={mockOnValueChange}
+      />,
+    );
+
+    expect(mockUseStockItemBatchNumbers).toHaveBeenLastCalledWith(mockStockItemUuid, false);
+    expect(mockUseStockItemBatchInformationHook).toHaveBeenLastCalledWith({
+      partyUuid: 'main-store',
+      excludeExpired: false,
+    });
+  });
+
   it('offers no batches and shows an error when the inventory fails to load', async () => {
     const user = userEvent.setup();
     mockUseStockItemBatchInformationHook.mockReturnValue({
@@ -468,5 +486,21 @@ describe('BatchNoSelector', () => {
 
     expect(screen.queryByText('BATCH-002')).not.toBeInTheDocument();
     expect(screen.queryByText('BATCH-003')).not.toBeInTheDocument();
+  });
+
+  it('asks for the quantities of expired batches when they are allowed', () => {
+    render(
+      <BatchNoSelector stockItemUuid={mockStockItemUuid} includeExpiredBatches onValueChange={mockOnValueChange} />,
+    );
+
+    expect(mockUseStockItemBatchInformationHook).toHaveBeenCalledWith(
+      expect.objectContaining({ excludeExpired: false }),
+    );
+  });
+
+  it('leaves out expired batches by default', () => {
+    render(<BatchNoSelector stockItemUuid={mockStockItemUuid} onValueChange={mockOnValueChange} />);
+
+    expect(mockUseStockItemBatchInformationHook.mock.lastCall[0]?.excludeExpired).toBeUndefined();
   });
 });

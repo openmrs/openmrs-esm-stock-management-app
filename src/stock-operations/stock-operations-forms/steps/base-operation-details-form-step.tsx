@@ -13,7 +13,7 @@ import {
 import { ArrowRight } from '@carbon/react/icons';
 import { Controller, useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { ErrorState, useConfig } from '@openmrs/esm-framework';
+import { ErrorState, useConfig, useSession } from '@openmrs/esm-framework';
 import { type ConfigObject } from '../../../config-schema';
 import { DATE_PICKER_CONTROL_FORMAT, DATE_PICKER_FORMAT } from '../../../constants';
 import { type Party } from '../../../core/api/types/Party';
@@ -25,6 +25,7 @@ import useParties from '../hooks/useParties';
 import StockOperationReasonSelector from '../input-components/stock-operation-reason-selector.component';
 import UsersSelector from '../input-components/users-selector.component';
 import styles from '../stock-operation-form.scss';
+import { getDatePickerLocale } from '../../../core/utils/datetimeUtils';
 
 type BaseOperationDetailsFormStepProps = {
   stockOperation?: StockOperationDTO;
@@ -38,6 +39,7 @@ const BaseOperationDetailsFormStep: FC<BaseOperationDetailsFormStepProps> = ({
   onNext,
 }) => {
   const { t } = useTranslation();
+  const session = useSession();
   const { mainStoreLocationTag } = useConfig<ConfigObject>();
   const operationTypePermision = useOperationTypePermisions(stockOperationType);
   const {
@@ -127,7 +129,7 @@ const BaseOperationDetailsFormStep: FC<BaseOperationDetailsFormStepProps> = ({
             <DatePicker
               readOnly={field.disabled}
               datePickerType="single"
-              locale="en"
+              locale={getDatePickerLocale(session?.locale)}
               className={styles.datePickerInput}
               {...field}
               value={field.value}
@@ -139,7 +141,7 @@ const BaseOperationDetailsFormStep: FC<BaseOperationDetailsFormStepProps> = ({
               <DatePickerInput
                 id={`operationDate-input`}
                 placeholder={DATE_PICKER_FORMAT}
-                labelText={t('operationDate', 'Operation Date')}
+                labelText={`${t('operationDate', 'Operation Date')} (${DATE_PICKER_FORMAT})`}
                 invalid={!!error?.message}
                 invalidText={error?.message}
                 size="lg"

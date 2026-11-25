@@ -2,30 +2,30 @@ import { InlineLoading } from '@carbon/react';
 import { showSnackbar } from '@openmrs/esm-framework';
 import React, { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useStockItemBatchInformationHook } from '../../../stock-items/add-stock-item/batch-information/batch-information.resource';
+import { ResourceRepresentation } from '../../../core/api/api';
+import { type StockItemInventoryFilter, useStockItemInventory } from '../../../stock-items/stock-items.resource';
 import styles from './stock-operation-items-form-step.scc.scss';
-const StockAvailability: React.FC<{ stockItemUuid: string; partyUuid?: string }> = ({ stockItemUuid, partyUuid }) => {
-  const { items, isLoading, error, setPartyUuid } = useStockItemBatchInformationHook({
-    stockItemUuid: stockItemUuid,
-    partyUuid: partyUuid,
-    includeBatchNo: true,
-  });
+const StockAvailability: React.FC<{ stockItemUuid: string; partyUuid?: string | null }> = ({
+  stockItemUuid,
+  partyUuid,
+}) => {
   const { t } = useTranslation();
 
-  useEffect(() => {
-    setPartyUuid(partyUuid);
-  }, [partyUuid, setPartyUuid]);
+  const filter = useMemo<StockItemInventoryFilter>(
+    () => ({
+      v: ResourceRepresentation.Default,
+      stockItemUuid,
+      partyUuid: partyUuid || undefined,
+      groupBy: partyUuid ? 'LocationStockItem' : 'StockItemOnly',
+    }),
+    [stockItemUuid, partyUuid],
+  );
 
-  const totalQuantity = useMemo(() => {
-    if (!items?.length) return 0;
-    return items.reduce((total, batch) => {
-      return total + (Number(batch.quantity) || 0);
-    }, 0);
-  }, [items]);
-  const commonUOM = useMemo(() => {
-    if (!items?.length) return '';
-    return items[0]?.quantityUoM || '';
-  }, [items]);
+  const { items, isLoading, error } = useStockItemInventory(filter);
+
+  const row = items?.results?.[0];
+  const totalQuantity = Number(row?.quantity) || 0;
+  const uom = row?.quantityUoM ?? '';
 
   useEffect(() => {
     if (error) {
@@ -44,7 +44,7 @@ const StockAvailability: React.FC<{ stockItemUuid: string; partyUuid?: string }>
     <div className={styles.availability}>
       {totalQuantity > 0 ? (
         <span>
-          Available: {totalQuantity.toLocaleString()} {commonUOM}
+          Available: {totalQuantity.toLocaleString()} {uom}
         </span>
       ) : (
         <span className={styles.outOfStock}>Out of Stock</span>

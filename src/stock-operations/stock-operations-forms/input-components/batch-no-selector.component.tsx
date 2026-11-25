@@ -13,6 +13,8 @@ interface BatchNoSelectorProps {
   partyUuid?: string;
   /** Also list batches with no stock at the party, for operations that correct a recorded balance. */
   includeEmptyBatches?: boolean;
+  /** Also list expired batches that have stock, for operation types that allow them (Disposal on the RefApp). */
+  includeExpiredBatches?: boolean;
   initialValue?: string;
   onValueChange?: (value: string) => void;
   error?: string;
@@ -22,16 +24,18 @@ const BatchNoSelector: React.FC<BatchNoSelectorProps> = ({
   stockItemUuid,
   partyUuid,
   includeEmptyBatches = false,
+  includeExpiredBatches = false,
   error,
   initialValue,
   onValueChange,
 }) => {
-  // Inventory leaves out expired batches, so an expired batch would show here with no stock at all.
+  // Unless expired batches are asked for, inventory leaves them out, so an expired batch would show
+  // here with no stock at all.
   const {
     isLoading,
     stockItemBatchNos,
     error: batchesError,
-  } = useStockItemBatchNumbers(stockItemUuid, includeEmptyBatches);
+  } = useStockItemBatchNumbers(stockItemUuid, includeEmptyBatches && !includeExpiredBatches);
   const { t } = useTranslation();
   const {
     items,
@@ -39,7 +43,7 @@ const BatchNoSelector: React.FC<BatchNoSelectorProps> = ({
     setPartyUuid,
     isLoading: isLoadingBatchinfo,
     error: inventoryError,
-  } = useStockItemBatchInformationHook({ partyUuid });
+  } = useStockItemBatchInformationHook({ partyUuid, excludeExpired: includeExpiredBatches ? false : undefined });
 
   useEffect(() => {
     setStockItemUuid(stockItemUuid);

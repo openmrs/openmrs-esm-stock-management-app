@@ -12,7 +12,6 @@ import stockManagementAdminCardLinkComponent from './stock-management-admin-card
 import stockManagementComponent from './stock-management.component';
 import StockOperationsComponent from './stock-operations/stock-operations.component';
 import StockReports from './stock-reports/report-list/stock-reports.component';
-import StockSettings from './stock-settings/stock-settings.component';
 import StockSources from './stock-sources/stock-sources.component';
 import StockUserScopes from './stock-user-role-scopes/stock-user-role-scopes.component';
 import TransactionsBincardPrintPreviewModal from './stock-items/add-stock-item/transactions/printout/transactions-print-bincard-preview.modal';
@@ -122,13 +121,6 @@ export const stockLocationsLink = getSyncLifecycle(
 // t("reports","Reports")
 export const stockReports = getSyncLifecycle(StockReports, options);
 export const stockReportsLink = getSyncLifecycle(createDashboardLink({ title: 'Reports', name: 'reports' }), options);
-
-// t("settings","Settings")
-export const stockSettings = getSyncLifecycle(StockSettings, options);
-export const stockSettingsLink = getSyncLifecycle(
-  createDashboardLink({ title: 'Settings', name: 'settings' }),
-  options,
-);
 
 export const stockManagement = getSyncLifecycle(stockManagementComponent, options);
 

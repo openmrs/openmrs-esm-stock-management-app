@@ -65,6 +65,14 @@
   font-size: 8px;
 }
 
+// Sized in em so the arrow matches the card's small table text
+.locationArrow {
+  width: 1em;
+  height: 1em;
+  margin: 0 0.25em;
+  vertical-align: -0.125em;
+}
+
 .printButton {
   padding: layout.$spacing-01;
   margin: layout.$spacing-01;

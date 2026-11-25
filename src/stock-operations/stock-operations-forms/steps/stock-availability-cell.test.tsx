@@ -1,42 +1,57 @@
 import React from 'react';
-import { vi, describe, it, expect } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { type StockItemInventory } from '../../../core/api/types/stockItem/StockItemInventory';
-import { useStockItemBatchInformationHook } from '../../../stock-items/add-stock-item/batch-information/batch-information.resource';
+import { useStockItemInventory } from '../../../stock-items/stock-items.resource';
 import StockAvailability from './stock-availability-cell.component';
 
-vi.mock('../../../stock-items/add-stock-item/batch-information/batch-information.resource', () => ({
-  useStockItemBatchInformationHook: vi.fn(),
+vi.mock('../../../stock-items/stock-items.resource', () => ({
+  useStockItemInventory: vi.fn(),
 }));
 
-const mockUseStockItemBatchInformationHook = vi.mocked(useStockItemBatchInformationHook);
+const mockUseStockItemInventory = vi.mocked(useStockItemInventory);
+
+const mockInventory = (results: Array<Record<string, unknown>>) =>
+  mockUseStockItemInventory.mockReturnValue({
+    items: { results },
+    isLoading: false,
+    error: null,
+  } as any);
 
 describe('StockAvailability', () => {
-  it("counts only the stock held by the operation's party", () => {
-    const inventory = [
-      { partyUuid: 'main-pharmacy', batchNumber: 'B1', quantity: 20, quantityUoM: 'Tablet' },
-      { partyUuid: 'main-store', batchNumber: 'B1', quantity: 500, quantityUoM: 'Tablet' },
-      { partyUuid: 'main-store', batchNumber: 'B2', quantity: 295, quantityUoM: 'Tablet' },
-    ] as StockItemInventory[];
-    mockUseStockItemBatchInformationHook.mockImplementation((filter) => ({
-      items: inventory.filter((row) => !filter?.partyUuid || row.partyUuid === filter.partyUuid),
-      totalCount: 3,
-      currentPage: 1,
-      currentPageSize: 10,
-      pageSizes: [10, 20, 30, 40, 50],
-      isLoading: false,
-      error: null,
-      setCurrentPage: vi.fn(),
-      setPageSize: vi.fn(),
-      setSearchString: vi.fn(),
-      setStockItemUuid: vi.fn(),
-      setLocationUuid: vi.fn(),
-      setPartyUuid: vi.fn(),
-      setStockBatchUuid: vi.fn(),
-    }));
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
-    render(<StockAvailability stockItemUuid="item-uuid" partyUuid="main-store" />);
+  it('shows the location total as one row in one unit, and asks the backend to group it', () => {
+    mockInventory([{ quantity: 5.35, quantityUoM: 'Box' }]);
 
-    expect(screen.getByText('Available: 795 Tablet')).toBeInTheDocument();
+    render(<StockAvailability stockItemUuid="item-1" partyUuid="party-1" />);
+
+    expect(screen.getByText(/Available: 5.35 Box/)).toBeInTheDocument();
+
+    const filter = mockUseStockItemInventory.mock.calls[0][0];
+    expect(filter).toMatchObject({
+      stockItemUuid: 'item-1',
+      partyUuid: 'party-1',
+      groupBy: 'LocationStockItem',
+    });
+    expect(filter.includeBatchNo).toBeUndefined();
+  });
+
+  it('falls back to a single item-wide total when there is no party', () => {
+    mockInventory([{ quantity: 12, quantityUoM: 'Box' }]);
+
+    render(<StockAvailability stockItemUuid="item-1" />);
+
+    expect(screen.getByText(/Available: 12 Box/)).toBeInTheDocument();
+    expect(mockUseStockItemInventory.mock.calls[0][0]).toMatchObject({ groupBy: 'StockItemOnly' });
+  });
+
+  it('shows Out of Stock when there are no rows', () => {
+    mockInventory([]);
+
+    render(<StockAvailability stockItemUuid="item-1" partyUuid="party-1" />);
+
+    expect(screen.getByText(/Out of Stock/)).toBeInTheDocument();
   });
 });

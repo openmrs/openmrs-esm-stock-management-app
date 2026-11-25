@@ -22,6 +22,11 @@
   gap: layout.$spacing-03;
   padding: layout.$spacing-03;
   border-left: layout.$spacing-02 solid colors.$gray-30;
+
+  &:focus-visible {
+    outline: 2px solid colors.$blue-60;
+    outline-offset: -2px;
+  }
 }
 
 .stepperItemActive {

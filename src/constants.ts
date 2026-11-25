@@ -79,8 +79,6 @@ export const TASK_STOCKMANAGEMENT_REPORTS_MUTATE = 'Task: stockmanagement.report
 
 /** @type {string}: Task: stockmanagement.reports.mutate, Able to create stock reports*/
 
-export const STOCK_OPERATION_PRINT_DISABLE_BALANCE_ON_HAND = true;
-export const STOCK_OPERATION_PRINT_DISABLE_COSTS = true;
 export const PRINT_LOGO = 'moduleResources/stockmanagement/assets/print-logo.svg';
 
 export const BASE_OPENMRS_APP_URL = '/openmrs/';
