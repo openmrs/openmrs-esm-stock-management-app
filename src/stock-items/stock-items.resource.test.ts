@@ -1,7 +1,18 @@
+import { openmrsFetch, restBaseUrl, type FetchResponse } from '@openmrs/esm-framework';
 import { describe, expect, it, vi } from 'vitest';
-import { openmrsFetch } from '@openmrs/esm-framework';
+import { deleteStockItemPackagingUnit, updateStockItem, fetchAllStockItemTransactions } from './stock-items.resource';
 import { type StockItemFormData } from './validationSchema';
-import { updateStockItem } from './stock-items.resource';
+
+describe('deleteStockItemPackagingUnit', () => {
+  it('sends the void reason as a query parameter', () => {
+    deleteStockItemPackagingUnit('packaging-uuid', 'No longer used');
+
+    expect(openmrsFetch).toHaveBeenCalledWith(
+      `${restBaseUrl}/stockmanagement/stockitempackaginguom/packaging-uuid?reason=No%20longer%20used`,
+      expect.objectContaining({ method: 'DELETE' }),
+    );
+  });
+});
 
 describe('updateStockItem', () => {
   // An item as it is loaded for editing, with every packaging unit assigned
@@ -75,5 +86,38 @@ describe('updateStockItem', () => {
     updateStockItem('item-uuid', item);
 
     expect(item).toEqual(loadedItem);
+  });
+});
+
+describe('fetchAllStockItemTransactions', () => {
+  const transactions = (count: number, from = 0) =>
+    Array.from({ length: count }, (_, index) => ({ uuid: `transaction-${from + index}` }));
+
+  it('requests 100-row pages by page number until it has every transaction', async () => {
+    vi.mocked(openmrsFetch)
+      .mockResolvedValueOnce({ data: { results: transactions(100), totalCount: 130 } } as FetchResponse)
+      .mockResolvedValueOnce({ data: { results: transactions(30, 100), totalCount: 130 } } as FetchResponse);
+
+    const result = await fetchAllStockItemTransactions({ stockItemUuid: 'item-uuid', locationUuid: 'location-uuid' });
+
+    expect(result).toHaveLength(130);
+    expect(result.at(-1)).toEqual({ uuid: 'transaction-129' });
+    expect(vi.mocked(openmrsFetch)).toHaveBeenCalledTimes(2);
+    const secondUrl = vi.mocked(openmrsFetch).mock.calls[1][0];
+    expect(secondUrl).toContain('stockItemUuid=item-uuid');
+    expect(secondUrl).toContain('locationUuid=location-uuid');
+    expect(secondUrl).toContain('startIndex=1');
+    expect(secondUrl).toContain('limit=100');
+  });
+
+  it('stops after one request when everything fits on the first page', async () => {
+    vi.mocked(openmrsFetch).mockResolvedValueOnce({
+      data: { results: transactions(3), totalCount: 3 },
+    } as FetchResponse);
+
+    const result = await fetchAllStockItemTransactions({ stockItemUuid: 'item-uuid' });
+
+    expect(result).toHaveLength(3);
+    expect(vi.mocked(openmrsFetch)).toHaveBeenCalledTimes(1);
   });
 });

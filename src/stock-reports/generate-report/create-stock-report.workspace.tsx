@@ -27,6 +27,7 @@ import {
   showSnackbar,
   useConfig,
   useLayoutType,
+  useSession,
   Workspace2,
   type Workspace2DefinitionProps,
 } from '@openmrs/esm-framework';
@@ -36,7 +37,7 @@ import { getParamDefaultLimit, isForecastReport, ReportParameter } from '../Repo
 import { DATE_PICKER_CONTROL_FORMAT, DATE_PICKER_FORMAT, formatForDatePicker, today } from '../../constants';
 import { BatchJobTypeReport } from '../../core/api/types/BatchJob';
 import { createBatchJob } from '../../stock-batch/stock-batch.resource';
-import { formatDisplayDate } from '../../core/utils/datetimeUtils';
+import { formatDisplayDate, getDatePickerLocale } from '../../core/utils/datetimeUtils';
 import { useHandleMutate } from '../../utils';
 import { type Concept } from '../../core/api/types/concept/Concept';
 import { type Patient } from '../../core/api/types/identity/Patient';
@@ -82,6 +83,7 @@ export interface ReportModel {
 const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ workspaceProps, closeWorkspace }) => {
   const { model } = workspaceProps ?? {};
   const { t } = useTranslation();
+  const session = useSession();
   const handleMutate = useHandleMutate();
   const { stockItemCategoryUUID } = useConfig<ConfigObject>();
   const isTablet = useLayoutType() === 'tablet';
@@ -557,7 +559,7 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
                 <DatePicker
                   datePickerType="single"
                   maxDate={formatForDatePicker(today())}
-                  locale="en"
+                  locale={getDatePickerLocale(session?.locale)}
                   dateFormat={DATE_PICKER_CONTROL_FORMAT}
                   invalid={!!errors?.startDate?.message}
                   onChange={onChange}
@@ -566,7 +568,7 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
                   <DatePickerInput
                     id="startDate"
                     placeholder={DATE_PICKER_FORMAT}
-                    labelText={t('startDate', 'Start date')}
+                    labelText={`${t('startDate', 'Start date')} (${DATE_PICKER_FORMAT})`}
                     invalidText={errors?.startDate?.message}
                   />
                 </DatePicker>
@@ -581,7 +583,7 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
                 <DatePicker
                   datePickerType="single"
                   maxDate={formatForDatePicker(today())}
-                  locale="en"
+                  locale={getDatePickerLocale(session?.locale)}
                   dateFormat={DATE_PICKER_CONTROL_FORMAT}
                   invalid={!!errors?.endDate?.message}
                   onChange={onChange}
@@ -590,7 +592,7 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
                   <DatePickerInput
                     id="endDate"
                     placeholder={DATE_PICKER_FORMAT}
-                    labelText={t('endDate', 'End date')}
+                    labelText={`${t('endDate', 'End date')} (${DATE_PICKER_FORMAT})`}
                     invalidText={errors?.endDate?.message}
                   />
                 </DatePicker>
@@ -822,7 +824,7 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
                 <DatePicker
                   datePickerType="single"
                   maxDate={formatForDatePicker(today())}
-                  locale="en"
+                  locale={getDatePickerLocale(session?.locale)}
                   dateFormat={DATE_PICKER_CONTROL_FORMAT}
                   invalid={!!errors?.date?.message}
                   onChange={onChange}
@@ -831,7 +833,7 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
                   <DatePickerInput
                     id="date"
                     placeholder={DATE_PICKER_FORMAT}
-                    labelText={t('date', 'Date')}
+                    labelText={`${t('date', 'Date')} (${DATE_PICKER_FORMAT})`}
                     invalidText={errors?.date?.message}
                   />
                 </DatePicker>

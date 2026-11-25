@@ -8,15 +8,27 @@ import { useStockItemBatchNumbers } from '../hooks/useStockItemBatchNumbers';
 
 interface BatchNoSelectorProps {
   stockItemUuid: string;
+  /** Also list expired batches that have stock, for operation types that allow them (Disposal on the RefApp). */
+  includeExpiredBatches?: boolean;
   initialValue?: string;
   onValueChange?: (value: string) => void;
   error?: string;
 }
 
-const BatchNoSelector: React.FC<BatchNoSelectorProps> = ({ stockItemUuid, error, initialValue, onValueChange }) => {
+const BatchNoSelector: React.FC<BatchNoSelectorProps> = ({
+  stockItemUuid,
+  includeExpiredBatches = false,
+  error,
+  initialValue,
+  onValueChange,
+}) => {
   const { isLoading, stockItemBatchNos } = useStockItemBatchNumbers(stockItemUuid);
   const { t } = useTranslation();
-  const { items, setStockItemUuid, isLoading: isLoadingBatchinfo } = useStockItemBatchInformationHook();
+  const {
+    items,
+    setStockItemUuid,
+    isLoading: isLoadingBatchinfo,
+  } = useStockItemBatchInformationHook({ excludeExpired: includeExpiredBatches ? false : undefined });
 
   useEffect(() => {
     setStockItemUuid(stockItemUuid);
