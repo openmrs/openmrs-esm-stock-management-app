@@ -1,5 +1,5 @@
 import React from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { showSnackbar, useConfig } from '@openmrs/esm-framework';
@@ -33,6 +33,11 @@ const reportTypes = [
     name: 'Most Moving Items/Least Moving Items',
     systemName: 'MOST_LEAST_MOVING_STOCK_REPORT',
     parameters: ['StartDate', 'EndDate', 'Location', 'Limit'],
+  },
+  {
+    name: 'Stock Status Report',
+    systemName: 'STOCK_STATUS_REPORT',
+    parameters: ['Date', 'Location', 'InventoryGroupBy'],
   },
 ];
 
@@ -199,6 +204,48 @@ describe('CreateReport', () => {
 
       await waitFor(() => expect(createBatchJob).toHaveBeenCalledTimes(1));
       expect(getParameters()).toContain('param.Limit.value=4\r\n');
+    });
+  });
+
+  describe('date parameters', () => {
+    const originalTimeZone = process.env.TZ;
+
+    beforeAll(() => {
+      // Ahead of UTC, so local midnight falls on the previous UTC day
+      process.env.TZ = 'Africa/Nairobi';
+    });
+
+    afterAll(() => {
+      process.env.TZ = originalTimeZone;
+    });
+
+    it('sends the start and end dates as the calendar days picked', async () => {
+      const user = userEvent.setup();
+      renderForm();
+      await selectReport(user, 'Stock Expiry Report');
+      await user.selectOptions(screen.getByRole('combobox', { name: 'Location' }), 'Main Store');
+      typeDate('Start date', '01/11/2026');
+      typeDate('End date', '23/11/2026');
+
+      await save(user);
+
+      await waitFor(() => expect(createBatchJob).toHaveBeenCalledTimes(1));
+      expect(getParameters()).toContain('param.StartDate.value=2026-11-01\r\n');
+      expect(getParameters()).toContain('param.EndDate.value=2026-11-23\r\n');
+    });
+
+    it('sends the inventory date as the calendar day picked', async () => {
+      const user = userEvent.setup();
+      renderForm();
+      await selectReport(user, 'Stock Status Report');
+      await user.selectOptions(screen.getByRole('combobox', { name: 'Location' }), 'Main Store');
+      await user.selectOptions(screen.getByRole('combobox', { name: 'Inventory by' }), 'Stock Item');
+      typeDate('Date', '23/11/2026');
+
+      await save(user);
+
+      await waitFor(() => expect(createBatchJob).toHaveBeenCalledTimes(1));
+      expect(getParameters()).toContain('param.Date.value=2026-11-23\r\n');
     });
   });
 });
