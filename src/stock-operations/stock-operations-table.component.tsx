@@ -2,8 +2,6 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   DataTable,
   DataTableSkeleton,
-  DatePicker,
-  DatePickerInput,
   InlineLoading,
   InlineNotification,
   Link,
@@ -27,10 +25,10 @@ import {
 } from '@carbon/react';
 import { ArrowRight } from '@carbon/react/icons';
 import { useTranslation } from 'react-i18next';
-import { isDesktop, restBaseUrl, useConfig, useSession } from '@openmrs/esm-framework';
+import { isDesktop, OpenmrsDatePicker, restBaseUrl, useConfig } from '@openmrs/esm-framework';
 import { type ConfigObject } from '../config-schema';
-import { DATE_PICKER_CONTROL_FORMAT, DATE_PICKER_FORMAT, StockFilters } from '../constants';
-import { formatDisplayDate, getDatePickerLocale } from '../core/utils/datetimeUtils';
+import { StockFilters } from '../constants';
+import { formatDisplayDate } from '../core/utils/datetimeUtils';
 import { useHandleMutate } from '../utils';
 import { ResourceRepresentation } from '../core/api/api';
 import { useDebounce } from '../core/hooks/debounce-hook';
@@ -45,9 +43,13 @@ interface StockOperationsTableProps {
   status?: string;
 }
 
+type DateRange = [Date | null, Date | null];
+
+// While a year is typed or deleted, the date pickers report each partial year (2, 20, 202) as a date
+const hasFullYear = (date: Date | null) => !!date && date.getFullYear() >= 1000;
+
 const StockOperations: React.FC<StockOperationsTableProps> = () => {
   const { t } = useTranslation();
-  const session = useSession();
   const handleMutate = useHandleMutate();
   const { stockSourceTypeUUID } = useConfig<ConfigObject>();
 
@@ -55,8 +57,8 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
     handleMutate(`${restBaseUrl}/stockmanagement/stockoperation`);
   };
 
-  const [selectedFromDate, setSelectedFromDate] = useState(null);
-  const [selectedToDate, setSelectedToDate] = useState(null);
+  const [dateRange, setDateRange] = useState<DateRange>([null, null]);
+  const [[selectedFromDate, selectedToDate], setDateFilter] = useState<DateRange>([null, null]);
   const [selectedSources, setSelectedSources] = useState<string[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<string[]>([]);
   const [selectedOperations, setSelectedOperations] = useState<string[]>([]);
@@ -70,6 +72,10 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
   useEffect(() => {
     debouncedSearch(searchInput);
   }, [searchInput, debouncedSearch]);
+
+  // The date pickers report a date whenever every segment has a value, so changing the day from 23 to 25 reports
+  // day 2 first
+  const debouncedDateFilter = useDebounce(setDateFilter, 500);
 
   const {
     items,
@@ -111,18 +117,14 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
     }
   }, []);
 
-  const handleDateFilterChange = ([startDate, endDate]) => {
-    if (startDate) {
-      setSelectedFromDate(startDate);
-      if (selectedToDate && startDate && selectedToDate < startDate) {
-        setSelectedToDate(startDate);
-      }
-    }
-    if (endDate) {
-      setSelectedToDate(endDate);
-      if (selectedFromDate && endDate && selectedFromDate > endDate) {
-        setSelectedFromDate(endDate);
-      }
+  const handleDateRangeChange = (range: DateRange) => {
+    setDateRange(range);
+    const [startDate, endDate] = range;
+    // A partial year or an end date before the start date is still being typed or deleted, so the last valid filter
+    // stays
+    const isPartialYear = range.some((date) => date && !hasFullYear(date));
+    if (!isPartialYear && !(startDate && endDate && startDate > endDate)) {
+      debouncedDateFilter(range);
     }
   };
 
@@ -212,25 +214,20 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
                   placeholder={t('searchStockOperations', 'Search stock operations')}
                 />
                 <div className={styles.container}>
-                  <DatePicker
-                    datePickerType="range"
-                    dateFormat={DATE_PICKER_CONTROL_FORMAT}
-                    locale={getDatePickerLocale(session?.locale)}
-                    onChange={([startDate, endDate]) => handleDateFilterChange([startDate, endDate])}
-                    value={[selectedFromDate, selectedToDate]}
-                  >
-                    <DatePickerInput
-                      id="stock-operations-start-date"
-                      labelText={`${t('startDate', 'Start date')} (${DATE_PICKER_FORMAT})`}
-                      placeholder={DATE_PICKER_FORMAT}
-                    />
-
-                    <DatePickerInput
-                      id="stock-operations-end-date"
-                      labelText={`${t('endDate', 'End date')} (${DATE_PICKER_FORMAT})`}
-                      placeholder={DATE_PICKER_FORMAT}
-                    />
-                  </DatePicker>
+                  <OpenmrsDatePicker
+                    className={styles.datePicker}
+                    labelText={t('startDate', 'Start date')}
+                    maxDate={hasFullYear(dateRange[1]) ? dateRange[1] : undefined}
+                    onChange={(date) => handleDateRangeChange([date ?? null, dateRange[1]])}
+                    value={dateRange[0]}
+                  />
+                  <OpenmrsDatePicker
+                    className={styles.datePicker}
+                    labelText={t('endDate', 'End date')}
+                    minDate={hasFullYear(dateRange[0]) ? dateRange[0] : undefined}
+                    onChange={(date) => handleDateRangeChange([dateRange[0], date ?? null])}
+                    value={dateRange[1]}
+                  />
 
                   <StockOperationsFilters
                     conceptUuid={stockSourceTypeUUID}
