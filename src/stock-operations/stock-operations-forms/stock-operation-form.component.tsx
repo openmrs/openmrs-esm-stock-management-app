@@ -21,7 +21,7 @@ import {
   StockOperationTypeIsStockIssue,
 } from '../../core/api/types/stockOperation/StockOperationType';
 import { type TabItem } from '../../core/components/tabs/types';
-import { findFirstFieldErrorMessage, otherUser, pick } from '../../core/utils/utils';
+import { otherUser, pick } from '../../core/utils/utils';
 import {
   type BaseStockOperationItemFormData,
   getStockOperationFormSchema,
@@ -222,20 +222,9 @@ const StockOperationForm: React.FC<Workspace2DefinitionProps<StockOperationFormP
 
   useEffect(() => {
     // Display fields errors for stock operation items and operation type uuid
-    const fieldErrorTitles: Record<string, string> = {
-      stockOperationItems: t('stockOperationItemsErrorTitle', 'Stock item error'),
-      operationTypeUuid: t('operationTypeErrorTitle', 'Operation type error'),
-    };
     Object.entries(form.formState.errors ?? {}).forEach(([key, val]) => {
       if (['stockOperationItems', 'operationTypeUuid'].includes(key)) {
-        showSnackbar({
-          kind: 'error',
-          title: fieldErrorTitles[key],
-          subtitle:
-            (val as FieldError)?.message ??
-            findFirstFieldErrorMessage(val) ??
-            t('reviewRequiredFields', 'Please review the required fields and try again.'),
-        });
+        showSnackbar({ kind: 'error', title: key, subtitle: (val as FieldError)?.message });
       }
     });
 
@@ -259,7 +248,7 @@ const StockOperationForm: React.FC<Workspace2DefinitionProps<StockOperationFormP
         break;
       }
     }
-  }, [form.formState.errors, t]);
+  }, [form.formState.errors]);
 
   // Stock issue errors (while fetching related requisitio or if no supplied requisition)
   useEffect(() => {

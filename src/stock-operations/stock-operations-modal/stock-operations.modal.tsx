@@ -19,20 +19,6 @@ interface StockOperationsModalProps {
   closeModal: () => void;
 }
 
-// Maps each confirmable action to its natural past-tense phrasing, e.g. "complete" -> "completed",
-// so the success message reads as "Operation completed" rather than "successfully Complete operation".
-const actionPastTense: Record<string, string> = {
-  submit: 'submitted',
-  dispatch: 'dispatched',
-  complete: 'completed',
-  'complete dispatch': 'completed',
-  cancel: 'cancelled',
-  reject: 'rejected',
-  return: 'returned',
-  approve: 'approved',
-  dispatchapproval: 'dispatched',
-};
-
 const StockOperationsModal: React.FC<StockOperationsModalProps> = ({ title, requireReason, operation, closeModal }) => {
   const confirmType = title.toLocaleLowerCase().trim();
   const { t } = useTranslation();
@@ -55,6 +41,16 @@ const StockOperationsModal: React.FC<StockOperationsModalProps> = ({ title, requ
     approve: t('approve', 'Approve'),
   };
   const confirmLabel = confirmLabels[confirmType] ?? t('submit', 'Submit');
+  const successMessages: Record<string, string> = {
+    submit: t('operationSubmitted', 'Operation submitted'),
+    dispatch: t('operationDispatched', 'Operation dispatched'),
+    dispatchapproval: t('operationDispatched', 'Operation dispatched'),
+    complete: t('operationCompleted', 'Operation completed'),
+    'complete dispatch': t('operationCompleted', 'Operation completed'),
+    reject: t('operationRejected', 'Operation rejected'),
+    return: t('operationReturned', 'Operation returned'),
+    approve: t('operationApproved', 'Operation approved'),
+  };
 
   const handleClick = async (event) => {
     event.preventDefault();
@@ -116,11 +112,7 @@ const StockOperationsModal: React.FC<StockOperationsModalProps> = ({ title, requ
           title: isCancelling
             ? t('operationCancelled', 'Operation cancelled')
             : t('operationSuccessTitle', '{{title}} Operation', { title }),
-          subtitle: isCancelling
-            ? undefined
-            : t('operationSuccessful', 'Operation {{action}} successfully', {
-                action: actionPastTense[confirmType] ?? confirmType,
-              }),
+          subtitle: isCancelling ? undefined : successMessages[confirmType],
           kind: 'success',
         });
         closeModal();
