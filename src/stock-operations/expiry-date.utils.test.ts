@@ -1,7 +1,23 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { parseStockExpiryDate, stockExpiryDateForApi } from './expiry-date.utils';
 
-describe('stock batch expiry calendar dates', () => {
+const timeZones = ['UTC', 'Asia/Karachi', 'America/New_York', 'America/Los_Angeles', 'Pacific/Auckland'];
+
+describe.each(timeZones)('stock batch expiry calendar dates in %s', (timeZone) => {
+  const originalTimeZone = process.env.TZ;
+
+  beforeEach(() => {
+    process.env.TZ = timeZone;
+  });
+
+  afterEach(() => {
+    if (originalTimeZone === undefined) {
+      delete process.env.TZ;
+    } else {
+      process.env.TZ = originalTimeZone;
+    }
+  });
+
   it.each([
     [2027, 12, 31],
     [2028, 2, 29],

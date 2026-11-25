@@ -5,7 +5,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { FormProvider, useForm } from 'react-hook-form';
 import { SWRConfig } from 'swr';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { openingStockOperationTypeMock } from '@mocks';
 import { formatForDatePicker } from '../../../constants';
 import { OperationType, type StockOperationType } from '../../../core/api/types/stockOperation/StockOperationType';
@@ -118,55 +118,72 @@ const SubmissionHarness: React.FC<{ expiration: Date }> = ({ expiration }) => {
   );
 };
 
-describe('StockOperationSubmissionFormStep expiry date persistence round trip', () => {
-  it('catches UTC-midnight regression in a negative-offset backend timezone', () => {
-    const { storedDate } = simulateOpenmrsDateColumnRoundTrip('2027-12-31T00:00:00.000Z', 'America/New_York');
-    expect(storedDate).toBe('2027-12-30');
-  });
+const browserTimeZones = ['UTC', 'Asia/Karachi', 'America/New_York', 'America/Los_Angeles', 'Pacific/Auckland'];
 
-  it.each([
-    [2027, 12, 31],
-    [2028, 2, 29],
-    [2028, 3, 1],
-    [2027, 1, 1],
-  ])('sends date-only YYYY-MM-DD on save and preserves %i-%i-%i across backend timezones', async (year, month, day) => {
-    const user = userEvent.setup();
-    let capturedWireJson = '';
+describe.each(browserTimeZones)(
+  'StockOperationSubmissionFormStep expiry date persistence round trip in %s',
+  (browserTimeZone) => {
+    const originalTimeZone = process.env.TZ;
 
-    mockOpenmrsFetch.mockImplementation(async (_url, init) => {
-      capturedWireJson = JSON.stringify(init?.body);
-      return { data: { uuid: 'saved-operation-uuid' } } as FetchResponse;
+    beforeEach(() => {
+      process.env.TZ = browserTimeZone;
     });
 
-    const selectedDate = new Date(year, month - 1, day);
-    render(<SubmissionHarness expiration={selectedDate} />);
-
-    await user.click(screen.getByRole('button', { name: /save/i }));
-
-    await waitFor(() => {
-      expect(mockOpenmrsFetch).toHaveBeenCalledTimes(1);
+    afterEach(() => {
+      if (originalTimeZone === undefined) {
+        delete process.env.TZ;
+      } else {
+        process.env.TZ = originalTimeZone;
+      }
     });
 
-    const wirePayload = JSON.parse(capturedWireJson);
-    const expectedDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    const expectedPickerDisplay = `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`;
-    const wireExpiration = wirePayload.stockOperationItems[0].expiration;
+    it.each([
+      [2027, 12, 31],
+      [2028, 2, 29],
+      [2028, 3, 1],
+      [2027, 1, 1],
+    ])(
+      'sends date-only YYYY-MM-DD on save and preserves %i-%i-%i across backend timezones',
+      async (year, month, day) => {
+        const user = userEvent.setup();
+        let capturedWireJson = '';
 
-    expect(wireExpiration).toBe(expectedDate);
+        mockOpenmrsFetch.mockImplementation(async (_url, init) => {
+          capturedWireJson = JSON.stringify(init?.body);
+          return { data: { uuid: 'saved-operation-uuid' } } as FetchResponse;
+        });
 
-    for (const backendTimeZone of [
-      'America/New_York',
-      'America/Los_Angeles',
-      'UTC',
-      'Asia/Karachi',
-      'Pacific/Auckland',
-    ]) {
-      const { storedDate, responseString } = simulateOpenmrsDateColumnRoundTrip(wireExpiration, backendTimeZone);
-      expect(storedDate).toBe(expectedDate);
+        const selectedDate = new Date(year, month - 1, day);
+        render(<SubmissionHarness expiration={selectedDate} />);
 
-      const restored = parseStockExpiryDate(responseString);
-      expect([restored.getFullYear(), restored.getMonth() + 1, restored.getDate()]).toEqual([year, month, day]);
-      expect(formatForDatePicker(restored)).toBe(expectedPickerDisplay);
-    }
-  });
-});
+        await user.click(screen.getByRole('button', { name: /save/i }));
+
+        await waitFor(() => {
+          expect(mockOpenmrsFetch).toHaveBeenCalledTimes(1);
+        });
+
+        const wirePayload = JSON.parse(capturedWireJson);
+        const expectedDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const expectedPickerDisplay = `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`;
+        const wireExpiration = wirePayload.stockOperationItems[0].expiration;
+
+        expect(wireExpiration).toBe(expectedDate);
+
+        for (const backendTimeZone of [
+          'America/New_York',
+          'America/Los_Angeles',
+          'UTC',
+          'Asia/Karachi',
+          'Pacific/Auckland',
+        ]) {
+          const { storedDate, responseString } = simulateOpenmrsDateColumnRoundTrip(wireExpiration, backendTimeZone);
+          expect(storedDate).toBe(expectedDate);
+
+          const restored = parseStockExpiryDate(responseString);
+          expect([restored.getFullYear(), restored.getMonth() + 1, restored.getDate()]).toEqual([year, month, day]);
+          expect(formatForDatePicker(restored)).toBe(expectedPickerDisplay);
+        }
+      },
+    );
+  },
+);

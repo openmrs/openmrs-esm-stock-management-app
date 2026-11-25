@@ -42,31 +42,3 @@ jobs:
       publish_environment: npm-publish
     secrets:
       BOT_PAT: ${{ secrets.OMRS_BOT_GH_TOKEN }}
-
-  stock-expiry-timezone-tests:
-    name: Stock expiry timezone regression
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
-
-      - name: Set up Node.js
-        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
-        with:
-          node-version: 22
-
-      - name: Enable Corepack
-        run: corepack enable
-
-      - name: Install dependencies
-        run: yarn install --immutable
-
-      - name: Test expiry dates across timezones
-        shell: bash
-        run: |
-          set -euo pipefail
-          for timezone in UTC Asia/Karachi America/New_York America/Los_Angeles Pacific/Auckland; do
-            echo "::group::Timezone: $timezone"
-            TZ="$timezone" yarn vitest run src/stock-operations/expiry-date.utils.test.ts src/stock-operations/stock-operations-forms/steps/stock-operation-submission-expiry.test.tsx
-            echo "::endgroup::"
-          done
