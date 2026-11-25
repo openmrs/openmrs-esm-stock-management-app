@@ -1,22 +1,43 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button } from '@carbon/react';
+import { ActionableNotification, Button } from '@carbon/react';
 import { ResourceRepresentation } from '../core/api/api';
-import { DocumentImport, View } from '@carbon/react/icons';
-import { showModal } from '@openmrs/esm-framework';
+import { DocumentExport } from '@carbon/react/icons';
+import { restBaseUrl, showModal } from '@openmrs/esm-framework';
 import { useStockIssuing } from './stock-home-issuing.resource';
 import styles from './stock-home-detail-card.scss';
+import { useHandleMutate } from '../utils';
 
 const StockHomeIssuingCard = () => {
   const { t } = useTranslation();
 
-  const { items, isLoading } = useStockIssuing({
+  const handleMutate = useHandleMutate();
+  const { items, isLoading, error } = useStockIssuing({
     v: ResourceRepresentation.Full,
     totalCount: true,
   });
 
   if (isLoading) {
     return null;
+  }
+
+  // Checked before the data, which SWR keeps from an earlier load when a reload fails.
+  if (error) {
+    return (
+      <ActionableNotification
+        actionButtonLabel={t('tryAgain', 'Try again')}
+        closeOnEscape={false}
+        hasFocus={false}
+        hideCloseButton
+        inline
+        kind="error"
+        lowContrast
+        // The trailing "?" keeps the retry to the operations list
+        onActionButtonClick={() => handleMutate(`${restBaseUrl}/stockmanagement/stockoperation?`)}
+        role="alert"
+        title={t('issuedStockLoadError', "Couldn't load issued stock")}
+      />
+    );
   }
 
   if (items?.length === 0) {
@@ -56,7 +77,7 @@ const StockHomeIssuingCard = () => {
         <div className={styles.card} key={index}>
           <div className={styles.colorLineGreen} />
           <div className={styles.icon}>
-            <DocumentImport size={40} color={'#198038'} />
+            <DocumentExport size={40} color={'#198038'} />
           </div>
           <div className={styles.cardText}>
             <p>

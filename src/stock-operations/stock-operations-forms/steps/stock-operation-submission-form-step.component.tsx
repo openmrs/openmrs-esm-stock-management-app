@@ -161,7 +161,7 @@ const StockOperationSubmissionFormStep: React.FC<StockOperationSubmissionFormSte
       <Column>
         <RadioButtonGroup
           name="rbgApprovelRequired"
-          legendText={t('doesThisTransactionRequireApproval', 'Does the transaction require approval ?')}
+          legendText={t('doesThisTransactionRequireApproval', 'Does the transaction require approval?')}
           onChange={(value) => handleRadioButtonChange(value === 'true')}
           readOnly={!editable}
           valueSelected={approvalRequired === true ? 'true' : approvalRequired === false ? 'false' : null}

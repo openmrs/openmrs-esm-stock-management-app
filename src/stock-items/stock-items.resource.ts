@@ -106,6 +106,33 @@ export function useStockItemTransactions(filter: StockItemTransactionFilter) {
   };
 }
 
+// The backend caps a page at 100 results and reads startIndex as a page number, not a row offset
+const ALL_TRANSACTIONS_PAGE_SIZE = 100;
+
+export async function fetchAllStockItemTransactions(filter: StockItemInventoryFilter) {
+  const transactions: Array<StockItemTransactionDTO> = [];
+
+  for (let page = 0; ; page++) {
+    const { data } = await openmrsFetch<PageableResult<StockItemTransactionDTO>>(
+      `${restBaseUrl}/stockmanagement/stockitemtransaction${toQueryParams({
+        ...filter,
+        startIndex: page,
+        limit: ALL_TRANSACTIONS_PAGE_SIZE,
+        totalCount: true,
+      })}`,
+    );
+    const results = data?.results ?? [];
+    transactions.push(...results);
+
+    if (
+      results.length < ALL_TRANSACTIONS_PAGE_SIZE ||
+      (data?.totalCount != null && transactions.length >= data.totalCount)
+    ) {
+      return transactions;
+    }
+  }
+}
+
 // getStockItemInventory
 export function useStockItemInventory(filter: StockItemInventoryFilter) {
   const apiUrl = `${restBaseUrl}/stockmanagement/stockiteminventory${toQueryParams(filter)}`;
@@ -214,8 +241,8 @@ export function deleteStockItems(ids: string[]) {
 }
 
 // deleteStockItemPackagingUnit
-export function deleteStockItemPackagingUnit(id: string) {
-  const apiUrl = `${restBaseUrl}/stockmanagement/stockitempackaginguom/${id}`;
+export function deleteStockItemPackagingUnit(id: string, reason: string) {
+  const apiUrl = `${restBaseUrl}/stockmanagement/stockitempackaginguom/${id}?reason=${encodeURIComponent(reason)}`;
   const abortController = new AbortController();
 
   return openmrsFetch(apiUrl, {
