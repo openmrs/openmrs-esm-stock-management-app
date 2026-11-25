@@ -49,6 +49,7 @@ import { useHandleMutate } from '../../utils';
 import useSearchUser from '../../stock-operations/stock-operations-forms/hooks/useSearchUser';
 import { useDebounce } from '../../core/hooks/debounce-hook';
 import styles from './add-stock-user-role-scope.scss';
+import { getDatePickerLocale } from '../../core/utils/datetimeUtils';
 
 const MinDate: Date = today();
 
@@ -387,7 +388,7 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
                 // The picker sets its inputs' invalid state
                 invalid={!!(errors.activeFrom || errors.activeTo)}
                 light
-                locale="en"
+                locale={getDatePickerLocale(currentUser?.locale)}
                 minDate={formatForDatePicker(minActiveDate)}
                 onChange={onActiveDatesChange}
                 value={activeDates}
@@ -395,13 +396,13 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
                 <DatePickerInput
                   id="date-picker-input-id-start"
                   invalidText={errors.activeFrom}
-                  labelText={t('activeFrom', 'Active From')}
+                  labelText={`${t('activeFrom', 'Active From')} (${DATE_PICKER_FORMAT})`}
                   placeholder={DATE_PICKER_FORMAT}
                 />
                 <DatePickerInput
                   id="date-picker-input-id-finish"
                   invalidText={errors.activeTo}
-                  labelText={t('activeTo', 'Active To')}
+                  labelText={`${t('activeTo', 'Active To')} (${DATE_PICKER_FORMAT})`}
                   placeholder={DATE_PICKER_FORMAT}
                 />
               </DatePicker>

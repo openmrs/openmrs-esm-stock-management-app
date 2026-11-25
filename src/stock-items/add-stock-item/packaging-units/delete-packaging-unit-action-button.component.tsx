@@ -24,6 +24,7 @@ const DeletePackagingUnitActionButton: React.FC<DeletePackagingUnitActionButtonP
       size="sm"
       className="submitButton clear-padding-margin"
       iconDescription={t('delete', 'Delete')}
+      hasIconOnly
       kind="ghost"
       renderIcon={TrashCan}
       onClick={launchDeleteModal}
