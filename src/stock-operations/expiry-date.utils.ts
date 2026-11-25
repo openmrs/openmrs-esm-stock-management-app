@@ -2,7 +2,7 @@
  * Stock batch expiration is a calendar date, not a moment in time.
  * The REST API supplies ISO-formatted strings, while Carbon DatePicker uses
  * a Date at local midnight. Never interpret the date-only value in the
- * user's time zone when reading, or serialize local midnight when writing.
+ * user's time zone when reading, or serialize a UTC instant when writing.
  */
 export function parseStockExpiryDate(value: string | Date): Date {
   if (value instanceof Date) return value;
@@ -15,7 +15,10 @@ export function parseStockExpiryDate(value: string | Date): Date {
   return new Date(value);
 }
 
-/** Serialize a selected local calendar day as UTC midnight for the REST API. */
-export function stockExpiryDateForApi(value: Date): Date {
-  return new Date(Date.UTC(value.getFullYear(), value.getMonth(), value.getDate()));
+/** Format a selected local calendar day as date-only YYYY-MM-DD for the REST API. */
+export function stockExpiryDateForApi(value: Date): string {
+  const year = String(value.getFullYear()).padStart(4, '0');
+  const month = String(value.getMonth() + 1).padStart(2, '0');
+  const day = String(value.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }

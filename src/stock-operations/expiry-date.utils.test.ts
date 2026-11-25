@@ -7,17 +7,22 @@ describe('stock batch expiry calendar dates', () => {
     [2028, 2, 29],
     [2028, 3, 1],
     [2027, 1, 1],
-  ])('preserves %i-%i-%i through the API boundary', (year, month, day) => {
+  ])('preserves %i-%i-%i as date-only YYYY-MM-DD through the API boundary', (year, month, day) => {
     const selected = new Date(year, month - 1, day);
-    const outgoing = stockExpiryDateForApi(selected).toISOString();
+    const outgoing = stockExpiryDateForApi(selected);
     const expected = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    expect(outgoing).toBe(`${expected}T00:00:00.000Z`);
+    expect(outgoing).toBe(expected);
     const redisplayed = parseStockExpiryDate(outgoing);
     expect([redisplayed.getFullYear(), redisplayed.getMonth() + 1, redisplayed.getDate()]).toEqual([year, month, day]);
   });
 
-  it('uses the calendar portion of OpenMRS date-only responses', () => {
-    const restored = parseStockExpiryDate('2027-12-31T00:00:00.000+0000');
+  it.each([
+    '2027-12-31T00:00:00.000-0500',
+    '2027-12-31T00:00:00.000+0000',
+    '2027-12-31T00:00:00.000+0500',
+    '2027-12-31T00:00:00.000+1300',
+  ])('uses the calendar portion of OpenMRS date-only response %s', (responseValue) => {
+    const restored = parseStockExpiryDate(responseValue);
     expect([restored.getFullYear(), restored.getMonth() + 1, restored.getDate()]).toEqual([2027, 12, 31]);
   });
 

@@ -67,6 +67,6 @@ jobs:
           set -euo pipefail
           for timezone in UTC Asia/Karachi America/New_York America/Los_Angeles Pacific/Auckland; do
             echo "::group::Timezone: $timezone"
-            TZ="$timezone" yarn vitest run src/stock-operations/expiry-date.utils.test.ts
+            TZ="$timezone" yarn vitest run src/stock-operations/expiry-date.utils.test.ts src/stock-operations/stock-operations-forms/steps/stock-operation-submission-expiry.test.tsx
             echo "::endgroup::"
           done
