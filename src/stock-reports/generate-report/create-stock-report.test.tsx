@@ -4,6 +4,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { showSnackbar, useConfig } from '@openmrs/esm-framework';
 import { mockWorkspace2Props } from '@mocks';
+import { DATE_PICKER_FORMAT } from '../../constants';
 import { createBatchJob } from '../../stock-batch/stock-batch.resource';
 import { useConcept, useStockTagLocations } from '../../stock-lookups/stock-lookups.resource';
 import { useReportTypes } from '../stock-reports.resource';
@@ -49,7 +50,7 @@ const selectReport = async (user: ReturnType<typeof userEvent.setup>, name: stri
 };
 
 const typeDate = (label: string, value: string) => {
-  const input = screen.getByRole('textbox', { name: label });
+  const input = screen.getByRole('textbox', { name: `${label} (${DATE_PICKER_FORMAT})` });
   fireEvent.change(input, { target: { value } });
   // flatpickr commits a typed date on Enter
   fireEvent.keyDown(input, { key: 'Enter', code: 'Enter', keyCode: 13 });
@@ -82,7 +83,10 @@ describe('CreateReport', () => {
       expect(await screen.findByText(/Start Date is required/)).toBeInTheDocument();
       expect(screen.getByText(/End Date is required/)).toBeInTheDocument();
       expect(screen.getByText('Location is required')).toBeInTheDocument();
-      expect(screen.getByRole('textbox', { name: 'Start date' })).toHaveAttribute('data-invalid', 'true');
+      expect(screen.getByRole('textbox', { name: `Start date (${DATE_PICKER_FORMAT})` })).toHaveAttribute(
+        'data-invalid',
+        'true',
+      );
       expect(showSnackbar).toHaveBeenCalledWith(
         expect.objectContaining({
           kind: 'error',
@@ -116,6 +120,15 @@ describe('CreateReport', () => {
   });
 
   describe('Enter in a date field', () => {
+    it('displays the expected date format in the label for date inputs', async () => {
+      const user = userEvent.setup();
+      renderForm();
+      await selectReport(user, 'Stock Expiry Report');
+
+      expect(screen.getByRole('textbox', { name: `Start date (${DATE_PICKER_FORMAT})` })).toBeInTheDocument();
+      expect(screen.getByRole('textbox', { name: `End date (${DATE_PICKER_FORMAT})` })).toBeInTheDocument();
+    });
+
     it('commits the date without submitting a form that is otherwise complete', async () => {
       const user = userEvent.setup();
       const { closeWorkspace } = renderForm();
@@ -123,7 +136,7 @@ describe('CreateReport', () => {
       await user.selectOptions(screen.getByRole('combobox', { name: 'Location' }), 'Main Store');
       typeDate('Start date', '01/01/2026');
 
-      const endDate = screen.getByRole('textbox', { name: 'End date' });
+      const endDate = screen.getByRole('textbox', { name: `End date (${DATE_PICKER_FORMAT})` });
       await user.clear(endDate);
       await user.type(endDate, '31/01/2026{Enter}');
 

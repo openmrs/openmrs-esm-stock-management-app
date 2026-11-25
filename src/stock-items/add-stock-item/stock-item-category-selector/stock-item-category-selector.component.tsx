@@ -1,4 +1,4 @@
-import React, { type ReactNode, useEffect, useRef } from 'react';
+import React, { type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type Control, type FieldValues, useController } from 'react-hook-form';
 import { type Concept } from '../../../core/api/types/concept/Concept';
@@ -13,7 +13,6 @@ interface StockItemCategorySelectorProps<T> {
   placeholder?: string;
   invalid?: boolean;
   invalidText?: ReactNode;
-  itemType?: string;
 
   // Control
   controllerName: string;
@@ -30,25 +29,12 @@ const StockItemCategorySelector = <T,>(props: StockItemCategorySelectorProps<T>)
     isLoading,
   } = useConcept(stockItemCategoryUUID);
 
-  const filteredCategories = props.itemType ? categories?.filter((c) => c.display === props?.itemType) : categories;
-
   const {
     field: { onChange, value, ref },
   } = useController({
     name: props.controllerName,
     control: props.control,
   });
-
-  const prevItemTypeRef = useRef(props.itemType);
-
-  useEffect(() => {
-    if (prevItemTypeRef.current !== props.itemType && filteredCategories) {
-      prevItemTypeRef.current = props.itemType;
-      if (value && !filteredCategories.some((c) => c.uuid === value)) {
-        onChange('');
-      }
-    }
-  }, [props.itemType, filteredCategories, value, onChange]);
 
   if (isLoading) {
     return <TextInputSkeleton />;
@@ -59,12 +45,12 @@ const StockItemCategorySelector = <T,>(props: StockItemCategorySelectorProps<T>)
       titleText={props.title}
       id={props.name}
       size={'md'}
-      items={filteredCategories || []}
+      items={categories || []}
       onChange={(data: { selectedItem: Concept | null | undefined }) => {
         props.onCategoryUuidChange?.(data.selectedItem);
         onChange(data.selectedItem?.uuid);
       }}
-      selectedItem={filteredCategories?.find((p) => p.uuid === value) ?? null}
+      selectedItem={categories?.find((p) => p.uuid === value) ?? null}
       itemToString={(item?: Concept) => (item && item?.display ? `${t(item?.display)}` : '')}
       shouldFilterItem={() => true}
       placeholder={props.placeholder}
