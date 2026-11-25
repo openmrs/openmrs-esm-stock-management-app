@@ -1,6 +1,6 @@
 import React from 'react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { showSnackbar, useConfig, useSession } from '@openmrs/esm-framework';
 import { mockWorkspace2Props, stockIssueOperationtypeMock } from '@mocks';
@@ -34,6 +34,15 @@ vi.mock('../stock-operations.resource', () => ({
 vi.mock('./hooks/useParties', () => ({
   default: vi.fn(),
   useParties: vi.fn(),
+}));
+
+// Stands in for the line form: saving fills in the quantity unit the saved lines are missing
+vi.mock('./stock-item-form/stock-item-form.workspace', () => ({
+  default: ({ stockOperationItem, onSave }) => (
+    <button type="button" onClick={() => onSave({ ...stockOperationItem, stockItemPackagingUOMUuid: 'uom-uuid' })}>
+      Save line
+    </button>
+  ),
 }));
 
 const requisitionUuid = 'requisition-uuid';
@@ -176,6 +185,40 @@ describe('StockOperationForm validation errors', () => {
     // Neither saved line has a quantity unit
     expect(screen.getAllByText('Missing: Quantity unit of measurement')).toHaveLength(2);
     expect(showSnackbar).not.toHaveBeenCalled();
+  });
+
+  it('clears the marker and the alert once the lines are fixed, without clicking Next again', async () => {
+    const user = userEvent.setup();
+    mockUseStockOperationAndItems.mockReturnValue({ items: undefined, isLoading: false, error: null });
+    render(
+      <StockOperationForm
+        {...mockWorkspace2Props({
+          stockOperationType: stockIssueType,
+          stockOperation: savedIssue,
+          stockRequisitionUuid: requisitionUuid,
+        })}
+      />,
+    );
+
+    await user.click(screen.getByText(/stock items/i));
+    await user.click(screen.getByRole('button', { name: /next/i }));
+    expect(await screen.findAllByText('Missing: Quantity unit of measurement')).toHaveLength(2);
+
+    // The row buttons are named only by their icon, so take Edit, the first button on the line's row
+    const editLine = (index: number) =>
+      user.click(within(screen.getAllByRole('row')[index + 1]).getAllByRole('button')[0]);
+    await editLine(0);
+    await user.click(screen.getByRole('button', { name: 'Save line' }));
+
+    // Only the line that's still missing its unit is marked
+    expect(await screen.findAllByText('Missing: Quantity unit of measurement')).toHaveLength(1);
+    expect(screen.getByRole('alert')).toHaveTextContent('Complete the details of the items marked below');
+
+    await editLine(1);
+    await user.click(screen.getByRole('button', { name: 'Save line' }));
+
+    await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
+    expect(screen.queryByText(/^Missing:/)).not.toBeInTheDocument();
   });
 
   it('says to add an item when there are none, instead of showing a toast', async () => {

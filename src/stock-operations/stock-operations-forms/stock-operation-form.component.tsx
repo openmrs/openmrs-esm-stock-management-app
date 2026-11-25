@@ -142,9 +142,11 @@ const StockOperationForm: React.FC<Workspace2DefinitionProps<StockOperationFormP
           } else {
             items[index] = data;
           }
+          // Revalidate so a line's error and marker go once it's fixed
           form.setValue(
             'stockOperationItems',
             items as [BaseStockOperationItemFormData, ...BaseStockOperationItemFormData[]],
+            { shouldValidate: true },
           );
           setRenderItemForm(false);
           setItemFormProps(undefined);
