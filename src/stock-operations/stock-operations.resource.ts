@@ -37,7 +37,9 @@ export interface StockItemInventoryFilter extends ResourceFilterCriteria {
 // getStockOperations
 export function useStockOperations(filter: StockOperationFilter) {
   const apiUrl = `${restBaseUrl}/stockmanagement/stockoperation${toQueryParams(filter)}`;
-  const { data, error, isLoading } = useSWR<{ data: PageableResult<StockOperationDTO> }, Error>(apiUrl, openmrsFetch);
+  const { data, error, isLoading } = useSWR<{ data: PageableResult<StockOperationDTO> }, Error>(apiUrl, openmrsFetch, {
+    keepPreviousData: true,
+  });
 
   return {
     items: data?.data || <PageableResult<StockOperationDTO>>{},
@@ -183,8 +185,8 @@ export function updateStockOperationBatchNumbers(item: StockOperationDTO, uuid: 
 }
 
 // get stock operation itemcosts
-export function getStockOperationItemsCost(filter: StockOperationFilter) {
-  const apiUrl = `${restBaseUrl}/stockmanagement/stockoperationitemcost?v=default&stockOperationUuid=${filter}`;
+export function getStockOperationItemsCost(stockOperationUuid: string) {
+  const apiUrl = `${restBaseUrl}/stockmanagement/stockoperationitemcost?v=default&stockOperationUuid=${stockOperationUuid}`;
   const abortController = new AbortController();
   return openmrsFetch<{ results: Array<StockOperationItemCost> }>(apiUrl, {
     method: 'GET',

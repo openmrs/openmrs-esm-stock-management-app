@@ -157,16 +157,20 @@ const StockRulesAddOrUpdate: React.FC<Workspace2DefinitionProps<AddStockRuleProp
           () => {
             showSnackbar({
               isLowContrast: true,
-              title: t('addedRule', 'Add rule'),
+              title: model ? t('editStockRule', 'Edit Stock Rule') : t('addedRule', 'Add rule'),
               kind: 'success',
-              subtitle: t('stockRuleAddedSuccessfully', 'Stock rule added successfully'),
+              subtitle: model
+                ? t('stockRuleEditedSuccessfully', 'Stock rule edited successfully')
+                : t('stockRuleAddedSuccessfully', 'Stock rule added successfully'),
             });
             handleMutate(`${restBaseUrl}/stockmanagement/stockrule`);
             closeWorkspace();
           },
           (error) => {
             showSnackbar({
-              title: t('errorAddingRule', 'Error adding a rule'),
+              title: model
+                ? t('errorEditingRule', 'Error editing a rule')
+                : t('errorAddingRule', 'Error adding a rule'),
               kind: 'error',
               isLowContrast: true,
               subtitle: error?.message,
@@ -190,6 +194,7 @@ const StockRulesAddOrUpdate: React.FC<Workspace2DefinitionProps<AddStockRuleProp
                   className="select-field"
                   labelText={t('location', 'Location')}
                   id="location"
+                  disabled={Boolean(model)}
                   value={formModel?.locationUuid ? formModel.locationUuid : ''}
                   onChange={onLocationChange}
                 >

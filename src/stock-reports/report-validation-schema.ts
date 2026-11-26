@@ -14,7 +14,6 @@ export const reportSchema = z
       message: 'Report Name Required',
     }),
     mostLeastMoving: z.string().optional(),
-    mostLeastMovingName: z.string().optional(),
     stockItemUuid: z.string().optional(),
     stockItemName: z.string().optional(),
     patientUuid: z.string().optional(),

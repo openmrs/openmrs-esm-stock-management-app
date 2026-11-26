@@ -23,7 +23,12 @@ import { type StockOperationType } from '../core/api/types/stockOperation/StockO
 import { type User } from '../core/api/types/identity/User';
 import { type UserRoleScope } from '../core/api/types/identity/UserRoleScope';
 
-export type ConceptFilterCriteria = ResourceFilterCriteria;
+export type ConceptFilterCriteria = ResourceFilterCriteria & {
+  memberOf?: string;
+  name?: string;
+  searchType?: 'fuzzy' | 'equal';
+  class?: string;
+};
 export type DrugFilterCriteria = ResourceFilterCriteria;
 export type LocationFilterCriteria = ResourceFilterCriteria;
 export type PatientFilterCriteria = ResourceFilterCriteria;
@@ -239,14 +244,14 @@ export function useDrugs(filter: DrugFilterCriteria, enabled = true) {
 }
 
 // getConcepts
-export function useConcepts(filter: ConceptFilterCriteria) {
+export function useConcepts(filter: ConceptFilterCriteria, enabled = true) {
   const apiUrl = `${restBaseUrl}/concept${toQueryParams(filter)}`;
   const { data, error, isLoading } = useSWR<
     {
       data: PageableResult<Concept>;
     },
     Error
-  >(apiUrl, openmrsFetch);
+  >(enabled ? apiUrl : null, openmrsFetch);
   return {
     items: data?.data || <PageableResult<Concept>>{},
     isLoading,

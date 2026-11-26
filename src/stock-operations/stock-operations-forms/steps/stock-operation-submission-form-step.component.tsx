@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { Button, Column, InlineLoading, RadioButton, RadioButtonGroup, Stack } from '@carbon/react';
+import { Button, Column, InlineLoading, InlineNotification, RadioButton, RadioButtonGroup, Stack } from '@carbon/react';
 import { ArrowLeft, ArrowRight, Departure, ListChecked, Save, SendFilled } from '@carbon/react/icons';
 import { useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
@@ -157,11 +157,23 @@ const StockOperationSubmissionFormStep: React.FC<StockOperationSubmissionFormSte
             : t('submitAndComplete', 'Submit/Complete')}
         </h4>
       </div>
+      {form.formState.errors.operationTypeUuid && (
+        <Column>
+          <InlineNotification
+            hideCloseButton
+            kind="error"
+            lowContrast
+            role="alert"
+            subtitle={form.formState.errors.operationTypeUuid.message}
+            title={t('operationTypeError', "This operation's type isn't valid")}
+          />
+        </Column>
+      )}
 
       <Column>
         <RadioButtonGroup
           name="rbgApprovelRequired"
-          legendText={t('doesThisTransactionRequireApproval', 'Does the transaction require approval ?')}
+          legendText={t('doesThisTransactionRequireApproval', 'Does the transaction require approval?')}
           onChange={(value) => handleRadioButtonChange(value === 'true')}
           readOnly={!editable}
           valueSelected={approvalRequired === true ? 'true' : approvalRequired === false ? 'false' : null}

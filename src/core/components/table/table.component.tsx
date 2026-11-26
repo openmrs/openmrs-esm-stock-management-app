@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { saveAs } from 'file-saver';
 import {
@@ -43,21 +43,11 @@ interface ListProps {
 const DataList: React.FC<ListProps> = ({ columns, data, children, totalItems, goToPage, hasToolbar = true }) => {
   const { t } = useTranslation();
   const layout = useLayoutType();
-  const [allRows, setAllRows] = useState([]);
   const isTablet = useLayoutType() === 'tablet';
-  const [list] = useState(data);
   const pageSizes = [10, 20, 30, 40, 50];
   const [currentPageSize, setPageSize] = useState(10);
-  const { goTo, results: paginatedList, currentPage } = usePagination(list, currentPageSize);
-
-  useEffect(() => {
-    const rows: Array<Record<string, string>> = [];
-
-    paginatedList.map((item: any, index) => {
-      return rows.push({ ...item, id: index++ });
-    });
-    setAllRows(rows);
-  }, [paginatedList, allRows]);
+  const { goTo, results: paginatedList, currentPage } = usePagination(data ?? [], currentPageSize);
+  const allRows = useMemo(() => paginatedList.map((item: any, index) => ({ ...item, id: index })), [paginatedList]);
 
   const handleFilter = ({ rowIds, headers, cellsById, inputValue, getCellId }: FilterProps): Array<string> => {
     return rowIds.filter((rowId) =>
@@ -75,13 +65,13 @@ const DataList: React.FC<ListProps> = ({ columns, data, children, totalItems, go
     );
   };
   const handleExportCSV = () => {
-    const csvString = convertToCSV(list, columns);
+    const csvString = convertToCSV(data ?? [], columns);
     const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8' });
     saveAs(blob, 'data.csv');
   };
 
   const handleExportJSON = () => {
-    const jsonString = JSON.stringify(list, null, 2);
+    const jsonString = JSON.stringify(data ?? [], null, 2);
     const jsonBlob = new Blob([jsonString], { type: 'application/json' });
     saveAs(jsonBlob, 'data.json');
   };
@@ -186,7 +176,7 @@ const DataList: React.FC<ListProps> = ({ columns, data, children, totalItems, go
                 page={currentPage}
                 pageSize={currentPageSize}
                 pageSizes={pageSizes}
-                totalItems={totalItems || list?.length}
+                totalItems={totalItems || data?.length}
                 className={styles.pagination}
                 onChange={({ pageSize, page }) => {
                   if (pageSize !== currentPageSize) {

@@ -178,4 +178,20 @@ describe('BatchNoSelector', () => {
     expect(screen.queryByText('BATCH-002')).not.toBeInTheDocument();
     expect(screen.queryByText('BATCH-003')).not.toBeInTheDocument();
   });
+
+  it('asks for the quantities of expired batches when they are allowed', () => {
+    render(
+      <BatchNoSelector stockItemUuid={mockStockItemUuid} includeExpiredBatches onValueChange={mockOnValueChange} />,
+    );
+
+    expect(mockUseStockItemBatchInformationHook).toHaveBeenCalledWith(
+      expect.objectContaining({ excludeExpired: false }),
+    );
+  });
+
+  it('leaves out expired batches by default', () => {
+    render(<BatchNoSelector stockItemUuid={mockStockItemUuid} onValueChange={mockOnValueChange} />);
+
+    expect(mockUseStockItemBatchInformationHook.mock.lastCall[0]?.excludeExpired).toBeUndefined();
+  });
 });

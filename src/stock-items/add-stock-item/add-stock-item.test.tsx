@@ -48,21 +48,6 @@ vi.mock('./stock-item-references/stock-item-references.component', () => ({
   default: ({ stockItemUuid }) => <div data-testid="stock-references">References: {stockItemUuid || 'N/A'}</div>,
 }));
 
-// Mock window.matchMedia
-Object.defineProperty(window, 'matchMedia', {
-  writable: true,
-  value: vi.fn().mockImplementation((query) => ({
-    matches: false,
-    media: query,
-    onchange: null,
-    addListener: vi.fn(),
-    removeListener: vi.fn(),
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    dispatchEvent: vi.fn(),
-  })),
-});
-
 describe('AddEditStockItem', () => {
   const mockModel: StockItemDTO = {
     uuid: 'test-uuid-123',
@@ -147,6 +132,24 @@ describe('AddEditStockItem', () => {
     expect(screen.getByText('Transactions: test-uuid-123')).toBeInTheDocument();
   });
 
+  it('exposes the sections as tabs', () => {
+    render(<AddEditStockItem {...mockWorkspace2Props({ stockItem: mockModel })} />);
+
+    expect(screen.getByRole('tablist', { name: /stock item sections/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /stock item details/i })).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('moves to the next section with the down arrow', async () => {
+    const user = userEvent.setup();
+    render(<AddEditStockItem {...mockWorkspace2Props({ stockItem: mockModel })} />);
+
+    await user.click(screen.getByRole('tab', { name: /stock item details/i }));
+    await user.keyboard('{ArrowDown}');
+
+    expect(screen.getByRole('tab', { name: /packaging units/i })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByTestId('packaging-units')).toBeInTheDocument();
+  });
+
   it('disables tabs when isEditing is false', () => {
     render(<AddEditStockItem {...mockWorkspace2Props({})} />);
 
@@ -159,7 +162,7 @@ describe('AddEditStockItem', () => {
       /transactions/i,
     ];
     disabledTabs.forEach((tabName) => {
-      const tab = screen.getByRole('button', { name: tabName });
+      const tab = screen.getByRole('tab', { name: tabName });
       expect(tab).toHaveAttribute('aria-disabled', 'true');
     });
   });
@@ -176,7 +179,7 @@ describe('AddEditStockItem', () => {
       /transactions/i,
     ];
     enabledTabs.forEach((tabName) => {
-      const tab = screen.getByRole('button', { name: tabName });
+      const tab = screen.getByRole('tab', { name: tabName });
       expect(tab).toHaveAttribute('aria-disabled', 'false');
     });
   });
