@@ -25,11 +25,12 @@ describe('IssuingStockModal', () => {
     render(<IssuingStockModal closeModal={vi.fn()} issuingStock={issuingStock} />);
 
     expect(
-      screen.getByRole('row', { name: /DISPATCHED Main Store Main Pharmacy Paracetamol 500mg Tablet 200/ }),
+      screen.getByRole('row', { name: /Dispatched Main Store Main Pharmacy Paracetamol 500mg Tablet 200/ }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('row', { name: /DISPATCHED Main Store Main Pharmacy Amoxicillin 250mg Capsule 100/ }),
+      screen.getByRole('row', { name: /Dispatched Main Store Main Pharmacy Amoxicillin 250mg Capsule 100/ }),
     ).toBeInTheDocument();
+    expect(screen.queryByText('DISPATCHED')).not.toBeInTheDocument();
     expect(screen.queryByRole('cell', { name: 'N/A' })).not.toBeInTheDocument();
   });
 

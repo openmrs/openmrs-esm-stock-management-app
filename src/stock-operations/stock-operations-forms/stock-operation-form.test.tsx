@@ -1,9 +1,9 @@
 import React from 'react';
-import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { showSnackbar, useConfig, useSession } from '@openmrs/esm-framework';
-import { mockWorkspace2Props, stockIssueOperationtypeMock } from '@mocks';
+import { mockWorkspace2Props, receiptOperationTypeMock, stockIssueOperationtypeMock } from '@mocks';
 import { type Party } from '../../core/api/types/Party';
 import { type StockOperationDTO } from '../../core/api/types/stockOperation/StockOperationDTO';
 import { type StockOperationType } from '../../core/api/types/stockOperation/StockOperationType';
@@ -262,5 +262,74 @@ describe('StockOperationForm validation errors', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Add at least one item');
     expect(showSnackbar).not.toHaveBeenCalled();
+  });
+});
+
+describe('StockOperationForm editing a saved receipt', () => {
+  const originalTimeZone = process.env.TZ;
+
+  beforeEach(() => {
+    mockUseStockOperationAndItems.mockReturnValue({ items: undefined, isLoading: false, error: null });
+    mockUseParties.mockReturnValue({
+      destinationParties: parties,
+      destinationPartiesFilter: () => true,
+      destinationTags: [],
+      error: undefined,
+      isLoading: false,
+      mutate: vi.fn(),
+      parties,
+      sourceParties: parties,
+      sourcePartiesFilter: () => true,
+      sourceTags: [],
+    });
+    mockUseConfig.mockReturnValue({ autoPopulateResponsiblePerson: false });
+    mockUseSession.mockReturnValue({
+      authenticated: true,
+      sessionId: 'test-session-id',
+      user: { uuid: 'test-user-uuid' },
+    } as ReturnType<typeof useSession>);
+  });
+
+  afterEach(() => {
+    if (originalTimeZone === undefined) {
+      delete process.env.TZ;
+    } else {
+      process.env.TZ = originalTimeZone;
+    }
+  });
+
+  it('keeps the saved batch expiry date when the browser is behind the server', async () => {
+    process.env.TZ = 'America/New_York';
+    const user = userEvent.setup();
+    const savedReceipt = {
+      uuid: 'receipt-uuid',
+      operationTypeUuid: receiptOperationTypeMock.uuid,
+      operationType: 'receipt',
+      status: 'NEW',
+      sourceUuid: 'issue-source-uuid',
+      destinationUuid: 'issue-destination-uuid',
+      responsiblePersonUuid: 'receiver-person-uuid',
+      stockOperationItems: [
+        {
+          uuid: 'receipt-line',
+          stockItemUuid: 'item-uuid',
+          batchNo: 'BATCH-001',
+          expiration: '2027-12-31T00:00:00.000+0000',
+          quantity: 10,
+        },
+      ],
+    } as unknown as StockOperationDTO;
+
+    render(
+      <StockOperationForm
+        {...mockWorkspace2Props({
+          stockOperationType: receiptOperationTypeMock as unknown as StockOperationType,
+          stockOperation: savedReceipt,
+        })}
+      />,
+    );
+    await user.click(screen.getByText(/stock items/i));
+
+    expect(screen.getByRole('row', { name: /BATCH-001/ })).toHaveTextContent('31/12/2027');
   });
 });
