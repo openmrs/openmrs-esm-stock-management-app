@@ -48,3 +48,9 @@
   align-items: center;
   margin-top: layout.$spacing-03;
 }
+
+.itemError {
+  @include type.type-style('helper-text-01');
+  color: $danger;
+  margin-top: layout.$spacing-02;
+}
