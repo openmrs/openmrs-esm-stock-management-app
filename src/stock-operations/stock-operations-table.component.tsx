@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   DataTable,
   DataTableSkeleton,
@@ -48,6 +48,12 @@ type DateRange = [Date | null, Date | null];
 // While a year is typed or deleted, the date pickers report each partial year (2, 20, 202) as a date
 const hasFullYear = (date: Date | null) => !!date && date.getFullYear() >= 1000;
 
+const hasIncompleteDate = (input: HTMLDivElement | null) => {
+  const segments = Array.from(input?.querySelectorAll('[data-type]:not([data-readonly])') ?? []);
+  const emptySegments = segments.filter((segment) => segment.hasAttribute('data-placeholder')).length;
+  return emptySegments > 0 && emptySegments < segments.length;
+};
+
 const StockOperations: React.FC<StockOperationsTableProps> = () => {
   const { t } = useTranslation();
   const handleMutate = useHandleMutate();
@@ -59,6 +65,8 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
 
   const [dateRange, setDateRange] = useState<DateRange>([null, null]);
   const [[selectedFromDate, selectedToDate], setDateFilter] = useState<DateRange>([null, null]);
+  const startDateInputRef = useRef<HTMLDivElement>(null);
+  const endDateInputRef = useRef<HTMLDivElement>(null);
   const [selectedSources, setSelectedSources] = useState<string[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<string[]>([]);
   const [selectedOperations, setSelectedOperations] = useState<string[]>([]);
@@ -77,6 +85,11 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
   // day 2 first. The range is checked once the typing stops: a partial year or an end date before the start date is
   // still being typed or deleted, so the last valid filter stays.
   const debouncedDateFilter = useDebounce(([startDate, endDate]: DateRange) => {
+    // React Aria keeps partially cleared segments as draft text without calling onChange. Check the
+    // displayed inputs when the timer fires, so a date queued before a second Backspace cannot be applied.
+    if (hasIncompleteDate(startDateInputRef.current) || hasIncompleteDate(endDateInputRef.current)) {
+      return;
+    }
     const isPartialYear = [startDate, endDate].some((date) => date && !hasFullYear(date));
     if (!isPartialYear && !(startDate && endDate && startDate > endDate)) {
       setDateFilter([startDate, endDate]);
@@ -104,6 +117,19 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
     operationTypeUuid: selectedOperations.join(','),
     q: searchString || undefined,
   });
+
+  useEffect(() => {
+    // onChange also stays silent when an incomplete date is restored to its last complete value.
+    // Observe the picker's segment placeholders to restart filtering for that edit (including paste
+    // and mobile input), without changing the shared date picker's value or callback semantics.
+    const observer = new MutationObserver(() => debouncedDateFilter(dateRange));
+    for (const input of [startDateInputRef.current, endDateInputRef.current]) {
+      if (input) {
+        observer.observe(input, { subtree: true, attributes: true, attributeFilter: ['data-placeholder'] });
+      }
+    }
+    return () => observer.disconnect();
+  }, [dateRange, debouncedDateFilter]);
 
   const filterApplied =
     searchString ||
@@ -214,20 +240,24 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
                   placeholder={t('searchStockOperations', 'Search stock operations')}
                 />
                 <div className={styles.container}>
-                  <OpenmrsDatePicker
-                    className={styles.datePicker}
-                    labelText={t('startDate', 'Start date')}
-                    maxDate={hasFullYear(dateRange[1]) ? dateRange[1] : undefined}
-                    onChange={(date) => handleDateRangeChange([date ?? null, dateRange[1]])}
-                    value={dateRange[0]}
-                  />
-                  <OpenmrsDatePicker
-                    className={styles.datePicker}
-                    labelText={t('endDate', 'End date')}
-                    minDate={hasFullYear(dateRange[0]) ? dateRange[0] : undefined}
-                    onChange={(date) => handleDateRangeChange([dateRange[0], date ?? null])}
-                    value={dateRange[1]}
-                  />
+                  <div ref={startDateInputRef}>
+                    <OpenmrsDatePicker
+                      className={styles.datePicker}
+                      labelText={t('startDate', 'Start date')}
+                      maxDate={hasFullYear(dateRange[1]) ? dateRange[1] : undefined}
+                      onChange={(date) => handleDateRangeChange([date ?? null, dateRange[1]])}
+                      value={dateRange[0]}
+                    />
+                  </div>
+                  <div ref={endDateInputRef}>
+                    <OpenmrsDatePicker
+                      className={styles.datePicker}
+                      labelText={t('endDate', 'End date')}
+                      minDate={hasFullYear(dateRange[0]) ? dateRange[0] : undefined}
+                      onChange={(date) => handleDateRangeChange([dateRange[0], date ?? null])}
+                      value={dateRange[1]}
+                    />
+                  </div>
 
                   <StockOperationsFilters
                     conceptUuid={stockSourceTypeUUID}
