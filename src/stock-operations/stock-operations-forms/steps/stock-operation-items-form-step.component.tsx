@@ -151,7 +151,11 @@ const StockOperationItemsFormStep: React.FC<StockOperationItemsFormStepProps> = 
         item: stockItemUuid ? <StockOperationItemCell stockItemUuid={stockItemUuid} /> : '--',
         itemDetails:
           stockItemUuid && availabilityPartyUuid ? (
-            <StockAvailability stockItemUuid={stockItemUuid} partyUuid={availabilityPartyUuid} />
+            <StockAvailability
+              stockItemUuid={stockItemUuid}
+              partyUuid={availabilityPartyUuid}
+              includeExpiredBatches={stockOperationType.allowExpiredBatchNumbers}
+            />
           ) : (
             '--'
           ),
