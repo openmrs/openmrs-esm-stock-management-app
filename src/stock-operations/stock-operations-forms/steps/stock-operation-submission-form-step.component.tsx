@@ -184,11 +184,25 @@ const StockOperationSubmissionFormStep: React.FC<StockOperationSubmissionFormSte
       </Column>
       {editable && (
         <Column>
+          {/* The secondary Save comes before the primary actions, which sit on the right */}
+          <Button
+            name="save"
+            type="button"
+            className="submitButton"
+            style={{ margin: '4px' }}
+            disabled={form.formState.isSubmitting}
+            kind="secondary"
+            onClick={handleSave}
+            renderIcon={Save}
+          >
+            {form.formState.isSubmitting ? <InlineLoading /> : t('save', 'Save')}
+          </Button>
           {approvalRequired != null && (
             <>
               {!operationTypePermision.requiresDispatchAcknowledgement && !approvalRequired && (
                 <Button
                   name="complete"
+                  disabled={form.formState.isSubmitting}
                   data-testid="complete-button"
                   type="button"
                   style={{ margin: '4px' }}
@@ -203,6 +217,7 @@ const StockOperationSubmissionFormStep: React.FC<StockOperationSubmissionFormSte
               {operationTypePermision.requiresDispatchAcknowledgement && !approvalRequired && (
                 <Button
                   name="dispatch"
+                  disabled={form.formState.isSubmitting}
                   type="button"
                   style={{ margin: '4px' }}
                   data-testid="dipatch-button"
@@ -221,6 +236,7 @@ const StockOperationSubmissionFormStep: React.FC<StockOperationSubmissionFormSte
               {approvalRequired && (
                 <Button
                   name="submit"
+                  disabled={form.formState.isSubmitting}
                   type="button"
                   style={{ margin: '4px' }}
                   className="submitButton"
@@ -237,26 +253,9 @@ const StockOperationSubmissionFormStep: React.FC<StockOperationSubmissionFormSte
               )}
             </>
           )}
-          <Button
-            name="save"
-            type="button"
-            className="submitButton"
-            style={{ margin: '4px' }}
-            disabled={form.formState.isSubmitting}
-            kind="secondary"
-            onClick={handleSave}
-            renderIcon={Save}
-          >
-            {form.formState.isSubmitting ? <InlineLoading /> : t('save', 'Save')}
-          </Button>
         </Column>
       )}
       <div className={styles.btnSet}>
-        {typeof onNext === 'function' && (
-          <Button kind="tertiary" onClick={onNext} renderIcon={ArrowRight}>
-            {t('nextButton', 'Next')}
-          </Button>
-        )}
         {typeof onPrevious === 'function' && (
           <Button
             kind="tertiary"
@@ -266,6 +265,11 @@ const StockOperationSubmissionFormStep: React.FC<StockOperationSubmissionFormSte
             data-testid="previous-btn"
             iconDescription={t('previousButton', 'Previous')}
           />
+        )}
+        {typeof onNext === 'function' && (
+          <Button kind="tertiary" onClick={onNext} renderIcon={ArrowRight}>
+            {t('nextButton', 'Next')}
+          </Button>
         )}
       </div>
     </Stack>
