@@ -4,7 +4,11 @@ import userEvent from '@testing-library/user-event';
 import { render, screen } from '@testing-library/react';
 import { type StockBatchDTO } from '../../../core/api/types/stockItem/StockBatchDTO';
 import { type StockItemInventory } from '../../../core/api/types/stockItem/StockItemInventory';
-import { APP_STOCKMANAGEMENT_STOCKITEMS, formatForDatePicker } from '../../../constants';
+import {
+  APP_STOCKMANAGEMENT_STOCKITEMS,
+  TASK_STOCKMANAGEMENT_STOCKOPERATIONS_MUTATE,
+  formatForDatePicker,
+} from '../../../constants';
 import { type PrivilegeScope } from '../../../core/api/types/identity/PriviledgeScope';
 import { useStockItemBatchInformationHook } from '../../../stock-items/add-stock-item/batch-information/batch-information.resource';
 import { useStockManagementSession } from '../../../stock-lookups/stock-lookups.resource';
@@ -254,8 +258,16 @@ describe('BatchNoSelector', () => {
 
   it("doesn't call a batch empty where the user can't see the party's stock", async () => {
     const user = userEvent.setup();
-    // Inventory comes back empty for a party outside the user's stock scopes.
-    mockUseStockManagementSession.mockReturnValue({ privilegeScopes: [], isLoading: false, error: undefined });
+    // Inventory comes back empty for a party outside the user's stock scopes. Seeing stock elsewhere, or
+    // holding another privilege here, doesn't count.
+    mockUseStockManagementSession.mockReturnValue({
+      privilegeScopes: [
+        { partyUuid: 'main-pharmacy', privilege: APP_STOCKMANAGEMENT_STOCKITEMS },
+        { partyUuid: 'main-store', privilege: TASK_STOCKMANAGEMENT_STOCKOPERATIONS_MUTATE },
+      ] as Array<PrivilegeScope>,
+      isLoading: false,
+      error: undefined,
+    });
     mockUseStockItemBatchNumbers.mockReturnValue({
       isLoading: false,
       stockItemBatchNos: [
