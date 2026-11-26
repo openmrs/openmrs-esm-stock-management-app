@@ -13,6 +13,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { formatDate as formatDisplayDate } from '@openmrs/esm-framework';
 import { getStockItemName } from '../stock-items/stock-item.utils';
+import { parseStockExpiryDate } from '../stock-operations/expiry-date.utils';
 
 interface ExpiredStockModalProps {
   closeModal: () => void;
@@ -32,7 +33,7 @@ const ExpiredStockModal = ({ closeModal, expiredStock }: ExpiredStockModalProps)
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
-    return formatDisplayDate(new Date(dateString), { time: false, noToday: true });
+    return formatDisplayDate(parseStockExpiryDate(dateString), { time: false, noToday: true });
   };
 
   return (
