@@ -16,7 +16,13 @@ vi.mock('../preferred-vendor-selector/preferred-vendor-selector.component', () =
 vi.mock('../stock-item-category-selector/stock-item-category-selector.component', () => ({ default: () => null }));
 vi.mock('../stock-item-units-edit/stock-item-units-edit.component', () => ({ default: () => null }));
 
-const gauze = { uuid: 'gauze-uuid', isDrug: false, hasExpiration: false, commonName: 'Gauze' } as StockItemDTO;
+const gauze = {
+  uuid: 'gauze-uuid',
+  isDrug: false,
+  hasExpiration: false,
+  commonName: 'Gauze',
+  conceptUuid: 'gauze-concept-uuid',
+} as StockItemDTO;
 
 describe('StockItemDetails', () => {
   it('disables Save until the save finishes', async () => {
