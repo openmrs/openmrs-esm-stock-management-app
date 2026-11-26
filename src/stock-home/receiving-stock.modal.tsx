@@ -11,6 +11,7 @@ import {
   TableRow,
 } from '@carbon/react';
 import { useTranslation } from 'react-i18next';
+import StockOperationStatusTag from '../stock-operations/stock-operation-status-tag/stock-operation-status-tag.component';
 
 const ReceivingStockModal = ({ closeModal, receivingStock }) => {
   const { t } = useTranslation();
@@ -42,7 +43,7 @@ const ReceivingStockModal = ({ closeModal, receivingStock }) => {
                 {receivingStock.map((item, index) =>
                   item?.stockOperationItems.map((stock, stockIndex) => (
                     <TableRow key={`${index}-${stockIndex}`}>
-                      <TableCell>{item?.status || 'N/A'}</TableCell>
+                      <TableCell>{item?.status ? <StockOperationStatusTag status={item.status} /> : 'N/A'}</TableCell>
                       <TableCell>{item?.sourceName || 'N/A'}</TableCell>
                       <TableCell>{item?.destinationName || 'N/A'}</TableCell>
                       <TableCell>{stock?.stockItemName || 'N/A'}</TableCell>

@@ -39,6 +39,7 @@ import EditStockOperationActionMenu from './edit-stock-operation/edit-stock-oper
 import StockOperationTypesSelector from './stock-operation-types-selector/stock-operation-types-selector.component';
 import StockOperationsFilters from './stock-operations-filters.component';
 import StockOperationExpandedRow from './add-stock-operation/stock-operations-expanded-row/stock-operation-expanded-row.component';
+import StockOperationStatusTag from './stock-operation-status-tag/stock-operation-status-tag.component';
 import styles from './stock-operations-table.scss';
 
 interface StockOperationsTableProps {
@@ -149,7 +150,7 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
             commonNames,
             more: itemCountGreaterThanThreshhold ? stockOperation?.stockOperationItems?.length - threshHold : 0,
           },
-          status: `${stockOperation?.status}`,
+          status: stockOperation?.status ?? '',
           source: `${stockOperation?.sourceName ?? ''}`,
           destination: `${stockOperation?.destinationName ?? ''}`,
           location: (
@@ -288,6 +289,8 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
                                   <Link onClick={() => expandRow(row.id)}>{`...(${cell.value.more} more)`}</Link>
                                 )}
                               </span>
+                            ) : cell?.info?.header === 'status' ? (
+                              <StockOperationStatusTag status={cell.value} />
                             ) : (
                               cell.value
                             )}
