@@ -47,10 +47,11 @@ const StockReportStatus = (props: StockReportStatusProps) => {
           <span className={styles.textHeading}>{t('cancelled', 'Cancelled')}:</span>
           <div className={styles.statusDescriptions}>
             <span className={styles.text}>
-              {formatDate(parseDate(props.model?.cancelledDate.toString()), {
-                time: true,
-                mode: 'standard',
-              })}
+              {props.model?.cancelledDate &&
+                formatDate(parseDate(props.model.cancelledDate.toString()), {
+                  time: true,
+                  mode: 'standard',
+                })}
               <p>{props.model?.cancelReason}</p>
             </span>
           </div>

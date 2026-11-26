@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Tab, TabListVertical, TabPanel, TabPanels, TabsVertical } from '@carbon/react';
 import { useTranslation } from 'react-i18next';
 import { Workspace2, type Workspace2DefinitionProps } from '@openmrs/esm-framework';
 import { type StockItemDTO } from '../../core/api/types/stockItem/StockItem';
@@ -7,10 +8,10 @@ import BatchInformation from './batch-information/batch-information.component';
 import PackagingUnits from './packaging-units/packaging-units.component';
 import StockItemDetails from './stock-item-details/stock-item-details.component';
 import StockItemRules from './stock-item-rules/stock-item-rules.component';
-import StockOperationStepper from '../../stock-operations/stock-operations-forms/stock-operation-stepper/stock-operation-stepper.component';
 import StockQuantities from './quantities/quantities.component';
 import StockReferences from './stock-item-references/stock-item-references.component';
 import Transactions from './transactions/transactions.component';
+import styles from './add-stock-item.scss';
 
 interface AddStockItemProps {
   stockItem?: StockItemDTO;
@@ -90,15 +91,29 @@ const AddEditStockItem: React.FC<Workspace2DefinitionProps<AddStockItemProps>> =
           : t('addItem', 'Add stock item')
       }
     >
-      <StockOperationStepper
-        steps={tabs.map((tab) => ({
-          title: tab.name,
-          component: tab.component,
-          disabled: tab.disabled,
-        }))}
-        selectedIndex={selectedTab}
-        onChange={handleTabChange}
-      />
+      <div className={styles.sections}>
+        <TabsVertical
+          height="100%"
+          selectedIndex={selectedTab}
+          onChange={({ selectedIndex }) => handleTabChange(selectedIndex)}
+        >
+          <TabListVertical aria-label={t('stockItemSections', 'Stock item sections')} aria-orientation="vertical">
+            {tabs.map((tab) => (
+              <Tab key={tab.name} disabled={tab.disabled}>
+                {tab.name}
+              </Tab>
+            ))}
+          </TabListVertical>
+          <TabPanels>
+            {tabs.map((tab, index) => (
+              <TabPanel key={tab.name}>
+                {/* Mount only the open section so its form starts from the latest saved item. */}
+                {selectedTab === index ? tab.component : null}
+              </TabPanel>
+            ))}
+          </TabPanels>
+        </TabsVertical>
+      </div>
     </Workspace2>
   );
 };

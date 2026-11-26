@@ -58,6 +58,9 @@ interface AddStockUserRoleScopeProps {
   editMode?: boolean;
 }
 
+// In the order the fields appear on the form
+type ValidatedField = 'user' | 'role' | 'activeFrom' | 'activeTo' | 'operationTypes' | 'locations';
+
 const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRoleScopeProps>> = ({
   workspaceProps,
   closeWorkspace,
@@ -78,6 +81,7 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
   const isTablet = useLayoutType() === 'tablet';
 
   const [roles, setRoles] = useState<Role[]>([]);
+  const [showErrors, setShowErrors] = useState(false);
 
   const loggedInUserUuid = currentUser?.user?.uuid;
   const [selectedUserUuid, setSelectedUserUuid] = useState<string | null>(null);
@@ -239,29 +243,38 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
     return formModel?.operationTypes?.filter((x) => x.operationTypeUuid === operationType.uuid)?.length > 0;
   };
 
+  // Each field's error, checked against the form as it is now, so an error goes once its field is fixed
+  const validationErrors: Partial<Record<ValidatedField, string>> = Object.fromEntries(
+    Object.entries({
+      user: !formModel?.userUuid && t('userRequired', 'User is required'),
+      role: !formModel?.role && t('roleRequired', 'Role is required'),
+      activeFrom: !formModel?.permanent && !formModel?.activeFrom && t('activeFromRequired', 'Active From is required'),
+      activeTo: !formModel?.permanent && !formModel?.activeTo && t('activeToRequired', 'Active To is required'),
+      operationTypes:
+        !formModel?.operationTypes?.length && t('operationTypeRequired', 'Select at least one stock operation'),
+      locations: !formModel?.locations?.length && t('selectAtLeastOneLocation', 'Select at least one location'),
+    }).filter(([, error]) => error),
+  );
+  // Errors show on the fields after the first save attempt
+  const errors = showErrors ? validationErrors : {};
+
   const addStockUserRole = async (e) => {
     e.preventDefault();
 
-    // Validation: ensure required fields are present
-    const validationError = !formModel?.userUuid
-      ? t('userRequired', 'User is required')
-      : !formModel?.role
-      ? t('roleRequired', 'Role is required')
-      : !formModel?.permanent && (!formModel?.activeFrom || !formModel?.activeTo)
-      ? t('activeDatesRequired', 'Active From and Active To are required unless the scope is permanent')
-      : !formModel?.operationTypes?.length
-      ? t('operationTypeRequired', 'Select at least one stock operation')
-      : !formModel?.locations?.length
-      ? t('selectAtLeastOneLocation', 'Select at least one location')
-      : null;
-
-    if (validationError) {
-      showSnackbar({
-        title: t('errorSavingUserRoleScope', 'Error Saving user role scope'),
-        kind: 'error',
-        isLowContrast: true,
-        subtitle: validationError,
-      });
+    const invalidFields = Object.keys(validationErrors) as Array<ValidatedField>;
+    if (invalidFields.length) {
+      setShowErrors(true);
+      // The form can be longer than the screen, so take the user to the first field to fix
+      const fieldIds: Record<ValidatedField, string | undefined> = {
+        user: 'userName',
+        role: 'select-role',
+        activeFrom: 'date-picker-input-id-start',
+        activeTo: 'date-picker-input-id-finish',
+        operationTypes: stockOperations?.[0]?.uuid,
+        locations: stockLocations?.[0] && `chk-loc-child-${stockLocations[0].id}`,
+      };
+      const firstInvalidField = invalidFields.find((field) => fieldIds[field]);
+      document.getElementById(fieldIds[firstInvalidField])?.focus();
       return;
     }
 
@@ -319,6 +332,8 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
                     return `${itemWithPerson?.person?.display ?? itemWithPerson?.display ?? ''}`;
                   }}
                   titleText={t('user', 'User')}
+                  invalid={!!errors.user}
+                  invalidText={errors.user}
                   onChange={onUserChanged}
                   onInputChange={debouncedSearch}
                   placeholder={t('searchUsers', 'Search users')}
@@ -333,6 +348,8 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
             helperText={
               user?.uuid && roleOptions.length === 0 ? t('noStockRoles', 'This user has no stock roles') : undefined
             }
+            invalid={!!errors.role}
+            invalidText={errors.role}
             labelText={t('role', 'Role')}
             name="role"
             onChange={onRoleChange}
@@ -368,6 +385,8 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
               <DatePicker
                 dateFormat={DATE_PICKER_CONTROL_FORMAT}
                 datePickerType="range"
+                // The picker sets its inputs' invalid state
+                invalid={!!(errors.activeFrom || errors.activeTo)}
                 light
                 locale={getDatePickerLocale(currentUser?.locale)}
                 minDate={formatForDatePicker(minActiveDate)}
@@ -376,11 +395,13 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
               >
                 <DatePickerInput
                   id="date-picker-input-id-start"
+                  invalidText={errors.activeFrom}
                   labelText={`${t('activeFrom', 'Active From')} (${DATE_PICKER_FORMAT})`}
                   placeholder={DATE_PICKER_FORMAT}
                 />
                 <DatePickerInput
                   id="date-picker-input-id-finish"
+                  invalidText={errors.activeTo}
                   labelText={`${t('activeTo', 'Active To')} (${DATE_PICKER_FORMAT})`}
                   placeholder={DATE_PICKER_FORMAT}
                 />
@@ -392,70 +413,76 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
               {t('roleDescription', 'The role will be applicable to only selected stock operations.')}
             </span>
           </FormGroup>
-          <CheckboxGroup className={styles.checkboxGrid} legendText="">
-            {stockOperations?.length > 0 &&
-              stockOperations.map((type) => {
-                return (
-                  <div className={styles.flexRow}>
-                    <Checkbox
-                      checked={isOperationChecked(type)}
-                      className={styles.checkbox}
-                      id={type.uuid}
-                      labelText={type.name}
-                      onChange={(event) => onStockOperationTypeChanged(event)}
-                      value={type.uuid}
-                    />
-                  </div>
-                );
-              })}
+          {/* The grid is inside the group so that the group's error shows below it */}
+          <CheckboxGroup invalid={!!errors.operationTypes} invalidText={errors.operationTypes} legendText="">
+            <div className={styles.checkboxGrid}>
+              {stockOperations?.length > 0 &&
+                stockOperations.map((type) => {
+                  return (
+                    <div className={styles.flexRow}>
+                      <Checkbox
+                        checked={isOperationChecked(type)}
+                        className={styles.checkbox}
+                        id={type.uuid}
+                        labelText={type.name}
+                        onChange={(event) => onStockOperationTypeChanged(event)}
+                        value={type.uuid}
+                      />
+                    </div>
+                  );
+                })}
+            </div>
           </CheckboxGroup>
           <FormGroup legendText={t('locations', 'Locations')}>
             <span className={styles.subTitle}>
               {t('toggleMessage', 'Use the toggle to apply this scope to the locations under the selected location.')}
             </span>
           </FormGroup>
-          <CheckboxGroup className={styles.checkboxGrid} legendText="">
-            {stockLocations?.length > 0 &&
-              stockLocations.map((type) => {
-                const checkedLocation = findCheckedLocation(type);
+          {/* The grid is inside the group so that the group's error shows below it */}
+          <CheckboxGroup invalid={!!errors.locations} invalidText={errors.locations} legendText="">
+            <div className={styles.checkboxGrid}>
+              {stockLocations?.length > 0 &&
+                stockLocations.map((type) => {
+                  const checkedLocation = findCheckedLocation(type);
 
-                const getToggledValue = (locationUuid) => {
-                  const location = checkedLocation?.locationUuid === locationUuid ? checkedLocation : null;
-                  return location?.enableDescendants === true;
-                };
+                  const getToggledValue = (locationUuid) => {
+                    const location = checkedLocation?.locationUuid === locationUuid ? checkedLocation : null;
+                    return location?.enableDescendants === true;
+                  };
 
-                return (
-                  <div className={styles.flexRow}>
-                    <Checkbox
-                      checked={checkedLocation != null}
-                      className={styles.checkbox}
-                      id={`chk-loc-child-${type.id}`}
-                      key={`chk-loc-child-key-${type.id}`}
-                      labelText={type.name}
-                      name="location"
-                      onChange={(event) => onLocationCheckBoxChanged(event)}
-                      value={type.id}
-                    />
-                    {checkedLocation && (
-                      <>
-                        <span className="cds--visually-hidden" id={`tg-loc-child-label-${type.id}`}>
-                          {t('applyToChildLocations', 'Apply to child locations')}
-                        </span>
-                        <Toggle
-                          aria-labelledby={`tg-loc-child-label-${type.id}`}
-                          className={styles.toggle}
-                          hideLabel
-                          id={`tg-loc-child-${type.id}`}
-                          key={`tg-loc-child-key-${type.id}`}
-                          onToggle={(checked) => onEnableDescendantsToggled(type.id, checked)}
-                          toggled={getToggledValue(type.id)}
-                          size="sm"
-                        />
-                      </>
-                    )}
-                  </div>
-                );
-              })}
+                  return (
+                    <div className={styles.flexRow}>
+                      <Checkbox
+                        checked={checkedLocation != null}
+                        className={styles.checkbox}
+                        id={`chk-loc-child-${type.id}`}
+                        key={`chk-loc-child-key-${type.id}`}
+                        labelText={type.name}
+                        name="location"
+                        onChange={(event) => onLocationCheckBoxChanged(event)}
+                        value={type.id}
+                      />
+                      {checkedLocation && (
+                        <>
+                          <span className="cds--visually-hidden" id={`tg-loc-child-label-${type.id}`}>
+                            {t('applyToChildLocations', 'Apply to child locations')}
+                          </span>
+                          <Toggle
+                            aria-labelledby={`tg-loc-child-label-${type.id}`}
+                            className={styles.toggle}
+                            hideLabel
+                            id={`tg-loc-child-${type.id}`}
+                            key={`tg-loc-child-key-${type.id}`}
+                            onToggle={(checked) => onEnableDescendantsToggled(type.id, checked)}
+                            toggled={getToggledValue(type.id)}
+                            size="sm"
+                          />
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
+            </div>
           </CheckboxGroup>
         </Stack>
         <ButtonSet
