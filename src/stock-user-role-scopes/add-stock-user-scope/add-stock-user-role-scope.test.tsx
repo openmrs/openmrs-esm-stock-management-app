@@ -1,9 +1,10 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { showSnackbar, useConfig } from '@openmrs/esm-framework';
+import { OpenmrsDateRangePicker, showSnackbar, useConfig } from '@openmrs/esm-framework';
 import { mockWorkspace2Props } from '@mocks';
+import { today } from '../../constants';
 import { type UserRoleScope } from '../../core/api/types/identity/UserRoleScope';
 import { useStockOperationTypes, useStockTagLocations, useUser } from '../../stock-lookups/stock-lookups.resource';
 import useSearchUser from '../../stock-operations/stock-operations-forms/hooks/useSearchUser';
@@ -109,8 +110,9 @@ describe('AddStockUserRoleScope', () => {
     it('shows the saved active dates, even when they are in the past', () => {
       renderForm(savedScope);
 
-      expect(screen.getByLabelText(/^Active From/)).toHaveValue('15/01/2020');
-      expect(screen.getByLabelText(/^Active To/)).toHaveValue('20/02/2020');
+      expect(screen.getByDisplayValue('15/01/2020–20/02/2020')).toBeInTheDocument();
+      // The picker would otherwise drop a saved start date that has passed
+      expect(vi.mocked(OpenmrsDateRangePicker).mock.lastCall[0].minDate).toEqual(new Date(savedScope.activeFrom));
     });
 
     it('keeps a saved role selectable when it is no longer a configured stock role', () => {
@@ -210,9 +212,7 @@ describe('AddStockUserRoleScope', () => {
       await fillRequiredFieldsExceptDates(user);
       await user.click(screen.getByRole('button', { name: /save/i }));
 
-      await expectValidationError('Active From is required');
-      expect(screen.getByText('Active To is required')).toBeInTheDocument();
-      expect(screen.getByRole('textbox', { name: /^Active From/ })).toHaveAttribute('data-invalid', 'true');
+      await expectValidationError('Active From and Active To are required');
     });
 
     it('requires at least one stock operation', async () => {
@@ -247,8 +247,7 @@ describe('AddStockUserRoleScope', () => {
       await expectValidationError('User is required');
       for (const message of [
         'Role is required',
-        'Active From is required',
-        'Active To is required',
+        'Active From and Active To are required',
         'Select at least one stock operation',
         'Select at least one location',
       ]) {
@@ -269,7 +268,7 @@ describe('AddStockUserRoleScope', () => {
 
       expect(screen.queryByText('User is required')).not.toBeInTheDocument();
       expect(screen.queryByText('Role is required')).not.toBeInTheDocument();
-      expect(screen.queryByText('Active From is required')).not.toBeInTheDocument();
+      expect(screen.queryByText('Active From and Active To are required')).not.toBeInTheDocument();
       expect(screen.getByText('Select at least one stock operation')).toBeInTheDocument();
     });
 
@@ -293,6 +292,72 @@ describe('AddStockUserRoleScope', () => {
           }),
         ),
       );
+    });
+  });
+  describe('active dates', () => {
+    const pastDateMessage = 'Active dates must not be in the past';
+    const scopeWithoutDates = { ...savedScope, activeFrom: undefined, activeTo: undefined } as unknown as UserRoleScope;
+    // The picker reports its range raw, as dates that convert to a Date, or null once a date is cleared
+    const pickerDate = (date: Date) => ({ toDate: () => date });
+    const reportRange = (range: { start: ReturnType<typeof pickerDate>; end: ReturnType<typeof pickerDate> } | null) =>
+      act(() => vi.mocked(OpenmrsDateRangePicker).mock.lastCall[0].onChangeRaw(range as never));
+    const chooseActiveDates = (activeFrom: Date, activeTo: Date) =>
+      reportRange({ start: pickerDate(activeFrom), end: pickerDate(activeTo) });
+
+    it("doesn't let the picker choose a day before today", () => {
+      renderForm(scopeWithoutDates);
+
+      expect(vi.mocked(OpenmrsDateRangePicker).mock.lastCall[0].minDate).toEqual(today());
+    });
+
+    it('saves the chosen dates', async () => {
+      const user = userEvent.setup();
+      renderForm(scopeWithoutDates);
+
+      chooseActiveDates(new Date(2999, 0, 1), new Date(2999, 11, 31));
+      await user.click(screen.getByRole('button', { name: /save/i }));
+
+      await waitFor(() =>
+        expect(createOrUpdateUserRoleScope).toHaveBeenCalledWith(
+          expect.objectContaining({ activeFrom: new Date(2999, 0, 1), activeTo: new Date(2999, 11, 31) }),
+        ),
+      );
+    });
+
+    it("marks a typed date before today as invalid and doesn't save it", async () => {
+      const user = userEvent.setup();
+      renderForm(scopeWithoutDates);
+
+      chooseActiveDates(new Date(2020, 0, 1), new Date(2999, 11, 31));
+      await user.click(screen.getByRole('button', { name: /save/i }));
+
+      await expectValidationError(pastDateMessage);
+    });
+
+    it('drops the dates once one is cleared in the picker', async () => {
+      const user = userEvent.setup();
+      renderForm(scopeWithoutDates);
+
+      chooseActiveDates(new Date(2999, 0, 1), new Date(2999, 11, 31));
+      reportRange(null);
+      await user.click(screen.getByRole('button', { name: /save/i }));
+
+      await expectValidationError('Active From and Active To are required');
+    });
+
+    it('clears the dates and their error when Permanent is turned on and off', async () => {
+      const user = userEvent.setup();
+      renderForm(scopeWithoutDates);
+
+      chooseActiveDates(new Date(2020, 0, 1), new Date(2999, 11, 31));
+      await user.click(screen.getByRole('button', { name: /save/i }));
+      expect(await screen.findByText(pastDateMessage)).toBeInTheDocument();
+
+      await user.click(screen.getByRole('checkbox', { name: 'Permanent' }));
+      await user.click(screen.getByRole('checkbox', { name: 'Permanent' }));
+
+      expect(vi.mocked(OpenmrsDateRangePicker).mock.lastCall[0].value).toBeUndefined();
+      expect(screen.queryByText(pastDateMessage)).not.toBeInTheDocument();
     });
   });
 });
@@ -329,78 +394,5 @@ describe('AddStockUserRoleScope stock roles', () => {
 
     expect(screen.getByRole('option', { name: 'Central Store Clerk' })).toBeInTheDocument();
     expect(screen.queryByRole('option', { name: 'Provider' })).not.toBeInTheDocument();
-  });
-});
-
-const invalidMessage = 'Enter a valid date in the format DD/MM/YYYY that is not in the past';
-const model = { uuid: 'scope-uuid', userUuid: 'user-uuid', role: 'Inventory Clerk' } as unknown as UserRoleScope;
-
-describe('AddStockUserRoleScope typed active dates', () => {
-  beforeEach(() => {
-    vi.mocked(useConfig).mockReturnValue({});
-    vi.mocked(useSearchUser).mockReturnValue({ userList: [], setSearchString: vi.fn(), isLoading: false } as never);
-    vi.mocked(createOrUpdateUserRoleScope).mockResolvedValue({} as never);
-  });
-
-  it('marks a date before today as invalid and does not save it', async () => {
-    const user = userEvent.setup();
-    render(<AddStockUserRoleScope {...mockWorkspace2Props({ model })} />);
-
-    fireEvent.change(screen.getByLabelText('Active From'), { target: { value: '01/01/2020' } });
-
-    expect(await screen.findByText(invalidMessage)).toBeInTheDocument();
-    expect(screen.getByLabelText('Active From')).toHaveAttribute('data-invalid', 'true');
-
-    await user.click(screen.getByRole('button', { name: /save/i }));
-
-    expect(showSnackbar).toHaveBeenCalledWith(expect.objectContaining({ kind: 'error', subtitle: invalidMessage }));
-    expect(createOrUpdateUserRoleScope).not.toHaveBeenCalled();
-  });
-
-  it('saves a valid typed date and clears the error once corrected', async () => {
-    const user = userEvent.setup();
-    render(<AddStockUserRoleScope {...mockWorkspace2Props({ model })} />);
-
-    fireEvent.change(screen.getByLabelText('Active To'), { target: { value: '01/01/2020' } });
-    expect(await screen.findByText(invalidMessage)).toBeInTheDocument();
-
-    fireEvent.change(screen.getByLabelText('Active To'), { target: { value: '31/12/2999' } });
-    await waitFor(() => expect(screen.queryByText(invalidMessage)).not.toBeInTheDocument());
-
-    await user.click(screen.getByRole('button', { name: /save/i }));
-
-    await waitFor(() =>
-      expect(createOrUpdateUserRoleScope).toHaveBeenCalledWith(
-        expect.objectContaining({ activeTo: new Date(2999, 11, 31) }),
-      ),
-    );
-  });
-
-  it('saves no Active To once a typed date is cleared from the box', async () => {
-    const user = userEvent.setup();
-    render(<AddStockUserRoleScope {...mockWorkspace2Props({ model })} />);
-
-    fireEvent.change(screen.getByLabelText('Active To'), { target: { value: '31/12/2999' } });
-    fireEvent.change(screen.getByLabelText('Active To'), { target: { value: '' } });
-    await user.click(screen.getByRole('button', { name: /save/i }));
-
-    await waitFor(() => expect(createOrUpdateUserRoleScope).toHaveBeenCalled());
-    expect(vi.mocked(createOrUpdateUserRoleScope).mock.lastCall[0].activeTo).toBeUndefined();
-  });
-
-  it('drops an invalid date error when Permanent is turned on and off', async () => {
-    const user = userEvent.setup();
-    render(<AddStockUserRoleScope {...mockWorkspace2Props({ model })} />);
-
-    fireEvent.change(screen.getByLabelText('Active To'), { target: { value: '01/01/2020' } });
-    expect(await screen.findByText(invalidMessage)).toBeInTheDocument();
-
-    await user.click(screen.getByRole('checkbox', { name: 'Permanent' }));
-    await user.click(screen.getByRole('checkbox', { name: 'Permanent' }));
-
-    expect(screen.getByLabelText('Active To')).toHaveValue('');
-    expect(screen.queryByText(invalidMessage)).not.toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: /save/i }));
-    expect(showSnackbar).not.toHaveBeenCalledWith(expect.objectContaining({ subtitle: invalidMessage }));
   });
 });

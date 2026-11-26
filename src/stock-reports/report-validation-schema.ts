@@ -1,14 +1,17 @@
+import dayjs from 'dayjs';
 import { z } from 'zod';
 
-const typedDate = () =>
-  z.coerce
-    .date({ errorMap: () => ({ message: 'Enter a valid date in the format DD/MM/YYYY that is not in the future' }) })
-    .optional();
+// The date pickers block days after today in the calendar, but one can still be typed
+const notFutureDate = () =>
+  z
+    .date()
+    .nullish()
+    .refine((date) => !date || !dayjs(date).isAfter(dayjs(), 'day'), { message: 'Date must not be in the future' });
 
 export const reportSchema = z
   .object({
-    startDate: typedDate(),
-    endDate: typedDate(),
+    startDate: notFutureDate(),
+    endDate: notFutureDate(),
     location: z.string().optional(),
     reportName: z.string({ required_error: 'Report Name Required' }).min(1, {
       message: 'Report Name Required',
@@ -32,7 +35,7 @@ export const reportSchema = z
     maxReorderLevelRatio: z.number().optional(),
     fullFillment: z.string().array().optional(),
     limit: z.number().optional(),
-    date: typedDate(),
+    date: notFutureDate(),
   })
   .superRefine((data, ctx) => {
     if (data.reportName !== 'Stock Status Report' && data.reportName !== 'Stock-Out Report') {

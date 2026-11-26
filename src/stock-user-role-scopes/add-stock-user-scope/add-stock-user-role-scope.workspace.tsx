@@ -1,13 +1,12 @@
 import React, { type ChangeEvent, useEffect, useMemo, useState } from 'react';
 import classNames from 'classnames';
+import dayjs from 'dayjs';
 import {
   Button,
   ButtonSet,
   Checkbox,
   CheckboxGroup,
   ComboBox,
-  DatePicker,
-  DatePickerInput,
   Form,
   FormGroup,
   InlineLoading,
@@ -25,6 +24,7 @@ import {
   showSnackbar,
   useConfig,
   useLayoutType,
+  OpenmrsDateRangePicker,
   useSession,
   Workspace2,
   type Workspace2DefinitionProps,
@@ -41,8 +41,7 @@ import { type UserRoleScope } from '../../core/api/types/identity/UserRoleScope'
 import { createOrUpdateUserRoleScope } from '../stock-user-role-scopes.resource';
 import { type UserRoleScopeOperationType } from '../../core/api/types/identity/UserRoleScopeOperationType';
 import { type UserRoleScopeLocation } from '../../core/api/types/identity/UserRoleScopeLocation';
-import { DATE_PICKER_CONTROL_FORMAT, DATE_PICKER_FORMAT, formatForDatePicker, today } from '../../constants';
-import { isInvalidDate, parseTypedDate } from '../../core/utils/typed-date';
+import { today } from '../../constants';
 import { type Role } from '../../core/api/types/identity/Role';
 import { type StockOperationType } from '../../core/api/types/stockOperation/StockOperationType';
 import { type User } from '../../core/api/types/identity/User';
@@ -50,7 +49,6 @@ import { useHandleMutate } from '../../utils';
 import useSearchUser from '../../stock-operations/stock-operations-forms/hooks/useSearchUser';
 import { useDebounce } from '../../core/hooks/debounce-hook';
 import styles from './add-stock-user-role-scope.scss';
-import { getDatePickerLocale } from '../../core/utils/datetimeUtils';
 
 const MinDate: Date = today();
 
@@ -60,7 +58,10 @@ interface AddStockUserRoleScopeProps {
 }
 
 // In the order the fields appear on the form
-type ValidatedField = 'user' | 'role' | 'activeFrom' | 'activeTo' | 'operationTypes' | 'locations';
+// A date as the date range picker reports it
+type PickerDate = { toDate: (timeZone: string) => Date };
+
+type ValidatedField = 'user' | 'role' | 'activeDates' | 'operationTypes' | 'locations';
 
 const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRoleScopeProps>> = ({
   workspaceProps,
@@ -82,7 +83,6 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
   const isTablet = useLayoutType() === 'tablet';
 
   const [roles, setRoles] = useState<Role[]>([]);
-  const [invalidActiveDates, setInvalidActiveDates] = useState<{ activeFrom?: boolean; activeTo?: boolean }>({});
   const [showErrors, setShowErrors] = useState(false);
 
   const loggedInUserUuid = currentUser?.user?.uuid;
@@ -149,8 +149,6 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
 
   const onPermanentChanged = (): void => {
     const isPermanent = !formModel?.permanent;
-    // The dates are cleared below, so an error left by an invalid one no longer applies.
-    setInvalidActiveDates({});
     setFormModel({
       ...formModel,
       permanent: isPermanent,
@@ -216,23 +214,15 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
     return result && result.length > 0 ? result[0] : null;
   };
 
-  const onActiveDatesChange = (dates: Date[]): void => {
-    setInvalidActiveDates({});
-    setFormModel({ ...formModel, activeFrom: dates[0], activeTo: dates[1] });
+  // The picker's onChange fails when a date is cleared, as it then gets no range, so this takes the raw range
+  const onActiveDatesChange = (range: { start?: PickerDate; end?: PickerDate } | null): void => {
+    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    setFormModel((current) => ({
+      ...current,
+      activeFrom: range?.start?.toDate(timeZone),
+      activeTo: range?.end?.toDate(timeZone),
+    }));
   };
-
-  const onActiveDateTyped =
-    (field: 'activeFrom' | 'activeTo') =>
-    (event: ChangeEvent<HTMLInputElement>): void => {
-      const date = parseTypedDate(event.target.value, { minDate: MinDate });
-      const invalid = isInvalidDate(date);
-      setInvalidActiveDates((current) => ({ ...current, [field]: invalid }));
-      if (!event.target.value.trim()) {
-        setFormModel((current) => ({ ...current, [field]: undefined }));
-      } else if (date && !invalid) {
-        setFormModel((current) => ({ ...current, [field]: date }));
-      }
-    };
 
   const onUserChanged = (data: { selectedItem: User }) => {
     const filteredStockRoles = data.selectedItem?.roles
@@ -261,17 +251,21 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
     return formModel?.operationTypes?.filter((x) => x.operationTypeUuid === operationType.uuid)?.length > 0;
   };
 
-  const invalidActiveDateText = t(
-    'invalidActiveDate',
-    'Enter a valid date in the format DD/MM/YYYY that is not in the past',
-  );
+  // The picker marks a typed date before its minimum, but still reports it
+  const activeDatesError = () => {
+    const { activeFrom, activeTo } = formModel ?? {};
+    if (!activeFrom || !activeTo) {
+      return t('activeDatesRequired', 'Active From and Active To are required');
+    }
+    const inPast = [activeFrom, activeTo].some((date) => dayjs(date).isBefore(minActiveDate, 'day'));
+    return inPast && t('activeDatesInPast', 'Active dates must not be in the past');
+  };
   // Each field's error, checked against the form as it is now, so an error goes once its field is fixed
   const validationErrors: Partial<Record<ValidatedField, string>> = Object.fromEntries(
     Object.entries({
       user: !formModel?.userUuid && t('userRequired', 'User is required'),
       role: !formModel?.role && t('roleRequired', 'Role is required'),
-      activeFrom: !formModel?.permanent && !formModel?.activeFrom && t('activeFromRequired', 'Active From is required'),
-      activeTo: !formModel?.permanent && !formModel?.activeTo && t('activeToRequired', 'Active To is required'),
+      activeDates: !formModel?.permanent && activeDatesError(),
       operationTypes:
         !formModel?.operationTypes?.length && t('operationTypeRequired', 'Select at least one stock operation'),
       locations: !formModel?.locations?.length && t('selectAtLeastOneLocation', 'Select at least one location'),
@@ -290,23 +284,14 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
       const fieldIds: Record<ValidatedField, string | undefined> = {
         user: 'userName',
         role: 'select-role',
-        activeFrom: 'date-picker-input-id-start',
-        activeTo: 'date-picker-input-id-finish',
+        activeDates: 'activeDates',
         operationTypes: stockOperations?.[0]?.uuid,
         locations: stockLocations?.[0] && `chk-loc-child-${stockLocations[0].id}`,
       };
       const firstInvalidField = invalidFields.find((field) => fieldIds[field]);
-      document.getElementById(fieldIds[firstInvalidField])?.focus();
-      return;
-    }
-
-    if (!formModel?.permanent && (invalidActiveDates.activeFrom || invalidActiveDates.activeTo)) {
-      showSnackbar({
-        title: t('errorSavingUserRoleScope', 'Error Saving user role scope'),
-        kind: 'error',
-        isLowContrast: true,
-        subtitle: invalidActiveDateText,
-      });
+      const field = document.getElementById(fieldIds[firstInvalidField]);
+      // The date picker's day, month and year aren't inputs, so focus the first of them
+      (field?.querySelector<HTMLElement>('[role="spinbutton"]') ?? field)?.focus();
       return;
     }
 
@@ -414,39 +399,17 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
             />
 
             {!formModel?.permanent && (
-              <DatePicker
-                dateFormat={DATE_PICKER_CONTROL_FORMAT}
-                datePickerType="range"
-                // The picker sets its inputs' invalid state
-                invalid={
-                  !!(
-                    invalidActiveDates.activeFrom ||
-                    invalidActiveDates.activeTo ||
-                    errors.activeFrom ||
-                    errors.activeTo
-                  )
-                }
-                light
-                locale={getDatePickerLocale(currentUser?.locale)}
-                minDate={formatForDatePicker(minActiveDate)}
-                onChange={onActiveDatesChange}
-                value={activeDates}
-              >
-                <DatePickerInput
-                  id="date-picker-input-id-start"
-                  invalidText={invalidActiveDates.activeFrom ? invalidActiveDateText : errors.activeFrom}
-                  labelText={`${t('activeFrom', 'Active From')} (${DATE_PICKER_FORMAT})`}
-                  onChange={onActiveDateTyped('activeFrom')}
-                  placeholder={DATE_PICKER_FORMAT}
+              <div id="activeDates">
+                <OpenmrsDateRangePicker
+                  invalid={!!errors.activeDates}
+                  invalidText={errors.activeDates}
+                  labelText={t('activeDates', 'Active dates')}
+                  light
+                  minDate={minActiveDate}
+                  onChangeRaw={onActiveDatesChange}
+                  value={activeDates.length === 2 ? [activeDates[0], activeDates[1]] : undefined}
                 />
-                <DatePickerInput
-                  id="date-picker-input-id-finish"
-                  invalidText={invalidActiveDates.activeTo ? invalidActiveDateText : errors.activeTo}
-                  labelText={`${t('activeTo', 'Active To')} (${DATE_PICKER_FORMAT})`}
-                  onChange={onActiveDateTyped('activeTo')}
-                  placeholder={DATE_PICKER_FORMAT}
-                />
-              </DatePicker>
+              </div>
             )}
           </CheckboxGroup>
           <FormGroup legendText={t('stockOperations', 'Stock operations')}>
