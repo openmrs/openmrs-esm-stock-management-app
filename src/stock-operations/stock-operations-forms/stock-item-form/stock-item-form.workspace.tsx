@@ -1,23 +1,14 @@
 import React, { useMemo } from 'react';
-import {
-  Button,
-  ButtonSet,
-  Column,
-  DatePicker,
-  DatePickerInput,
-  Form,
-  NumberInput,
-  Stack,
-  TextInput,
-} from '@carbon/react';
+import { Button, ButtonSet, Column, Form, NumberInput, Stack, TextInput } from '@carbon/react';
 import classNames from 'classnames';
+import dayjs from 'dayjs';
 import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useConfig, useLayoutType, useSession } from '@openmrs/esm-framework';
+import { OpenmrsDatePicker, useConfig, useLayoutType } from '@openmrs/esm-framework';
 import { type z } from 'zod';
 import { type ConfigObject } from '../../../config-schema';
-import { DATE_PICKER_CONTROL_FORMAT, DATE_PICKER_FORMAT, formatForDatePicker, today } from '../../../constants';
+import { today } from '../../../constants';
 import {
   operationFromString,
   type StockOperationType,
@@ -28,7 +19,6 @@ import useOperationTypePermisions from '../hooks/useOperationTypePermisions';
 import BatchNoSelector from '../input-components/batch-no-selector.component';
 import QtyUomSelector from '../input-components/quantity-uom-selector.component';
 import styles from './stock-item-form.scss';
-import { getDatePickerLocale } from '../../../core/utils/datetimeUtils';
 
 export interface StockItemFormProps {
   stockOperationType: StockOperationType;
@@ -56,7 +46,6 @@ const StockItemForm: React.FC<StockItemFormProps> = ({ stockOperationType, stock
     mode: 'all',
   });
   const { t } = useTranslation();
-  const session = useSession();
   const { item } = useStockItem(form.getValues('stockItemUuid'));
   const commonName = useMemo(() => {
     if (!useItemCommonNameAsDisplay) return;
@@ -125,30 +114,18 @@ const StockItemForm: React.FC<StockItemFormProps> = ({ stockOperationType, stock
               <Controller
                 control={form.control}
                 name={'expiration' as keyof FormData}
-                render={({ field, fieldState: { error } }) => {
-                  const { value, onChange, onBlur, name, ref } = field;
-                  return (
-                    <DatePicker
-                      datePickerType="single"
-                      minDate={formatForDatePicker(today())}
-                      locale={getDatePickerLocale(session?.locale)}
-                      className={styles.datePickerInput}
-                      dateFormat={DATE_PICKER_CONTROL_FORMAT}
-                      value={(value as unknown as Date) || null}
-                      onChange={([newDate]) => {
-                        onChange(newDate);
-                      }}
-                    >
-                      <DatePickerInput
-                        id={`expiration-input`}
-                        placeholder={DATE_PICKER_FORMAT}
-                        labelText={`${t('expiration', 'Expiration date')} (${DATE_PICKER_FORMAT})`}
-                        invalid={!!error?.message}
-                        invalidText={error?.message}
-                      />
-                    </DatePicker>
-                  );
-                }}
+                render={({ field, fieldState: { error } }) => (
+                  <OpenmrsDatePicker
+                    invalid={!!error?.message}
+                    invalidText={error?.message}
+                    labelText={t('expiration', 'Expiration date')}
+                    // The backend only accepts an expiration date after today
+                    minDate={dayjs(today()).add(1, 'day').toDate()}
+                    onBlur={field.onBlur}
+                    onChange={field.onChange}
+                    value={field.value as unknown as Date | undefined}
+                  />
+                )}
               />
             </Column>
           )}

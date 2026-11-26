@@ -1,3 +1,4 @@
+import dayjs from 'dayjs';
 import { z } from 'zod';
 import { StockOperationStatusTypes } from '../core/api/types/stockOperation/StockOperationStatus';
 import { OperationType } from '../core/api/types/stockOperation/StockOperationType';
@@ -134,7 +135,13 @@ export const getStockOperationItemFormSchema = (operationType: OperationType) =>
   switch (operationType) {
     case OperationType.RECEIPT_OPERATION_TYPE:
     case OperationType.OPENING_STOCK_OPERATION_TYPE:
-      return baseStockOperationItemSchema.omit({ stockBatchUuid: true });
+      return baseStockOperationItemSchema.omit({ stockBatchUuid: true }).extend({
+        // The backend rejects a new batch that doesn't expire after today
+        expiration: baseStockOperationItemSchema.shape.expiration.refine(
+          (date) => !date || dayjs(date).isAfter(dayjs(), 'day'),
+          { message: 'Expiration date must be after today' },
+        ),
+      });
     case OperationType.REQUISITION_OPERATION_TYPE:
       return baseStockOperationItemSchema.omit({
         batchNo: true,
