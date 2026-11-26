@@ -21,6 +21,7 @@ import {
   type Workspace2DefinitionProps,
 } from '@openmrs/esm-framework';
 import { createOrUpdateStockRule } from './stock-rules.resource';
+import { extractErrorMessagesFromResponse } from '../../../constants';
 import { ResourceRepresentation } from '../../../core/api/api';
 import { type StockItemInventoryFilter, useStockItemPackagingUOMs } from '../../stock-items.resource';
 import { type StockRule } from '../../../core/api/types/stockItem/StockRule';
@@ -167,13 +168,14 @@ const StockRulesAddOrUpdate: React.FC<Workspace2DefinitionProps<AddStockRuleProp
             closeWorkspace();
           },
           (error) => {
+            const errorMessages = extractErrorMessagesFromResponse(error);
             showSnackbar({
               title: model
                 ? t('errorEditingRule', 'Error editing a rule')
                 : t('errorAddingRule', 'Error adding a rule'),
               kind: 'error',
               isLowContrast: true,
-              subtitle: error?.message,
+              subtitle: errorMessages.join(', '),
             });
           },
         )
