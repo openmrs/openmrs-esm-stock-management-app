@@ -37,6 +37,7 @@ export interface StockItemDTO {
   reorderLevel: number | null | undefined;
   reorderLevelUoMUuid: string | null | undefined;
   reorderLevelUoMName: string | null | undefined;
+  reorderLevelUoMFactor?: number | null | undefined;
   dateCreated: Date | null | undefined;
   creatorGivenName: string | null | undefined;
   creatorFamilyName: string | null | undefined;

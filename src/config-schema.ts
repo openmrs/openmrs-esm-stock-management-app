@@ -15,6 +15,15 @@ export const configSchema = {
     _default: true,
     _description: 'Enable or disable the print button in the stock management UI',
   },
+  expiredStockReasonUUIDs: {
+    _type: Type.Array,
+    _elements: {
+      _type: Type.UUID,
+    },
+    _default: ['5b3a9913-7f22-4ef0-ad07-77e5200c5304'],
+    _description:
+      'The UUIDs of the "reason for stock adjustment" concepts that mean stock was disposed of because it expired. Used to categorise the Disposed stock tile. When any are set, reasons are matched by UUID (locale-independent); when empty, they are matched by name',
+  },
   facilityName: {
     _type: Type.String,
     _default: 'Health Center',
@@ -59,6 +68,15 @@ export const configSchema = {
     _type: Type.ConceptUuid,
     _description: 'UUID for the packaging unit',
     _default: 'a6d438fe-05c1-4d4d-9755-c11cf6b0b3b9',
+  },
+  poorQualityStockReasonUUIDs: {
+    _type: Type.Array,
+    _elements: {
+      _type: Type.UUID,
+    },
+    _default: ['2450d06c-b2eb-431a-aab9-cfa9c2f32fc9'],
+    _description:
+      'The UUIDs of the "reason for stock adjustment" concepts that mean stock was disposed of because it was of poor quality. Used to categorise the Disposed stock tile. When any are set, reasons are matched by UUID (locale-independent); when empty, they are matched by name',
   },
   printBalanceOnHand: {
     _type: Type.Boolean,
@@ -124,6 +142,7 @@ export type ConfigObject = {
   autoPopulateResponsiblePerson: boolean;
   dispensingUnitsUUID: string;
   enablePrintButton: boolean;
+  expiredStockReasonUUIDs: Array<string>;
   facilityName: string;
   logo: {
     src: string;
@@ -134,6 +153,7 @@ export type ConfigObject = {
   nonDrugItemsConceptClassUUID: string;
   nonDrugItemsConceptSetUUID: string;
   packingUnitsUUID: string;
+  poorQualityStockReasonUUIDs: Array<string>;
   printBalanceOnHand: boolean;
   printItemCost: boolean;
   stockAdjustmentReasonUUID: string;

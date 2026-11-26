@@ -1,25 +1,41 @@
-import { useEffect, useState } from 'react';
-import { type StockItemFilter, useStockItems } from '../stock-items/stock-items.resource';
+import useSWR from 'swr';
+import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import { ResourceRepresentation } from '../core/api/api';
+import { type PageableResult } from '../core/api/types/PageableResult';
+import { type StockItemDTO } from '../core/api/types/stockItem/StockItem';
+
+const PAGE_SIZE = 100;
+
+async function fetchAllStockItems(v: ResourceRepresentation) {
+  const stockItems: StockItemDTO[] = [];
+
+  for (let startIndex = 0; ; startIndex += PAGE_SIZE) {
+    const response = await openmrsFetch<PageableResult<StockItemDTO>>(
+      `${restBaseUrl}/stockmanagement/stockitem?v=${v}&totalCount=true&limit=${PAGE_SIZE}&startIndex=${startIndex}`,
+    );
+    const page = response.data?.results ?? [];
+    stockItems.push(...page);
+
+    if (
+      page.length < PAGE_SIZE ||
+      (response.data?.totalCount != null && stockItems.length >= response.data.totalCount)
+    ) {
+      break;
+    }
+  }
+
+  return stockItems;
+}
 
 export function useStockInventoryItems(v?: ResourceRepresentation) {
-  const [stockItemFilter, setStockItemFilter] = useState<StockItemFilter>({
-    v: v || ResourceRepresentation.Default,
-    q: null,
-    totalCount: true,
-  });
-
-  const { items, isLoading, error } = useStockItems(stockItemFilter);
-
-  useEffect(() => {
-    setStockItemFilter({
-      v: ResourceRepresentation.Default,
-      totalCount: true,
-    });
-  }, []);
+  const representation = v ?? ResourceRepresentation.Default;
+  const { data, isLoading, error } = useSWR(
+    [`${restBaseUrl}/stockmanagement/stockitem`, 'inventory', representation],
+    () => fetchAllStockItems(representation),
+  );
 
   return {
-    items: items?.results ?? [],
+    items: data ?? [],
     isLoading,
     error,
   };

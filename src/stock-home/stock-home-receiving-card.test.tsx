@@ -2,12 +2,12 @@ import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useStockOperations } from '../stock-operations/stock-operations.resource';
 import StockHomeReceivingCard from './stock-home-receiving-card.component';
+import { useStockReceiving } from './stock-home-receiving.resource';
 
 const mockHandleMutate = vi.fn();
 
-vi.mock('../stock-operations/stock-operations.resource', () => ({ useStockOperations: vi.fn() }));
+vi.mock('./stock-home-receiving.resource', () => ({ useStockReceiving: vi.fn() }));
 vi.mock('../utils', () => ({ useHandleMutate: () => mockHandleMutate }));
 
 const receipt = {
@@ -22,7 +22,7 @@ const receipt = {
 describe('StockHomeReceivingCard', () => {
   it('shows an error with a retry when the operations fail to load', async () => {
     const user = userEvent.setup();
-    vi.mocked(useStockOperations).mockReturnValue({
+    vi.mocked(useStockReceiving).mockReturnValue({
       items: undefined,
       isLoading: false,
       error: new Error('Service Unavailable'),
@@ -39,7 +39,7 @@ describe('StockHomeReceivingCard', () => {
 
   it('keeps the error and Try again when Escape is pressed', async () => {
     const user = userEvent.setup();
-    vi.mocked(useStockOperations).mockReturnValue({
+    vi.mocked(useStockReceiving).mockReturnValue({
       items: undefined,
       isLoading: false,
       error: new Error('Service Unavailable'),
@@ -54,8 +54,8 @@ describe('StockHomeReceivingCard', () => {
   });
 
   it('shows the error when a reload fails, even with data from an earlier load', () => {
-    vi.mocked(useStockOperations).mockReturnValue({
-      items: { results: [receipt] },
+    vi.mocked(useStockReceiving).mockReturnValue({
+      items: [receipt],
       isLoading: false,
       error: new Error('Service Unavailable'),
     } as never);
@@ -66,8 +66,8 @@ describe('StockHomeReceivingCard', () => {
   });
 
   it('shows no error when the operations load', () => {
-    vi.mocked(useStockOperations).mockReturnValue({
-      items: { results: [] },
+    vi.mocked(useStockReceiving).mockReturnValue({
+      items: [],
       isLoading: false,
       error: null,
     } as never);

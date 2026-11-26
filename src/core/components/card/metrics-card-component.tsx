@@ -14,7 +14,7 @@ interface MetricsCardProps {
   headerLabel: string;
   children?: React.ReactNode;
   count?: { expiry6months: Array<any> };
-  outOfStockCount?: { itemsBelowMin: Array<any>; itemsAboveMax: Array<any> };
+  outOfStockCount?: { itemsBelowMin?: Array<any>; itemsAboveMax?: Array<any> };
   disposedCount?: { expired: Array<any>; poorQuality: Array<any> };
 }
 const MetricsCard: React.FC<MetricsCardProps> = ({
@@ -52,9 +52,13 @@ const MetricsCard: React.FC<MetricsCardProps> = ({
         {!isEmpty(outOfStockCount) && (
           <div className={styles.countGrid}>
             <span className={styles.belowMinLabel}>{t('understockedItems', 'Understocked items')}</span>
-            <span className={styles.aboveMaxLabel}>{t('overstockedItems', 'Overstocked items')}</span>
+            {outOfStockCount.itemsAboveMax && (
+              <span className={styles.aboveMaxLabel}>{t('overstockedItems', 'Overstocked items')}</span>
+            )}
             <p className={styles.belowMinValue}>{outOfStockCount.itemsBelowMin?.length}</p>
-            <p className={styles.aboveMaxValue}>{outOfStockCount.itemsAboveMax?.length}</p>
+            {outOfStockCount.itemsAboveMax && (
+              <p className={styles.aboveMaxValue}>{outOfStockCount.itemsAboveMax.length}</p>
+            )}
           </div>
         )}
         {!isEmpty(disposedCount) && (
