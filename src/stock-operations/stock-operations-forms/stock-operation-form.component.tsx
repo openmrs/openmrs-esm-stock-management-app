@@ -13,6 +13,7 @@ import { FormProvider, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { type ConfigObject } from '../../config-schema';
 import { today } from '../../constants';
+import { parseStockExpiryDate } from '../expiry-date.utils';
 import { type StockOperationDTO } from '../../core/api/types/stockOperation/StockOperationDTO';
 import {
   operationFromString,
@@ -97,7 +98,7 @@ const StockOperationForm: React.FC<Workspace2DefinitionProps<StockOperationFormP
       stockOperationItems:
         stockOperation?.stockOperationItems?.map((item) =>
           pick(
-            { ...item, expiration: item.expiration ? parseDate(String(item.expiration)) : undefined },
+            { ...item, expiration: item.expiration ? parseStockExpiryDate(String(item.expiration)) : undefined },
             stockOperationItemFormSchema.keyof().options,
           ),
         ) ?? [],
@@ -113,7 +114,7 @@ const StockOperationForm: React.FC<Workspace2DefinitionProps<StockOperationFormP
           stockOperationItems: (_stockOperation?.stockOperationItems && _stockOperation.stockOperationItems.length > 0
             ? _stockOperation.stockOperationItems.map((item) =>
                 pick(
-                  { ...item, expiration: item?.expiration ? parseDate(String(item.expiration)) : undefined },
+                  { ...item, expiration: item?.expiration ? parseStockExpiryDate(String(item.expiration)) : undefined },
                   stockOperationItemFormSchema.keyof().options,
                 ),
               )
