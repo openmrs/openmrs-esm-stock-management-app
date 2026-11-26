@@ -72,8 +72,9 @@ export function useStockOperationPages(filter: StockOperationFilter) {
         id: 7,
         key: 'details',
         header: '',
+        isSortable: false,
       },
-      { key: 'actions', header: '' },
+      { key: 'actions', header: '', isSortable: false },
     ],
     [t],
   );
