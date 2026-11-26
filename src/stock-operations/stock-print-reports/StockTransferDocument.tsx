@@ -4,6 +4,7 @@ import { CLOSE_PRINT_AFTER_PRINT, moduleName } from '../../constants';
 import { GetHeaderSection, GetPrintTemplate } from '../../core/print/PrintTemplate';
 import { printDocument } from '../../core/print/printUtils';
 import { formatDisplayDate } from '../../core/utils/datetimeUtils';
+import { parseStockExpiryDate } from '../expiry-date.utils';
 import { type StockOperationPrintData } from './StockOperationReport';
 
 export const FormatTransferDocument = async (data: StockOperationPrintData): Promise<string> => {
@@ -67,7 +68,9 @@ export const FormatTransferDocument = async (data: StockOperationPrintData): Pro
                     <td valign="middle">${p.itemCode ?? ''}</td>
                     <td valign="middle">${p.itemDescription ?? ''}</td>                    
                     <td valign="middle" class="center">${p.batchNumber ?? ''}</td>                    
-                    <td valign="middle" class="center">${formatDisplayDate(p.expiryDate)}</td>                    
+                    <td valign="middle" class="center">${
+                      p.expiryDate ? formatDisplayDate(parseStockExpiryDate(p.expiryDate)) : ''
+                    }</td>                    
                     <td valign="middle" class="center">${p.quantityRequired?.toLocaleString() ?? ''} ${
                         p.quantityRequiredUoM ?? ''
                       }</td>
