@@ -20,6 +20,7 @@ vi.mock('../../stock-lookups/stock-lookups.resource', () => ({
   useStockOperationTypes: vi.fn().mockReturnValue({ types: { results: [] }, isLoading: false, error: null }),
   useUsers: vi.fn().mockReturnValue({ items: { results: [] }, isLoading: false }),
   useUser: vi.fn().mockReturnValue({ data: { display: 'Test User' }, isLoading: false, error: null }),
+  useStockManagementSession: vi.fn().mockReturnValue({ privilegeScopes: [], isLoading: false, error: undefined }),
   useConcept: vi.fn().mockReturnValue({ items: { answers: [] }, isLoading: false, error: null }),
 }));
 
@@ -36,12 +37,16 @@ vi.mock('./hooks/useParties', () => ({
   useParties: vi.fn(),
 }));
 
-// Stands in for the line form: saving fills in the quantity unit the saved lines are missing
+// Stands in for the line form: it shows the party its batch picker would use, and saving fills in the
+// quantity unit the saved lines are missing
 vi.mock('./stock-item-form/stock-item-form.workspace', () => ({
-  default: ({ stockOperationItem, onSave }) => (
-    <button type="button" onClick={() => onSave({ ...stockOperationItem, stockItemPackagingUOMUuid: 'uom-uuid' })}>
-      Save line
-    </button>
+  default: ({ stockOperationItem, sourcePartyUuid, onSave }) => (
+    <>
+      <span>Batches at {sourcePartyUuid}</span>
+      <button type="button" onClick={() => onSave({ ...stockOperationItem, stockItemPackagingUOMUuid: 'uom-uuid' })}>
+        Save line
+      </button>
+    </>
   ),
 }));
 
@@ -140,6 +145,24 @@ describe('StockOperationForm with a linked requisition', () => {
 
     expect(screen.getByRole('combobox', { name: /source/i })).toHaveValue('Requisition Store');
     expect(screen.getByRole('combobox', { name: /destination/i })).toHaveValue('Requisition Pharmacy');
+  });
+
+  it("opens the line form with the saved issue's source for its batch picker", async () => {
+    const user = userEvent.setup();
+    render(
+      <StockOperationForm
+        {...mockWorkspace2Props({
+          stockOperationType: stockIssueType,
+          stockOperation: savedIssue,
+          stockRequisitionUuid: requisitionUuid,
+        })}
+      />,
+    );
+
+    await user.click(screen.getByText(/stock items/i));
+    await user.click(within(screen.getAllByRole('row')[1]).getAllByRole('button')[0]);
+
+    expect(screen.getByText('Batches at issue-source-uuid')).toBeInTheDocument();
   });
 });
 

@@ -5,20 +5,22 @@ import { useTranslation } from 'react-i18next';
 import { ResourceRepresentation } from '../../../core/api/api';
 import { type StockItemInventoryFilter, useStockItemInventory } from '../../../stock-items/stock-items.resource';
 import styles from './stock-operation-items-form-step.scc.scss';
-const StockAvailability: React.FC<{ stockItemUuid: string; sourceUuid?: string | null }> = ({
-  stockItemUuid,
-  sourceUuid,
-}) => {
+const StockAvailability: React.FC<{
+  stockItemUuid: string;
+  partyUuid?: string | null;
+  includeExpiredBatches?: boolean;
+}> = ({ stockItemUuid, partyUuid, includeExpiredBatches = false }) => {
   const { t } = useTranslation();
 
   const filter = useMemo<StockItemInventoryFilter>(
     () => ({
       v: ResourceRepresentation.Default,
       stockItemUuid,
-      partyUuid: sourceUuid || undefined,
-      groupBy: sourceUuid ? 'LocationStockItem' : 'StockItemOnly',
+      partyUuid: partyUuid || undefined,
+      groupBy: partyUuid ? 'LocationStockItem' : 'StockItemOnly',
+      excludeExpired: includeExpiredBatches ? false : undefined,
     }),
-    [stockItemUuid, sourceUuid],
+    [stockItemUuid, partyUuid, includeExpiredBatches],
   );
 
   const { items, isLoading, error } = useStockItemInventory(filter);

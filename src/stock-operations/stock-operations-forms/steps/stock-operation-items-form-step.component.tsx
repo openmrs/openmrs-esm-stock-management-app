@@ -14,12 +14,11 @@ import {
 } from '@carbon/react';
 import { useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
+import { APP_STOCKMANAGEMENT_STOCKITEMS } from '../../../constants';
+import { LocationTypeLocation } from '../../../core/api/types/stockOperation/LocationType';
 import { type StockOperationDTO } from '../../../core/api/types/stockOperation/StockOperationDTO';
-import {
-  type StockOperationType,
-  operationFromString,
-  StockOperationTypeTakesStockFromSource,
-} from '../../../core/api/types/stockOperation/StockOperationType';
+import { type StockOperationType } from '../../../core/api/types/stockOperation/StockOperationType';
+import { useStockManagementSession } from '../../../stock-lookups/stock-lookups.resource';
 import { getStockOperationUniqueId } from '../../stock-operation.utils';
 import { type BaseStockOperationItemFormData, type StockOperationItemDtoSchema } from '../../validation-schema';
 import useOperationTypePermisions from '../hooks/useOperationTypePermisions';
@@ -66,14 +65,16 @@ const StockOperationItemsFormStep: React.FC<StockOperationItemsFormStepProps> = 
     Object.keys((Array.isArray(itemsError) ? itemsError[index] : undefined) ?? {}).map(
       (field) => detailLabels[field] ?? field,
     );
-  const formSourceUuid = form.watch('sourceUuid');
-  // Only scope "Available" to the source when the source is a location that holds the stock
-  // (not a supplier, as on a Receipt)
-  const availabilitySourceUuid = StockOperationTypeTakesStockFromSource(
-    operationFromString(stockOperationType?.operationType),
-  )
-    ? formSourceUuid
-    : undefined;
+  // Show stock at the source. A receipt's source is a supplier, so use where it's received.
+  // A requisition's source is the location asking for stock, so requesters see their own stock.
+  const drawsFromSource = stockOperationType?.sourceType === LocationTypeLocation;
+  const drawnFromUuid = form.watch(drawsFromSource ? 'sourceUuid' : 'destinationUuid');
+  // Inventory leaves out stock the user can't see, so only ask for a party whose stock they can see.
+  const { privilegeScopes } = useStockManagementSession();
+  const canSeeStock = privilegeScopes?.some(
+    (scope) => scope.partyUuid === drawnFromUuid && scope.privilege === APP_STOCKMANAGEMENT_STOCKITEMS,
+  );
+  const availabilityPartyUuid = canSeeStock ? drawnFromUuid : undefined;
   const headers = useMemo(() => {
     return [
       {
@@ -148,11 +149,16 @@ const StockOperationItemsFormStep: React.FC<StockOperationItemsFormStepProps> = 
       return {
         id: uuid || `${uniqueId}-${index}`,
         item: stockItemUuid ? <StockOperationItemCell stockItemUuid={stockItemUuid} /> : '--',
-        itemDetails: stockItemUuid ? (
-          <StockAvailability stockItemUuid={stockItemUuid} sourceUuid={availabilitySourceUuid} />
-        ) : (
-          '--'
-        ),
+        itemDetails:
+          stockItemUuid && availabilityPartyUuid ? (
+            <StockAvailability
+              stockItemUuid={stockItemUuid}
+              partyUuid={availabilityPartyUuid}
+              includeExpiredBatches={stockOperationType.allowExpiredBatchNumbers}
+            />
+          ) : (
+            '--'
+          ),
         batch: (
           <StockOperationItemBatchNoCell
             operation={stockOperationType}
@@ -204,7 +210,7 @@ const StockOperationItemsFormStep: React.FC<StockOperationItemsFormStepProps> = 
         ),
       };
     });
-  }, [availabilitySourceUuid, observableOperationItems, onLaunchItemsForm, stockOperationType, t, uniqueId]);
+  }, [availabilityPartyUuid, observableOperationItems, onLaunchItemsForm, stockOperationType, t, uniqueId]);
 
   // An invalid step shows its errors above the table and on the lines
   const handleNext = async () => {
