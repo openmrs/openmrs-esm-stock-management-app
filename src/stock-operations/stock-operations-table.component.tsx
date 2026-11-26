@@ -74,8 +74,14 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
   }, [searchInput, debouncedSearch]);
 
   // The date pickers report a date whenever every segment has a value, so changing the day from 23 to 25 reports
-  // day 2 first
-  const debouncedDateFilter = useDebounce(setDateFilter, 500);
+  // day 2 first. The range is checked once the typing stops: a partial year or an end date before the start date is
+  // still being typed or deleted, so the last valid filter stays.
+  const debouncedDateFilter = useDebounce(([startDate, endDate]: DateRange) => {
+    const isPartialYear = [startDate, endDate].some((date) => date && !hasFullYear(date));
+    if (!isPartialYear && !(startDate && endDate && startDate > endDate)) {
+      setDateFilter([startDate, endDate]);
+    }
+  }, 500);
 
   const {
     items,
@@ -119,13 +125,7 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
 
   const handleDateRangeChange = (range: DateRange) => {
     setDateRange(range);
-    const [startDate, endDate] = range;
-    // A partial year or an end date before the start date is still being typed or deleted, so the last valid filter
-    // stays
-    const isPartialYear = range.some((date) => date && !hasFullYear(date));
-    if (!isPartialYear && !(startDate && endDate && startDate > endDate)) {
-      debouncedDateFilter(range);
-    }
+    debouncedDateFilter(range);
   };
 
   const tableRows = useMemo(

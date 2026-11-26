@@ -208,6 +208,23 @@ describe('StockOperations', () => {
       expect(lastQuery().operationDateMax).toBe('2026-11-23T00:00:00.000Z');
     });
 
+    it('drops a pending date when the typing ends on an invalid date', () => {
+      render(<StockOperations />);
+
+      pickDate('Start date', new Date(2026, 10, 1));
+      pickDate('End date', new Date(2026, 10, 23));
+      waitForFilter();
+
+      // Retyping the end date as 25/11/2025 reports 25 Nov 2026 before the year is changed
+      pickDate('End date', new Date(2026, 10, 25));
+      for (const year of [2, 20, 202, 2025]) {
+        pickDate('End date', dateInYear(year, 10, 25));
+      }
+      waitForFilter();
+
+      expect(lastQuery().operationDateMax).toBe('2026-11-23T00:00:00.000Z');
+    });
+
     it('limits each picker to the other date', () => {
       render(<StockOperations />);
 
