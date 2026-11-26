@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react';
-import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import { render, screen } from '@testing-library/react';
 import { useReactToPrint } from 'react-to-print';
@@ -53,6 +53,8 @@ const renderModal = () =>
   );
 
 describe('TransactionsStockcardPrintPreviewModal', () => {
+  const originalTimeZone = process.env.TZ;
+
   beforeEach(() => {
     mockUseConfig.mockImplementation((options) => {
       if (options?.externalModuleName) {
@@ -62,6 +64,35 @@ describe('TransactionsStockcardPrintPreviewModal', () => {
     });
     mockOpenmrsFetch.mockResolvedValue({ data: { uuid: 'patient-1', display: 'John Doe' } } as FetchResponse);
     mockUseReactToPrint.mockReturnValue(mockHandlePrint);
+  });
+
+  afterEach(() => {
+    if (originalTimeZone === undefined) {
+      delete process.env.TZ;
+    } else {
+      process.env.TZ = originalTimeZone;
+    }
+  });
+
+  it('shows the server calendar batch expiry date when the browser is behind the server', async () => {
+    process.env.TZ = 'America/New_York';
+    render(
+      <Suspense fallback={null}>
+        <TransactionsStockcardPrintPreviewModal
+          onClose={mockOnClose}
+          title="Amoxicillin 500mg"
+          columns={columns}
+          data={[
+            {
+              ...transactions[0],
+              expiration: '2027-12-31T00:00:00.000+0000',
+            },
+          ]}
+        />
+      </Suspense>,
+    );
+
+    expect(await screen.findByText('BATCH-001 (31-Dec-2027)')).toBeInTheDocument();
   });
 
   it('renders the title, item name and patient dispensing rows', async () => {

@@ -1,5 +1,6 @@
 import { CLOSE_PRINT_AFTER_PRINT } from '../../constants';
 import { formatDisplayDate } from '../../core/utils/datetimeUtils';
+import { parseStockExpiryDate } from '../expiry-date.utils';
 import { GetHeaderSection, GetPrintTemplate } from '../../core/print/PrintTemplate';
 import { printDocument } from '../../core/print/printUtils';
 import { type StockOperationPrintData } from './StockOperationReport';
@@ -63,7 +64,9 @@ export const FormatGoodsReceivedDocument = async (data: StockOperationPrintData)
                     <td valign="middle">${p.itemCode ?? ''}</td>
                     <td valign="middle">${p.itemDescription ?? ''}</td>                    
                     <td valign="middle" class="center">${p.batchNumber ?? ''}</td>                    
-                    <td valign="middle" class="center">${formatDisplayDate(p.expiryDate)}</td>                    
+                    <td valign="middle" class="center">${
+                      p.expiryDate ? formatDisplayDate(parseStockExpiryDate(p.expiryDate)) : ''
+                    }</td>                    
                     <td valign="middle" class="center">${p.quantityRequired?.toLocaleString() ?? ''} ${
                         p.quantityRequiredUoM ?? ''
                       }</td>
