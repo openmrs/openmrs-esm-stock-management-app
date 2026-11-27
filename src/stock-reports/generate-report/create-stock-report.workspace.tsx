@@ -106,7 +106,7 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
   const [displayLimit, setDisplayLimit] = useState<boolean>(false);
   const [displayMostLeastMoving, setDisplayMostLeastMoving] = useState<boolean>(false);
   const [displayFulfillment, setDisplayFulfillment] = useState<boolean>(false);
-  const [selectedReportName, setSelectedReportName] = useState<string>('');
+  const [selectedReportName, setSelectedReportName] = useState<string>(model?.reportName ?? '');
 
   const [stockItemSearchResults, setStockItemSearchResults] = useState<StockItemDTO[]>([]);
   const [patientSearchResults, setPatientSearchResults] = useState<Patient[]>([]);
@@ -247,9 +247,35 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
     control,
     formState: { errors, defaultValues, isDirty },
     setValue,
+    watch,
   } = useForm<StockReportSchema>({
     mode: 'all',
     resolver: zodResolver(getReportSchema(displayLocation)),
+    defaultValues: {
+      reportName: model?.reportName,
+      locationUuid: model?.locationUuid,
+      location: model?.location,
+      startDate: model?.startDate,
+      endDate: model?.endDate,
+      date: model?.date,
+      stockItemCategoryConceptUuid: model?.stockItemCategoryConceptUuid,
+      stockItemCategory: model?.stockItemCategory,
+      stockSourceUuid: model?.stockSourceUuid,
+      stockSource: model?.stockSource,
+      stockSourceDestinationUuid: model?.stockSourceDestinationUuid,
+      stockSourceDestination: model?.stockSourceDestination,
+      inventoryGroupBy: model?.inventoryGroupBy,
+      inventoryGroupByName: model?.inventoryGroupByName,
+      maxReorderLevelRatio: model?.maxReorderLevelRatio,
+      stockItemUuid: model?.stockItemUuid,
+      stockItemName: model?.stockItemName,
+      patientUuid: model?.patientUuid,
+      patientName: model?.patientName,
+      limit: model?.limit ?? undefined,
+      mostLeastMoving: model?.mostLeastMoving,
+      fullFillment: model?.fullFillment,
+      childLocations: model?.childLocations,
+    },
   });
 
   if (isLoading) {
@@ -489,10 +515,13 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
                     titleText={t('reportName', 'Report name')}
                     items={Array.isArray(reportTypes) ? reportTypes : [reportTypes]}
                     itemToString={(item) => `${item?.name ?? item?.name ?? ''}`}
+                    initialSelectedItem={
+                      Array.isArray(reportTypes) ? reportTypes.find((r) => r.name === model?.reportName) : undefined
+                    }
                     placeholder={t('filter', 'Filter...')}
                     onChange={({ selectedItem }) => {
-                      onChange(selectedItem.name);
-                      handleReportNameChange(selectedItem.name);
+                      onChange(selectedItem?.name);
+                      handleReportNameChange(selectedItem?.name ?? '');
                     }}
                   />
                 )}
@@ -506,12 +535,15 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
                 <Controller
                   control={control}
                   name="stockItemCategoryConceptUuid"
-                  render={({ field: { onChange } }) => (
+                  render={({ field: { onChange, value } }) => (
                     <ComboBox
                       id="stockReportItem"
                       size="md"
                       titleText={t('stockItemCategory', 'Stock Item Category')}
                       items={stockItemCategories}
+                      selectedItem={stockItemCategories.find(
+                        (c) => c.uuid === value) ?? null
+                      }
                       onChange={({ selectedItem }) => {
                         onChange(selectedItem?.uuid ?? '');
                         setValue('stockItemCategory', selectedItem?.display ?? '');
@@ -575,7 +607,7 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
           {displayInventoryGroupBy && (
             <Select
               id="inventoryGroupBy"
-              defaultValue={model?.inventoryGroupBy}
+              defaultValue={model?.inventoryGroupBy ?? ''}
               invalid={!!errors?.inventoryGroupBy?.message}
               invalidText={errors?.inventoryGroupBy?.message}
               labelText={t('inventoryBy', 'Inventory by')}
@@ -600,6 +632,9 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
                   id="patient"
                   titleText={t('patient', 'Patient')}
                   items={patientSearchResults}
+                  initialSelectedItem={
+                    model?.patientUuid ? ({ uuid: model.patientUuid, display: model.patientName } as any) : undefined
+                  }
                   onChange={(data) => {
                     onChange(data.selectedItem?.uuid);
                     setValue('patientName', data.selectedItem?.display || '');
@@ -623,6 +658,11 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
                   id="stockItem"
                   titleText={t('stockItem', 'Stock Item')}
                   items={stockItemSearchResults}
+                  initialSelectedItem={
+                    model?.stockItemUuid
+                      ? ({ uuid: model.stockItemUuid, drugName: model.stockItemName } as any)
+                      : undefined
+                  }
                   onChange={(data) => {
                     onChange(data.selectedItem?.uuid);
                     setValue(
@@ -663,7 +703,7 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
                 setValue('locationUuid', e.target.value, { shouldValidate: true });
                 setValue('location', selectedLocation?.name || '');
               }}
-              defaultValue=""
+              value={watch('locationUuid') ?? ''}
               invalid={!!errors?.locationUuid?.message}
               invalidText={errors?.locationUuid?.message}
             >
@@ -696,7 +736,7 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
                   name="mostLeastMoving"
                   legendText={t('rank', 'Rank')}
                   onChange={onChange}
-                  value={value}
+                  valueSelected={value}
                 >
                   <RadioButton value="MostMoving" id="mostLeastMovingMost" labelText={t('mostMoving', 'Most moving')} />
                   <RadioButton
