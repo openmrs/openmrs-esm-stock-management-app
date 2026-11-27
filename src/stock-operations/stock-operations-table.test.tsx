@@ -1,6 +1,6 @@
 import React from 'react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useConfig } from '@openmrs/esm-framework';
 import { StockFilters } from '../constants';
@@ -109,5 +109,40 @@ describe('StockOperations', () => {
 
     expect(screen.getByText('Server unavailable')).toBeInTheDocument();
     expect(screen.queryByText('RCPT-0049')).not.toBeInTheDocument();
+  });
+
+  describe('status column', () => {
+    beforeEach(() => {
+      mockPages({ items: operations, tableHeaders, totalItems: 2 });
+    });
+
+    it('shows each status as a translated, sentence case Tag', () => {
+      render(<StockOperations />);
+
+      expect(screen.getByText('Submitted')).toHaveClass('cds--tag__label');
+      expect(screen.getByText('Cancelled')).toHaveClass('cds--tag__label');
+      expect(screen.queryByText('SUBMITTED')).not.toBeInTheDocument();
+      expect(screen.queryByText('CANCELLED')).not.toBeInTheDocument();
+    });
+
+    it('can still be sorted by status', async () => {
+      const user = userEvent.setup();
+      render(<StockOperations />);
+
+      const statusesInOrder = () =>
+        screen
+          .getAllByRole('row')
+          .slice(1)
+          .map((row) => within(row).queryByText(/^(Submitted|Cancelled)$/)?.textContent)
+          .filter(Boolean);
+
+      expect(statusesInOrder()).toEqual(['Submitted', 'Cancelled']);
+
+      await user.click(screen.getByRole('button', { name: /status/i }));
+      expect(statusesInOrder()).toEqual(['Cancelled', 'Submitted']);
+
+      await user.click(screen.getByRole('button', { name: /status/i }));
+      expect(statusesInOrder()).toEqual(['Submitted', 'Cancelled']);
+    });
   });
 });

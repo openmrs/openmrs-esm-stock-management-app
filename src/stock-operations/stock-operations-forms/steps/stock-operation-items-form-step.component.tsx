@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowRight, Edit, TrashCan } from '@carbon/react/icons';
 import {
   Button,
   DataTable,
+  InlineNotification,
   Table,
   TableBody,
   TableCell,
@@ -13,9 +14,11 @@ import {
 } from '@carbon/react';
 import { useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { showSnackbar } from '@openmrs/esm-framework';
+import { APP_STOCKMANAGEMENT_STOCKITEMS } from '../../../constants';
+import { LocationTypeLocation } from '../../../core/api/types/stockOperation/LocationType';
 import { type StockOperationDTO } from '../../../core/api/types/stockOperation/StockOperationDTO';
 import { type StockOperationType } from '../../../core/api/types/stockOperation/StockOperationType';
+import { useStockManagementSession } from '../../../stock-lookups/stock-lookups.resource';
 import { getStockOperationUniqueId } from '../../stock-operation.utils';
 import { type BaseStockOperationItemFormData, type StockOperationItemDtoSchema } from '../../validation-schema';
 import useOperationTypePermisions from '../hooks/useOperationTypePermisions';
@@ -48,6 +51,30 @@ const StockOperationItemsFormStep: React.FC<StockOperationItemsFormStepProps> = 
 
   const form = useFormContext<StockOperationItemDtoSchema>();
   const observableOperationItems = form.watch('stockOperationItems');
+  const itemsError = form.formState.errors.stockOperationItems;
+  const detailLabels: Record<string, string> = {
+    batchNo: t('batchNo', 'Batch number'),
+    stockBatchUuid: t('batchNo', 'Batch number'),
+    expiration: t('expiration', 'Expiration date'),
+    quantity: t('quantity', 'Quantity'),
+    stockItemPackagingUOMUuid: t('quantityUom', 'Quantity unit of measurement'),
+    purchasePrice: t('purchasePrice', 'Purchase Price'),
+  };
+  // The details a line is missing, from its validation errors
+  const missingDetails = (index: number) =>
+    Object.keys((Array.isArray(itemsError) ? itemsError[index] : undefined) ?? {}).map(
+      (field) => detailLabels[field] ?? field,
+    );
+  // Show stock at the source. A receipt's source is a supplier, so use where it's received.
+  // A requisition's source is the location asking for stock, so requesters see their own stock.
+  const drawsFromSource = stockOperationType?.sourceType === LocationTypeLocation;
+  const drawnFromUuid = form.watch(drawsFromSource ? 'sourceUuid' : 'destinationUuid');
+  // Inventory leaves out stock the user can't see, so only ask for a party whose stock they can see.
+  const { privilegeScopes } = useStockManagementSession();
+  const canSeeStock = privilegeScopes?.some(
+    (scope) => scope.partyUuid === drawnFromUuid && scope.privilege === APP_STOCKMANAGEMENT_STOCKITEMS,
+  );
+  const availabilityPartyUuid = canSeeStock ? drawnFromUuid : undefined;
   const headers = useMemo(() => {
     return [
       {
@@ -122,7 +149,16 @@ const StockOperationItemsFormStep: React.FC<StockOperationItemsFormStepProps> = 
       return {
         id: uuid || `${uniqueId}-${index}`,
         item: stockItemUuid ? <StockOperationItemCell stockItemUuid={stockItemUuid} /> : '--',
-        itemDetails: stockItemUuid ? <StockAvailability stockItemUuid={stockItemUuid} /> : '--',
+        itemDetails:
+          stockItemUuid && availabilityPartyUuid ? (
+            <StockAvailability
+              stockItemUuid={stockItemUuid}
+              partyUuid={availabilityPartyUuid}
+              includeExpiredBatches={stockOperationType.allowExpiredBatchNumbers}
+            />
+          ) : (
+            '--'
+          ),
         batch: (
           <StockOperationItemBatchNoCell
             operation={stockOperationType}
@@ -174,21 +210,13 @@ const StockOperationItemsFormStep: React.FC<StockOperationItemsFormStepProps> = 
         ),
       };
     });
-  }, [observableOperationItems, onLaunchItemsForm, stockOperationType, t, uniqueId]);
+  }, [availabilityPartyUuid, observableOperationItems, onLaunchItemsForm, stockOperationType, t, uniqueId]);
 
+  // An invalid step shows its errors above the table and on the lines
   const handleNext = async () => {
     const valid = await form.trigger(['stockOperationItems']);
     if (valid) {
       onNext();
-    } else {
-      showSnackbar({
-        kind: 'error',
-        title: 'Validation error',
-        subtitle:
-          observableOperationItems && observableOperationItems.length > 0
-            ? 'You must update batch infomation for items'
-            : 'You must add atleast one item',
-      });
     }
   };
 
@@ -210,6 +238,19 @@ const StockOperationItemsFormStep: React.FC<StockOperationItemsFormStepProps> = 
             })
           }
         />
+        {itemsError && (
+          <InlineNotification
+            hideCloseButton
+            kind="error"
+            lowContrast
+            role="alert"
+            title={
+              observableOperationItems?.length
+                ? t('completeItemDetails', 'Complete the details of the items marked below')
+                : t('addAtLeastOneItem', 'Add at least one item')
+            }
+          />
+        )}
         <DataTable rows={tableRows ?? []} headers={headers} isSortable={false} useZebraStyles>
           {({ rows, headers, getTableProps, getHeaderProps, getRowProps }) => (
             <TableContainer>
@@ -238,13 +279,24 @@ const StockOperationItemsFormStep: React.FC<StockOperationItemsFormStepProps> = 
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {rows.map((row) => (
-                    <TableRow {...getRowProps({ row })} key={row.id}>
-                      {row.cells.map((cell) => (
-                        <TableCell key={cell.id}>{cell.value}</TableCell>
-                      ))}
-                    </TableRow>
-                  ))}
+                  {rows.map((row, index) => {
+                    // Rows aren't sorted, so they're in the same order as the lines
+                    const missing = missingDetails(index);
+                    return (
+                      <TableRow {...getRowProps({ row })} key={row.id}>
+                        {row.cells.map((cell) => (
+                          <TableCell key={cell.id}>
+                            {cell.value}
+                            {cell.info.header === 'item' && missing.length > 0 && (
+                              <div className={styles.itemError}>
+                                {t('itemMissingDetails', 'Missing: {{details}}', { details: missing.join(', ') })}
+                              </div>
+                            )}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </TableContainer>

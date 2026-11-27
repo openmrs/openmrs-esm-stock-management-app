@@ -12,7 +12,8 @@ import {
   TableRow,
   Tile,
 } from '@carbon/react';
-import { formatDate, parseDate, usePagination } from '@openmrs/esm-framework';
+import { formatDate, usePagination } from '@openmrs/esm-framework';
+import { parseStockExpiryDate } from '../../expiry-date.utils';
 import { type StockOperationItemDTO } from '../../../core/api/types/stockOperation/StockOperationItemDTO';
 import styles from './stock-items-table.scss';
 
@@ -63,7 +64,7 @@ const StockItemsTable: React.FC<Props> = ({ items }) => {
       results.map((item, index) => ({
         id: index,
         ...item,
-        expiration: item.expiration ? formatDate(parseDate(`${item.expiration}`)) : '--',
+        expiration: item.expiration ? formatDate(parseStockExpiryDate(item.expiration)) : '--',
       })),
     [results],
   );

@@ -9,10 +9,11 @@ import {
   type Workspace2DefinitionProps,
 } from '@openmrs/esm-framework';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { type FieldError, FormProvider, useForm } from 'react-hook-form';
+import { FormProvider, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { type ConfigObject } from '../../config-schema';
 import { today } from '../../constants';
+import { parseStockExpiryDate } from '../expiry-date.utils';
 import { type StockOperationDTO } from '../../core/api/types/stockOperation/StockOperationDTO';
 import {
   operationFromString,
@@ -97,7 +98,7 @@ const StockOperationForm: React.FC<Workspace2DefinitionProps<StockOperationFormP
       stockOperationItems:
         stockOperation?.stockOperationItems?.map((item) =>
           pick(
-            { ...item, expiration: item.expiration ? parseDate(String(item.expiration)) : undefined },
+            { ...item, expiration: item.expiration ? parseStockExpiryDate(String(item.expiration)) : undefined },
             stockOperationItemFormSchema.keyof().options,
           ),
         ) ?? [],
@@ -113,7 +114,7 @@ const StockOperationForm: React.FC<Workspace2DefinitionProps<StockOperationFormP
           stockOperationItems: (_stockOperation?.stockOperationItems && _stockOperation.stockOperationItems.length > 0
             ? _stockOperation.stockOperationItems.map((item) =>
                 pick(
-                  { ...item, expiration: item?.expiration ? parseDate(String(item.expiration)) : undefined },
+                  { ...item, expiration: item?.expiration ? parseStockExpiryDate(String(item.expiration)) : undefined },
                   stockOperationItemFormSchema.keyof().options,
                 ),
               )
@@ -134,6 +135,7 @@ const StockOperationForm: React.FC<Workspace2DefinitionProps<StockOperationFormP
       setItemFormProps({
         stockOperationType,
         stockOperationItem,
+        sourcePartyUuid: form.getValues('sourceUuid'),
         onSave: (data) => {
           const items = (form.getValues('stockOperationItems') ?? []) as BaseStockOperationItemFormData[];
           const index = items.findIndex((i) => i.uuid === data.uuid);
@@ -142,9 +144,11 @@ const StockOperationForm: React.FC<Workspace2DefinitionProps<StockOperationFormP
           } else {
             items[index] = data;
           }
+          // Revalidate so a line's error and marker go once it's fixed
           form.setValue(
             'stockOperationItems',
             items as [BaseStockOperationItemFormData, ...BaseStockOperationItemFormData[]],
+            { shouldValidate: true },
           );
           setRenderItemForm(false);
           setItemFormProps(undefined);
@@ -221,14 +225,8 @@ const StockOperationForm: React.FC<Workspace2DefinitionProps<StockOperationFormP
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   useEffect(() => {
-    // Display fields errors for stock operation items and operation type uuid
-    Object.entries(form.formState.errors ?? {}).forEach(([key, val]) => {
-      if (['stockOperationItems', 'operationTypeUuid'].includes(key)) {
-        showSnackbar({ kind: 'error', title: key, subtitle: (val as FieldError)?.message });
-      }
-    });
-
-    // Navigate to step where the error is
+    // Go to the step with the error, which shows it on the field. The items step shows the errors of
+    // its lines, and the last step shows an operation type error.
     const fieldSteps = [
       [
         'responsiblePersonUuid',

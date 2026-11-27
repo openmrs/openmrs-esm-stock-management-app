@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { Button, Column, InlineLoading, RadioButton, RadioButtonGroup, Stack } from '@carbon/react';
+import { Button, Column, InlineLoading, InlineNotification, RadioButton, RadioButtonGroup, Stack } from '@carbon/react';
 import { ArrowLeft, ArrowRight, Departure, ListChecked, Save, SendFilled } from '@carbon/react/icons';
 import { useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
@@ -9,6 +9,7 @@ import { extractErrorMessagesFromResponse } from '../../../constants';
 import { useHandleMutate } from '../../../utils';
 import { OperationType, type StockOperationType } from '../../../core/api/types/stockOperation/StockOperationType';
 import { otherUser } from '../../../core/utils/utils';
+import { stockExpiryDateForApi } from '../../expiry-date.utils';
 import { launchStockOperationsModal } from '../../stock-operation.utils';
 import { type StockOperationDTO } from '../../../core/api/types/stockOperation/StockOperationDTO';
 import { type StockOperationItemDTO } from '../../../core/api/types/stockOperation/StockOperationItemDTO';
@@ -89,6 +90,7 @@ const StockOperationSubmissionFormStep: React.FC<StockOperationSubmissionFormSte
           stockOperationItems: [
             ...formData.stockOperationItems.map((item) => ({
               ...item,
+              expiration: item.expiration ? stockExpiryDateForApi(item.expiration) : item.expiration,
               uuid:
                 item.uuid.startsWith('new-item-') || (!stockOperation && isStockIssueOperation) ? undefined : item.uuid, // Remove uuid for newly inserted items and stock issue items derived from requisition to avoid foreign key constraint lookup error
             })),
@@ -157,6 +159,18 @@ const StockOperationSubmissionFormStep: React.FC<StockOperationSubmissionFormSte
             : t('submitAndComplete', 'Submit/Complete')}
         </h4>
       </div>
+      {form.formState.errors.operationTypeUuid && (
+        <Column>
+          <InlineNotification
+            hideCloseButton
+            kind="error"
+            lowContrast
+            role="alert"
+            subtitle={form.formState.errors.operationTypeUuid.message}
+            title={t('operationTypeError', "This operation's type isn't valid")}
+          />
+        </Column>
+      )}
 
       <Column>
         <RadioButtonGroup

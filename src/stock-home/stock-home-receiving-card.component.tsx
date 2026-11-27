@@ -1,22 +1,44 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button } from '@carbon/react';
+import { ActionableNotification, Button } from '@carbon/react';
 import { Delivery } from '@carbon/react/icons';
-import { showModal } from '@openmrs/esm-framework';
+import { restBaseUrl, showModal } from '@openmrs/esm-framework';
 import { ResourceRepresentation } from '../core/api/api';
 import { useStockReceiving } from './stock-home-receiving.resource';
+import StockOperationStatusTag from '../stock-operations/stock-operation-status-tag/stock-operation-status-tag.component';
 import styles from './stock-home-detail-card.scss';
+import { useHandleMutate } from '../utils';
 
 const StockHomeReceivingCard = () => {
   const { t } = useTranslation();
 
-  const { items, isLoading } = useStockReceiving({
+  const handleMutate = useHandleMutate();
+  const { items, isLoading, error } = useStockReceiving({
     v: ResourceRepresentation.Full,
     totalCount: true,
   });
 
   if (isLoading) {
     return null;
+  }
+
+  // Checked before the data, which SWR keeps from an earlier load when a reload fails.
+  if (error) {
+    return (
+      <ActionableNotification
+        actionButtonLabel={t('tryAgain', 'Try again')}
+        closeOnEscape={false}
+        hasFocus={false}
+        hideCloseButton
+        inline
+        kind="error"
+        lowContrast
+        // The trailing "?" keeps the retry to the operations list
+        onActionButtonClick={() => handleMutate(`${restBaseUrl}/stockmanagement/stockoperation?`)}
+        role="alert"
+        title={t('receivedStockLoadError', "Couldn't load received stock")}
+      />
+    );
   }
 
   if (items?.length === 0) {
@@ -40,9 +62,12 @@ const StockHomeReceivingCard = () => {
               <Delivery size={40} color={'#0F62FE'} />
             </div>
             <div className={styles.cardText}>
-              <p>
-                {item?.status} · {item?.sourceName} · {item?.destinationName}
-              </p>
+              <div className={styles.statusLine}>
+                <StockOperationStatusTag status={item?.status} />
+                <span>
+                  {item?.sourceName} · {item?.destinationName}
+                </span>
+              </div>
               <p>
                 <strong>{stock?.stockItemName}</strong> {stock?.stockItemPackagingUOMName}, {stock?.quantity}
               </p>

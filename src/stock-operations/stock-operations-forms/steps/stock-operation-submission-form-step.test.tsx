@@ -1,5 +1,5 @@
 import React from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { FormProvider, useForm } from 'react-hook-form';
@@ -23,7 +23,7 @@ vi.mock('../../../utils', () => ({ useHandleMutate: () => vi.fn() }));
 
 const schema = z.object({
   responsiblePersonUuid: z.string().min(1),
-  stockOperationItems: z.array(z.object({ uuid: z.string() })),
+  stockOperationItems: z.array(z.object({ uuid: z.string(), expiration: z.date().optional() })),
 });
 
 function Operation({
@@ -33,6 +33,7 @@ function Operation({
   status = 'NEW',
   permission = { canEdit: true },
   unsaved = false,
+  items = [],
 }: {
   type: string;
   approval: boolean;
@@ -40,9 +41,10 @@ function Operation({
   status?: StockOperationDTO['status'];
   permission?: Partial<RecordPermission> | null;
   unsaved?: boolean;
+  items?: Array<{ uuid: string; expiration?: Date }>;
 }) {
   const form = useForm({
-    defaultValues: { responsiblePersonUuid: valid ? 'responsible-person' : '', stockOperationItems: [] },
+    defaultValues: { responsiblePersonUuid: valid ? 'responsible-person' : '', stockOperationItems: items },
     resolver: zodResolver(schema),
   });
   return (
@@ -143,4 +145,41 @@ describe('editing by permission', () => {
       expect(launchStockOperationsModal).toHaveBeenCalledWith('Submit', false, { ...saved, status: 'SUBMITTED' }),
     );
   });
+});
+
+describe('batch expiry on save', () => {
+  const originalTimeZone = process.env.TZ;
+
+  afterEach(() => {
+    if (originalTimeZone === undefined) {
+      delete process.env.TZ;
+    } else {
+      process.env.TZ = originalTimeZone;
+    }
+  });
+
+  it.each(['UTC', 'Asia/Karachi', 'America/New_York', 'America/Los_Angeles', 'Pacific/Auckland'])(
+    'sends the selected expiry as YYYY-MM-DD in %s',
+    async (timeZone) => {
+      process.env.TZ = timeZone;
+      vi.mocked(updateStockOperation).mockResolvedValue({ data: { uuid: 'saved-operation' } } as never);
+      render(
+        <Operation
+          type="receipt"
+          approval={false}
+          valid
+          items={[{ uuid: 'new-item-1', expiration: new Date(2027, 11, 31) }]}
+        />,
+      );
+      await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+      await waitFor(() =>
+        expect(updateStockOperation).toHaveBeenCalledWith(
+          expect.anything(),
+          expect.objectContaining({
+            stockOperationItems: [expect.objectContaining({ expiration: '2027-12-31' })],
+          }),
+        ),
+      );
+    },
+  );
 });
