@@ -159,14 +159,14 @@ const StockOperationSubmissionFormStep: React.FC<StockOperationSubmissionFormSte
             : t('submitAndComplete', 'Submit/Complete')}
         </h4>
       </div>
-      {form.formState.errors.operationTypeUuid && (
+      {form.formState.errors.operationType && (
         <Column>
           <InlineNotification
             hideCloseButton
             kind="error"
             lowContrast
             role="alert"
-            subtitle={form.formState.errors.operationTypeUuid.message}
+            subtitle={form.formState.errors.operationType.message}
             title={t('operationTypeError', "This operation's type isn't valid")}
           />
         </Column>

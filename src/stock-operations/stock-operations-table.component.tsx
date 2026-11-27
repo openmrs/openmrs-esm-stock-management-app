@@ -90,7 +90,7 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
     operationDateMax: selectedToDate?.toISOString(),
     status: selectedStatus.join(','),
     sourceTypeUuid: selectedSources.join(','),
-    operationTypeUuid: selectedOperations.join(','),
+    operationType: selectedOperations.join(','),
     q: searchString || undefined,
   });
 

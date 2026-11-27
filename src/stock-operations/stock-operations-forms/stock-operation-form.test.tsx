@@ -2,12 +2,12 @@ import React from 'react';
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { showSnackbar, useConfig, useSession } from '@openmrs/esm-framework';
+import { type FetchResponse, showSnackbar, useConfig, useSession } from '@openmrs/esm-framework';
 import { mockWorkspace2Props, receiptOperationTypeMock, stockIssueOperationtypeMock } from '@mocks';
 import { type Party } from '../../core/api/types/Party';
 import { type StockOperationDTO } from '../../core/api/types/stockOperation/StockOperationDTO';
 import { type StockOperationType } from '../../core/api/types/stockOperation/StockOperationType';
-import { useStockOperationAndItems } from '../stock-operations.resource';
+import { updateStockOperation, useStockOperationAndItems } from '../stock-operations.resource';
 import useParties from './hooks/useParties';
 import StockOperationForm from './stock-operation-form.component';
 
@@ -30,6 +30,7 @@ vi.mock('../stock-operations.resource', () => ({
   useStockOperations: vi.fn().mockReturnValue({ items: { results: [] }, isLoading: false, error: null }),
   useStockOperation: vi.fn().mockReturnValue({ items: undefined, isLoading: false, error: null }),
   useStockOperationAndItems: vi.fn(),
+  updateStockOperation: vi.fn(),
 }));
 
 vi.mock('./hooks/useParties', () => ({
@@ -70,7 +71,6 @@ const requisition = {
 
 const savedIssue = {
   uuid: 'issue-uuid',
-  operationTypeUuid: stockIssueOperationtypeMock.uuid,
   operationType: 'stockissue',
   status: 'NEW',
   sourceUuid: 'issue-source-uuid',
@@ -298,12 +298,54 @@ describe('StockOperationForm editing a saved receipt', () => {
     }
   });
 
+  it('saves the operation type code when the type response has no UUID', async () => {
+    const user = userEvent.setup();
+    vi.mocked(updateStockOperation).mockResolvedValue({
+      data: { uuid: 'receipt-uuid' },
+    } as FetchResponse<StockOperationDTO>);
+    const receipt = {
+      uuid: 'receipt-uuid',
+      operationType: 'receipt',
+      status: 'NEW',
+      permission: { canEdit: true },
+      operationDate: new Date('2026-01-01T12:00:00Z'),
+      sourceUuid: 'issue-source-uuid',
+      destinationUuid: 'issue-destination-uuid',
+      responsiblePersonUuid: 'receiver-person-uuid',
+      stockOperationItems: [
+        {
+          uuid: 'receipt-line',
+          stockItemUuid: 'item-uuid',
+          stockItemPackagingUOMUuid: 'uom-uuid',
+          batchNo: 'BATCH-001',
+          expiration: new Date('2027-12-31T00:00:00Z'),
+          quantity: 10,
+        },
+      ],
+    } as StockOperationDTO;
+
+    render(
+      <StockOperationForm
+        {...mockWorkspace2Props({
+          stockOperationType: receiptOperationTypeMock as StockOperationType,
+          stockOperation: receipt,
+        })}
+      />,
+    );
+    await user.click(screen.getByText('Submit/Complete'));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() =>
+      expect(updateStockOperation).toHaveBeenCalledWith(receipt, expect.objectContaining({ operationType: 'receipt' })),
+    );
+    expect(vi.mocked(updateStockOperation).mock.lastCall[1]).not.toHaveProperty('operationTypeUuid');
+  });
+
   it('keeps the saved batch expiry date when the browser is behind the server', async () => {
     process.env.TZ = 'America/New_York';
     const user = userEvent.setup();
     const savedReceipt = {
       uuid: 'receipt-uuid',
-      operationTypeUuid: receiptOperationTypeMock.uuid,
       operationType: 'receipt',
       status: 'NEW',
       sourceUuid: 'issue-source-uuid',

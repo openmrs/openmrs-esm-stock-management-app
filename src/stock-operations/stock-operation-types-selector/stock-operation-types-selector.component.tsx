@@ -58,7 +58,7 @@ const StockOperationTypesSelector = () => {
         .sort((a, b) => a.name.localeCompare(b.name))
         .map((operation) => (
           <OverflowMenuItem
-            key={operation.uuid}
+            key={operation.operationType}
             itemText={operation.name}
             onClick={() => {
               handleSelect(operation);

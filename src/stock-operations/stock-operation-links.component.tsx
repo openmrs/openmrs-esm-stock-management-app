@@ -32,7 +32,7 @@ const StockOperationLinks: React.FC<Props> = ({ stockOperation, stockOperationTy
           <h6 className={styles.relatedTransactionHeader}>Related Transactions:</h6>
           {operationLinks.map(
             (item) =>
-              (stockOperation.uuid === item?.parentUuid || stockOperationType?.uuid === item?.parentUuid) && (
+              stockOperation.uuid === item?.parentUuid && (
                 <React.Fragment key={item.uuid}>
                   <span>{item?.childOperationTypeName}</span>
                   <span className={item?.childVoided ? 'voided' : ''}>
@@ -54,7 +54,7 @@ const StockOperationLinks: React.FC<Props> = ({ stockOperation, stockOperationTy
           <span> </span>
           {operationLinks.map(
             (item) =>
-              (stockOperation.uuid === item?.childUuid || stockOperationType.uuid === item?.childUuid) && (
+              stockOperation.uuid === item?.childUuid && (
                 <React.Fragment key={item.uuid}>
                   <span>{item?.parentOperationTypeName}</span>
                   <span className={item?.parentVoided ? 'voided' : ''}>

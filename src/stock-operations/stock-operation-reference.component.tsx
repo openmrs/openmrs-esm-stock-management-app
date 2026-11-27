@@ -21,7 +21,7 @@ const StockOperationReference = ({ operationNumber, operationUuid }: StockOperat
   } = useStockOperationAndItems(operationUuid ?? null);
 
   const handleEdit = useCallback(() => {
-    const operationType = types.results?.find((op) => op?.uuid === stockOperation?.operationTypeUuid);
+    const operationType = types.results?.find((op) => op?.operationType === stockOperation?.operationType);
     if (!operationType) {
       return;
     }

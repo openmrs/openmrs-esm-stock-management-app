@@ -32,7 +32,6 @@ export interface StockOperationDTO {
   status: StockOperationStatus;
   returnReason: string | null | undefined;
   rejectionReason: string | null | undefined;
-  operationTypeUuid: string | null | undefined;
   operationType: string | null | undefined;
   operationTypeName: string | null | undefined;
   responsiblePerson: number;

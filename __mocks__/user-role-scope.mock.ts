@@ -17,9 +17,6 @@ const auditFields: Omit<BaseOpenmrsData, 'uuid'> = {
 export const roleScopeOperationTypes = operationTypesMock.map(
   (operation): StockOperationType => ({
     ...operation,
-    ...auditFields,
-    hasRecipient: false,
-    recipientRequired: false,
     sourceType: operation.hasSource ? 'Location' : null,
     destinationType: operation.hasDestination ? 'Location' : null,
     stockOperationTypeLocationScopes: [],
@@ -38,8 +35,8 @@ export const userRoleScopeMock: UserRoleScope = {
   enabled: true,
   operationTypes: roleScopeOperationTypes.map((operation) => ({
     ...auditFields,
-    uuid: `scope-operation-${operation.uuid}`,
-    operationTypeUuid: operation.uuid,
+    uuid: `scope-operation-${operation.operationType}`,
+    operationType: operation.operationType,
     operationTypeName: operation.name,
   })),
   locations: [

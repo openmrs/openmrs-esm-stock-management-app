@@ -14,7 +14,6 @@ vi.mock('../../../stock-items/stock-items.resource', () => ({
 
 const operationType = (operationType: string, allowExpiredBatchNumbers: boolean) =>
   ({
-    uuid: `${operationType}-uuid`,
     name: operationType,
     operationType,
     allowExpiredBatchNumbers,

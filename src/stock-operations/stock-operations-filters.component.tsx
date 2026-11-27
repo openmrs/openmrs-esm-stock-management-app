@@ -42,7 +42,7 @@ const StockOperationsFilters: React.FC<StockOperationFiltersProps> = ({ conceptU
           if (response.data?.results.length) {
             setDataItems(
               response.data.results.map((result) => ({
-                uuid: result.uuid,
+                uuid: result.operationType,
                 display: result.name,
               })),
             );

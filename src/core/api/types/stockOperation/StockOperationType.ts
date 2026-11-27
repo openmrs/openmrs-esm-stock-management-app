@@ -1,26 +1,21 @@
-import { type BaseOpenmrsData } from '../BaseOpenmrsData';
 import { type LocationType } from './LocationType';
 
-export interface StockOperationType extends BaseOpenmrsData {
+export interface StockOperationType {
   name: string;
-  description: string;
   operationType: string;
   hasSource: boolean;
   sourceType: LocationType;
   hasDestination: boolean;
   destinationType: LocationType;
-  hasRecipient: boolean;
-  recipientRequired: boolean;
   availableWhenReserved: boolean;
   allowExpiredBatchNumbers: boolean;
   stockOperationTypeLocationScopes: StockOperationTypeLocationScope[];
 }
 
 export interface StockOperationTypeLocationScope {
-  uuid: string;
   locationTag: string;
-  isSource: string;
-  isDestination: string;
+  isSource: boolean;
+  isDestination: boolean;
 }
 
 export enum OperationType {
