@@ -6,8 +6,15 @@ import ExpiredStockModal from './expired-stock.modal';
 const expiredStock = [{ drugName: 'Paracetamol', batchNo: 'B1', quantity: 5, expiration: '2026-01-15T12:00:00.000Z' }];
 
 describe('ExpiredStockModal', () => {
+  const originalTimeZone = process.env.TZ;
+
   afterEach(() => {
     vi.unstubAllGlobals();
+    if (originalTimeZone === undefined) {
+      delete process.env.TZ;
+    } else {
+      process.env.TZ = originalTimeZone;
+    }
   });
 
   it.each([
@@ -19,6 +26,22 @@ describe('ExpiredStockModal', () => {
     render(<ExpiredStockModal closeModal={vi.fn()} expiredStock={expiredStock} />);
 
     expect(screen.getByRole('cell', { name: expected })).toBeInTheDocument();
+  });
+
+  it('shows the server calendar expiry date when the browser is behind the server', () => {
+    process.env.TZ = 'America/New_York';
+    vi.stubGlobal('i18next', { language: 'en' });
+
+    render(
+      <ExpiredStockModal
+        closeModal={vi.fn()}
+        expiredStock={[
+          { drugName: 'Paracetamol', batchNo: 'B1', quantity: 5, expiration: '2026-01-15T00:00:00.000+0000' },
+        ]}
+      />,
+    );
+
+    expect(screen.getByRole('cell', { name: /15.*Jan.*2026|Jan.*15.*2026/i })).toBeInTheDocument();
   });
 
   it('names drug and non-drug items under an Item column', () => {

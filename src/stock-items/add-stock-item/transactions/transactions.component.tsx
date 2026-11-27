@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import DataList from '../../../core/components/table/table.component';
 import { formatDisplayDate } from '../../../core/utils/datetimeUtils';
+import { parseStockExpiryDate } from '../../../stock-operations/expiry-date.utils';
 import { type StockItemTransactionDTO } from '../../../core/api/types/stockItem/StockItemTransaction';
 import { type StockItemInventoryFilter } from '../../stock-items.resource';
 import TransactionsPrintAction from './printout/transactions-print-action.component';
@@ -88,7 +89,9 @@ const Transactions: React.FC<TransactionsProps> = ({ stockItemUuid }) => {
         quantity: `${stockItemTransaction?.quantity?.toLocaleString()} ${stockItemTransaction?.packagingUomName ?? ''}`,
         batch: stockItemTransaction.stockBatchNo
           ? `${stockItemTransaction.stockBatchNo}${
-              stockItemTransaction.expiration ? ` (${formatDisplayDate(stockItemTransaction.expiration)})` : ''
+              stockItemTransaction.expiration
+                ? ` (${formatDisplayDate(parseStockExpiryDate(stockItemTransaction.expiration))})`
+                : ''
             }`
           : '',
         reference: (

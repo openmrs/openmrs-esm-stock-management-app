@@ -123,15 +123,3 @@ export const StockOperationTypeIsStockIssue = (operationType: OperationType) => 
 export const StockOperationPrintHasItemCosts = (operationType: OperationType) => {
   return StockOperationTypeIsStockIssue(operationType) || StockOperationTypeIsTransferOut(operationType);
 };
-
-// Operations where the source is a location the stock is taken from or adjusted at,
-// so "available" should be scoped to it. For a Receipt the source is a supplier.
-export const StockOperationTypeTakesStockFromSource = (operationType?: OperationType) => {
-  return (
-    operationType === OperationType.TRANSFER_OUT_OPERATION_TYPE ||
-    operationType === OperationType.STOCK_ISSUE_OPERATION_TYPE ||
-    operationType === OperationType.DISPOSED_OPERATION_TYPE ||
-    operationType === OperationType.ADJUSTMENT_OPERATION_TYPE ||
-    operationType === OperationType.STOCK_TAKE_OPERATION_TYPE
-  );
-};

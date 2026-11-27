@@ -12,6 +12,7 @@ import { ArrowLeft } from '@carbon/react/icons';
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import React, { useEffect, useState } from 'react';
 import { formatDisplayDate } from '../../../../core/utils/datetimeUtils';
+import { parseStockExpiryDate } from '../../../../stock-operations/expiry-date.utils';
 import PrintableStockcardTransactionHeader from './printable-stockcard-transaction-header.component';
 import PrintableTransactionFooter from './printable-transaction-footer.component';
 import styles from './printable-transaction.scss';
@@ -100,7 +101,9 @@ const TransactionsStockcardPrintout: React.FC<Props> = ({ columns, items, title 
         quantity: `${stockItemTransaction?.quantity?.toLocaleString()} ${stockItemTransaction?.packagingUomName ?? ''}`,
         batch: stockItemTransaction.stockBatchNo
           ? `${stockItemTransaction.stockBatchNo}${
-              stockItemTransaction.expiration ? ` (${formatDisplayDate(stockItemTransaction.expiration)})` : ''
+              stockItemTransaction.expiration
+                ? ` (${formatDisplayDate(parseStockExpiryDate(stockItemTransaction.expiration))})`
+                : ''
             }`
           : '',
         out:

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ResourceRepresentation } from '../../../core/api/api';
 import { formatDisplayDate } from '../../../core/utils/datetimeUtils';
+import { parseStockExpiryDate } from '../../../stock-operations/expiry-date.utils';
 import { DataTableSkeleton } from '@carbon/react';
 import { useStockItemQuantitiesHook } from './quantities.resource';
 import DataList from '../../../core/components/table/table.component';
@@ -45,7 +46,7 @@ const StockQuantities: React.FC<StockQuantitiesProps> = ({ stockItemUuid }) => {
       id: `${row.partyUuid}${row.stockBatchUuid}${index}`,
       key: `${row.partyUuid}${row.stockBatchUuid}${index}`,
       uuid: `${row.partyUuid}${row.stockBatchUuid}${index}`,
-      expires: formatDisplayDate(row?.expiration),
+      expires: row?.expiration ? formatDisplayDate(parseStockExpiryDate(row.expiration)) : '',
       location: row?.partyName,
       quantity: row?.quantity?.toLocaleString() ?? '',
       batch: row.batchNumber ?? '',

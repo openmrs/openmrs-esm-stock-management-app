@@ -25,7 +25,7 @@ describe('StockAvailability', () => {
   it('shows the location total as one row in one unit, and asks the backend to group it', () => {
     mockInventory([{ quantity: 5.35, quantityUoM: 'Box' }]);
 
-    render(<StockAvailability stockItemUuid="item-1" sourceUuid="party-1" />);
+    render(<StockAvailability stockItemUuid="item-1" partyUuid="party-1" />);
 
     expect(screen.getByText(/Available: 5.35 Box/)).toBeInTheDocument();
 
@@ -38,7 +38,7 @@ describe('StockAvailability', () => {
     expect(filter.includeBatchNo).toBeUndefined();
   });
 
-  it('falls back to a single item-wide total when there is no source', () => {
+  it('falls back to a single item-wide total when there is no party', () => {
     mockInventory([{ quantity: 12, quantityUoM: 'Box' }]);
 
     render(<StockAvailability stockItemUuid="item-1" />);
@@ -50,7 +50,7 @@ describe('StockAvailability', () => {
   it('shows Out of Stock when there are no rows', () => {
     mockInventory([]);
 
-    render(<StockAvailability stockItemUuid="item-1" sourceUuid="party-1" />);
+    render(<StockAvailability stockItemUuid="item-1" partyUuid="party-1" />);
 
     expect(screen.getByText(/Out of Stock/)).toBeInTheDocument();
   });
