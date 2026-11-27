@@ -29,7 +29,6 @@ export const initialStockOperationValue = () => {
     operationOrder: 0,
     operationType: '',
     operationTypeName: '',
-    operationTypeUuid: '',
     permission: undefined,
     reasonName: '',
     reasonUuid: '',

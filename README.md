@@ -70,6 +70,8 @@ The OpenMRS ESM Stock Management app is designed to help healthcare facilities m
 
 ## Installation
 
+This version requires the Stock Management 4.0 API introduced by [backend PR #86](https://github.com/openmrs/openmrs-module-stockmanagement/pull/86). It identifies operation types by code (`operationType`), including in stock operations, filters and user role scopes. Deploy it with the matching backend update.
+
 1. Install the [stock management backend module](https://github.com/openmrs/openmrs-module-stockmanagement) on your OpenMRS server
 2. Add the frontend module to your distribution by following the [O3 configuration, setup and deployment guide](https://openmrs.atlassian.net/wiki/x/YgabAQ)
 3. Configure initial settings:

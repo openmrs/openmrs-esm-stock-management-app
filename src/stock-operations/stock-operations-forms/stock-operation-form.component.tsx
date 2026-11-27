@@ -92,7 +92,7 @@ const StockOperationForm: React.FC<Workspace2DefinitionProps<StockOperationFormP
       operationDate: stockOperation?.operationDate ? parseDate(String(stockOperation.operationDate)) : today(),
       remarks: stockOperation?.remarks ?? '',
 
-      operationTypeUuid: stockOperation?.operationTypeUuid ?? stockOperationType?.uuid,
+      operationType: stockOperation?.operationType ?? stockOperationType?.operationType,
       reasonUuid: stockOperation?.reasonUuid ?? '',
       responsiblePersonOther: stockOperation?.responsiblePersonOther ?? '',
       stockOperationItems:
@@ -110,7 +110,7 @@ const StockOperationForm: React.FC<Workspace2DefinitionProps<StockOperationFormP
       ? {
           sourceUuid: _stockOperation?.destinationUuid,
           destinationUuid: _stockOperation?.sourceUuid,
-          operationTypeUuid: stockOperationType?.uuid,
+          operationType: stockOperationType?.operationType,
           stockOperationItems: (_stockOperation?.stockOperationItems && _stockOperation.stockOperationItems.length > 0
             ? _stockOperation.stockOperationItems.map((item) =>
                 pick(

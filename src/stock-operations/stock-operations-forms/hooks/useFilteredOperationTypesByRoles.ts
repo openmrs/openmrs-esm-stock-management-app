@@ -19,13 +19,13 @@ const useFilteredOperationTypesByRoles = (privilege?: string) => {
   } = useStockManagementSession();
 
   const operationTypes = useMemo(() => {
-    const applicableOperationTypeUuids = new Set(
+    const applicableOperationTypes = new Set(
       privilegeScopes
         ?.filter((scope) => !privilege || scope.privilege === privilege)
-        .map((scope) => scope.operationTypeUuid),
+        .map((scope) => scope.operationType),
     );
 
-    return results?.filter((p) => applicableOperationTypeUuids.has(p.uuid)) || [];
+    return results?.filter((p) => applicableOperationTypes.has(p.operationType)) || [];
   }, [results, privilegeScopes, privilege]);
 
   const isLoading = isStockOperationTypesLoading || isPrivilegeScopesLoading;

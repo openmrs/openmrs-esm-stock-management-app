@@ -1,6 +1,6 @@
 import React from 'react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useConfig } from '@openmrs/esm-framework';
 import { StockFilters } from '../constants';
@@ -71,6 +71,20 @@ describe('StockOperations', () => {
       .find((props) => props.filterName === StockFilters.SOURCES);
 
     expect(sourcesFilterProps?.conceptUuid).toBe('stock-source-type-uuid');
+  });
+
+  it('passes selected operation codes to the server filter', () => {
+    render(<StockOperations />);
+    const filter = mockStockOperationsFilters.mock.calls
+      .map(([props]) => props)
+      .find((props) => props.filterName === StockFilters.OPERATION);
+
+    act(() => filter.onFilterChange(['receipt', 'stockissue'], StockFilters.OPERATION));
+
+    expect(mockUseStockOperationPages).toHaveBeenLastCalledWith(
+      expect.objectContaining({ operationType: 'receipt,stockissue' }),
+    );
+    expect(mockUseStockOperationPages.mock.lastCall[0]).not.toHaveProperty('operationTypeUuid');
   });
 
   it('shows the operation of the expanded row after sorting by status', async () => {

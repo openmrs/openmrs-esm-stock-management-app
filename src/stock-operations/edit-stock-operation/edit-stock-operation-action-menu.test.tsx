@@ -25,11 +25,11 @@ const mockUseStockOperationAndItems = vi.mocked(useStockOperationAndItems);
 const mockUseFilteredOperationTypesByRoles = vi.mocked(useFilteredOperationTypesByRoles);
 const mockLaunchWorkspace = vi.mocked(launchStockoperationAddOrEditWorkSpace);
 
-const receiptType = { uuid: 'receipt-type-uuid', name: 'Receipt' } as StockOperationType;
+const receiptType = { operationType: 'receipt', name: 'Receipt' } as StockOperationType;
 const stockOperation = {
   uuid: 'operation-uuid',
   operationNumber: 'RCPT-0001',
-  operationTypeUuid: 'receipt-type-uuid',
+  operationType: 'receipt',
 } as StockOperationDTO;
 
 describe('EditStockOperationActionMenu', () => {
@@ -59,5 +59,19 @@ describe('EditStockOperationActionMenu', () => {
     render(<EditStockOperationActionMenu stockOperation={stockOperation} showIcon={false} showprops />);
 
     expect(screen.getByRole('button', { name: 'RCPT-0001' })).toBeInTheDocument();
+  });
+
+  it('opens Receipt when Adjustment is first and operation types have no UUIDs', async () => {
+    const adjustmentType = { operationType: 'adjustment', name: 'Adjustment' } as StockOperationType;
+    mockUseFilteredOperationTypesByRoles.mockReturnValue({
+      operationTypes: [adjustmentType, receiptType],
+      isLoading: false,
+      error: null,
+    });
+    render(<EditStockOperationActionMenu stockOperation={stockOperation} />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'RCPT-0001' }));
+
+    expect(mockLaunchWorkspace).toHaveBeenCalledWith(receiptType, stockOperation, undefined);
   });
 });

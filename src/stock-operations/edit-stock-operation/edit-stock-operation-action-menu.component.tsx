@@ -34,7 +34,7 @@ const EditStockOperationActionMenu: React.FC<EditStockOperationActionMenuProps> 
   } = useStockOperationAndItems(_stockOperation?.uuid);
 
   const activeOperationType = useMemo(
-    () => operationTypes?.find((op) => op?.uuid === fetchedStockOperation?.operationTypeUuid),
+    () => operationTypes?.find((op) => op?.operationType === fetchedStockOperation?.operationType),
     [operationTypes, fetchedStockOperation],
   );
 

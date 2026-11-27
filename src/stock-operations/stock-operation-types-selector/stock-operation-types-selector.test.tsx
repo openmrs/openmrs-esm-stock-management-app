@@ -20,14 +20,14 @@ describe('StockOperationTypesSelector', () => {
         data: url.includes('/stockmanagement/session')
           ? {
               privileges: [
-                { privilege: TASK_STOCKMANAGEMENT_STOCKOPERATIONS_MUTATE, operationTypeUuid: 'receipt-uuid' },
-                { privilege: TASK_STOCKMANAGEMENT_STOCKOPERATIONS_APPROVE, operationTypeUuid: 'disposal-uuid' },
+                { privilege: TASK_STOCKMANAGEMENT_STOCKOPERATIONS_MUTATE, operationType: 'receipt' },
+                { privilege: TASK_STOCKMANAGEMENT_STOCKOPERATIONS_APPROVE, operationType: 'disposed' },
               ],
             }
           : {
               results: [
-                { uuid: 'receipt-uuid', name: 'Receipt' },
-                { uuid: 'disposal-uuid', name: 'Disposal' },
+                { operationType: 'receipt', name: 'Receipt' },
+                { operationType: 'disposed', name: 'Disposal' },
               ],
             },
       } as FetchResponse),

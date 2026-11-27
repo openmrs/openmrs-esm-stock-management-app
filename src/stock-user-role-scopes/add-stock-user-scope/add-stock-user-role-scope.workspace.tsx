@@ -162,17 +162,17 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
   }, [model]);
 
   const onStockOperationTypeChanged = (event: React.ChangeEvent<HTMLInputElement>): void => {
-    const operationType = formModel?.operationTypes?.find((x) => x.operationTypeUuid === event?.target?.value);
+    const operationType = formModel?.operationTypes?.find((x) => x.operationType === event?.target?.value);
     if (operationType) {
       const newOperationTypes = [
-        ...formModel.operationTypes.filter((x) => x.operationTypeUuid !== operationType?.operationTypeUuid),
+        ...formModel.operationTypes.filter((x) => x.operationType !== operationType?.operationType),
       ];
       setFormModel({ ...formModel, operationTypes: newOperationTypes });
     } else {
-      const stockOperationType = stockOperations?.find((x) => x.uuid === event?.target?.value);
+      const stockOperationType = stockOperations?.find((x) => x.operationType === event?.target?.value);
       const operationType: UserRoleScopeOperationType = {
         operationTypeName: stockOperationType?.name,
-        operationTypeUuid: stockOperationType?.uuid,
+        operationType: stockOperationType?.operationType,
       } as unknown as UserRoleScopeOperationType;
       setFormModel({
         ...formModel,
@@ -240,7 +240,7 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
   };
 
   const isOperationChecked = (operationType: StockOperationType) => {
-    return formModel?.operationTypes?.filter((x) => x.operationTypeUuid === operationType.uuid)?.length > 0;
+    return formModel?.operationTypes?.filter((x) => x.operationType === operationType.operationType)?.length > 0;
   };
 
   // Each field's error, checked against the form as it is now, so an error goes once its field is fixed
@@ -270,7 +270,7 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
         role: 'select-role',
         activeFrom: 'date-picker-input-id-start',
         activeTo: 'date-picker-input-id-finish',
-        operationTypes: stockOperations?.[0]?.uuid,
+        operationTypes: stockOperations?.[0]?.operationType,
         locations: stockLocations?.[0] && `chk-loc-child-${stockLocations[0].id}`,
       };
       const firstInvalidField = invalidFields.find((field) => fieldIds[field]);
@@ -419,14 +419,14 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
               {stockOperations?.length > 0 &&
                 stockOperations.map((type) => {
                   return (
-                    <div className={styles.flexRow}>
+                    <div className={styles.flexRow} key={type.operationType}>
                       <Checkbox
                         checked={isOperationChecked(type)}
                         className={styles.checkbox}
-                        id={type.uuid}
+                        id={type.operationType}
                         labelText={type.name}
                         onChange={(event) => onStockOperationTypeChanged(event)}
-                        value={type.uuid}
+                        value={type.operationType}
                       />
                     </div>
                   );

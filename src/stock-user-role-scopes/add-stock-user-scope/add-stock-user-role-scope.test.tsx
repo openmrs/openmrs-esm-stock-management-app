@@ -23,7 +23,7 @@ vi.mock('../../utils', () => ({ useHandleMutate: vi.fn(() => vi.fn()) }));
 const stockRole = { uuid: 'stock-role-uuid', display: 'Inventory Clerk' };
 const otherRole = { uuid: 'other-role-uuid', display: 'Provider' };
 const jane = { uuid: 'user-uuid', display: 'Jane Doe', roles: [stockRole, otherRole] };
-const operationType = { uuid: 'operation-type-uuid', name: 'Receipt' };
+const operationType = { operationType: 'receipt', name: 'Receipt' };
 const location = { id: 'location-uuid', name: 'Main Store' };
 
 const savedScope = {
@@ -37,7 +37,7 @@ const savedScope = {
   permanent: false,
   activeFrom: '2020-01-15T00:00:00.000+0000',
   activeTo: '2020-02-20T00:00:00.000+0000',
-  operationTypes: [{ operationTypeUuid: operationType.uuid, operationTypeName: operationType.name }],
+  operationTypes: [{ operationType: operationType.operationType, operationTypeName: operationType.name }],
   locations: [{ locationUuid: location.id, locationName: location.name, enableDescendants: false }],
 } as unknown as UserRoleScope;
 
@@ -96,6 +96,32 @@ describe('AddStockUserRoleScope', () => {
   });
 
   describe('editing a saved scope', () => {
+    it('checks and saves only the selected operation codes without type UUIDs', async () => {
+      const user = userEvent.setup();
+      vi.mocked(useStockOperationTypes).mockReturnValue({
+        types: { results: [operationType, { operationType: 'disposed', name: 'Disposal' }] },
+        isLoading: false,
+      } as never);
+      renderForm(savedScope);
+
+      const receipt = screen.getByRole('checkbox', { name: 'Receipt' });
+      const disposal = screen.getByRole('checkbox', { name: 'Disposal' });
+      expect(receipt).toBeChecked();
+      expect(disposal).not.toBeChecked();
+
+      await user.click(receipt);
+      await user.click(disposal);
+      await user.click(screen.getByRole('button', { name: /save/i }));
+
+      await waitFor(() =>
+        expect(createOrUpdateUserRoleScope).toHaveBeenCalledWith(
+          expect.objectContaining({
+            operationTypes: [{ operationType: 'disposed', operationTypeName: 'Disposal' }],
+          }),
+        ),
+      );
+    });
+
     it('shows the saved user as read-only, even when they are not in the user search results', () => {
       vi.mocked(useSearchUser).mockReturnValue({ userList: [], setSearchString: vi.fn(), isLoading: false } as never);
       renderForm(savedScope);

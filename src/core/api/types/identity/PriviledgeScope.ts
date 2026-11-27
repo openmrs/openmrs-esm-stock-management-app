@@ -1,7 +1,7 @@
 export interface PrivilegeScope {
   privilege: string;
   locationUuid: string | null;
-  operationTypeUuid: string | null;
+  operationType: string | null;
   partyUuid: string | null;
   isPermanent: boolean;
   activeFrom: Date | null;

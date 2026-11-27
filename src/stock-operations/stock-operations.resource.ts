@@ -11,7 +11,7 @@ import { type StockItemInventory } from '../core/api/types/stockItem/StockItemIn
 
 export interface StockOperationFilter extends ResourceFilterCriteria {
   status?: string | null | undefined;
-  operationTypeUuid?: string | null | undefined;
+  operationType?: string | null | undefined;
   locationUuid?: string | null | undefined;
   isLocationOther?: boolean | null | undefined;
   stockItemUuid?: string | null | undefined;

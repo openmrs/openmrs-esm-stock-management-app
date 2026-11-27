@@ -11,9 +11,9 @@ import useFilteredOperationTypesByRoles from './useFilteredOperationTypesByRoles
 
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 
-const receipt = { uuid: 'receipt-type-uuid', name: 'Receipt' };
-const disposal = { uuid: 'disposal-type-uuid', name: 'Disposal' };
-const transferOut = { uuid: 'transfer-out-type-uuid', name: 'Transfer Out' };
+const receipt = { operationType: 'receipt', name: 'Receipt' };
+const disposal = { operationType: 'disposed', name: 'Disposal' };
+const transferOut = { operationType: 'transferout', name: 'Transfer Out' };
 
 const wrapper = ({ children }: { children: React.ReactNode }) => (
   <SWRConfig value={{ provider: () => new Map(), dedupingInterval: 0 }}>{children}</SWRConfig>
@@ -29,8 +29,8 @@ describe('useFilteredOperationTypesByRoles', () => {
         return Promise.resolve({
           data: {
             privileges: [
-              { privilege: 'Task: stockmanagement.stockoperations.mutate', operationTypeUuid: receipt.uuid },
-              { privilege: 'Task: stockmanagement.stockoperations.mutate', operationTypeUuid: disposal.uuid },
+              { privilege: 'Task: stockmanagement.stockoperations.mutate', operationType: receipt.operationType },
+              { privilege: 'Task: stockmanagement.stockoperations.mutate', operationType: disposal.operationType },
             ],
           },
         } as FetchResponse);
@@ -55,8 +55,8 @@ describe('useFilteredOperationTypesByRoles', () => {
       return Promise.resolve({
         data: {
           privileges: [
-            { privilege: TASK_STOCKMANAGEMENT_STOCKOPERATIONS_MUTATE, operationTypeUuid: receipt.uuid },
-            { privilege: TASK_STOCKMANAGEMENT_STOCKOPERATIONS_APPROVE, operationTypeUuid: disposal.uuid },
+            { privilege: TASK_STOCKMANAGEMENT_STOCKOPERATIONS_MUTATE, operationType: receipt.operationType },
+            { privilege: TASK_STOCKMANAGEMENT_STOCKOPERATIONS_APPROVE, operationType: disposal.operationType },
           ],
         },
       } as FetchResponse);
