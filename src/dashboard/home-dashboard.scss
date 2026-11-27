@@ -12,6 +12,13 @@
   margin: 0;
   margin-left: 16rem;
   background-color: colors.$gray-10;
+
+  min-width: 0;
+  overflow-x: clip;
+
+  > * {
+    min-width: 0;
+  }
 }
 
 .dashboardContainerTablet {
@@ -19,6 +26,7 @@
 
   // Prevent the dashboard from expanding to fit the width of its children
   min-width: 0;
+  overflow-x: clip;
 }
 
 .logoSection {

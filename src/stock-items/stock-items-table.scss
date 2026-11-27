@@ -68,7 +68,20 @@
 
 .toolbarContent {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
+  gap: layout.$spacing-03;
+  height: auto;
+  min-height: layout.$spacing-09;
+  transform: none;
+}
+
+.search {
+  flex: 1 1 12rem;
+  max-width: 24rem;
+  margin-right: auto;
+  block-size: layout.$spacing-09;
 }
 
 .filterContainer {
