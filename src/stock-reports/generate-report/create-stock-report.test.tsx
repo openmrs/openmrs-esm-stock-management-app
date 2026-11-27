@@ -6,8 +6,9 @@ import { showSnackbar, useConfig } from '@openmrs/esm-framework';
 import { mockWorkspace2Props } from '@mocks';
 import { createBatchJob } from '../../stock-batch/stock-batch.resource';
 import { useConcept, useStockTagLocations } from '../../stock-lookups/stock-lookups.resource';
+import { ReportParameter } from '../ReportType';
 import { useReportTypes } from '../stock-reports.resource';
-import CreateReport from './create-stock-report.workspace';
+import CreateReport, { type ReportModel } from './create-stock-report.workspace';
 
 vi.mock('../../stock-batch/stock-batch.resource', () => ({ createBatchJob: vi.fn() }));
 vi.mock('../../stock-lookups/stock-lookups.resource', () => ({
@@ -16,6 +17,8 @@ vi.mock('../../stock-lookups/stock-lookups.resource', () => ({
 }));
 vi.mock('../stock-reports.resource', () => ({ useReportTypes: vi.fn() }));
 vi.mock('../../utils', () => ({ useHandleMutate: vi.fn(() => vi.fn()) }));
+
+type User = ReturnType<typeof userEvent.setup>;
 
 const reportTypes = [
   {
@@ -35,13 +38,17 @@ const reportTypes = [
   },
 ];
 
-const renderForm = () => {
+const withReportTypes = (types: unknown) =>
+  vi.mocked(useReportTypes).mockReturnValue({ reportTypes: types, isLoading: false } as never);
+
+// Pass a model to open the form the way the Copy button does
+const renderForm = (model?: ReportModel) => {
   const props = mockWorkspace2Props({});
-  render(<CreateReport {...props} />);
+  render(<CreateReport {...props} {...(model ? { workspaceProps: { model } } : {})} />);
   return props;
 };
 
-const selectReport = async (user: ReturnType<typeof userEvent.setup>, name: string) => {
+const selectReport = async (user: User, name: string) => {
   await user.click(screen.getByRole('combobox', { name: 'Report name' }));
   await user.click(screen.getByRole('option', { name }));
   // The report's fields appear once the form has processed the selection
@@ -56,14 +63,24 @@ const typeDate = (label: string, value: string) => {
   return input;
 };
 
-const save = (user: ReturnType<typeof userEvent.setup>) => user.click(screen.getByRole('button', { name: /save/i }));
+const fillRequiredFields = async (user: User, reportName: string) => {
+  await selectReport(user, reportName);
+  await user.selectOptions(screen.getByRole('combobox', { name: 'Location' }), 'Main Store');
+  typeDate('Start date', '01/01/2026');
+  typeDate('End date', '31/01/2026');
+};
+
+const save = (user: User) => user.click(screen.getByRole('button', { name: /save/i }));
 
 const getParameters = () => vi.mocked(createBatchJob).mock.calls[0][0].parameters as string;
+
+// Dates are saved as the JSON form of a Date, the same way handleSave writes them
+const dateParam = (date: Date) => JSON.stringify(date).replaceAll('"', '');
 
 describe('CreateReport', () => {
   beforeEach(() => {
     vi.mocked(useConfig).mockReturnValue({ stockItemCategoryUUID: 'category-uuid' });
-    vi.mocked(useReportTypes).mockReturnValue({ reportTypes, isLoading: false } as never);
+    withReportTypes(reportTypes);
     vi.mocked(useConcept).mockReturnValue({ items: { answers: [] } } as never);
     vi.mocked(useStockTagLocations).mockReturnValue({
       stockLocations: [{ id: 'location-uuid', name: 'Main Store' }],
@@ -139,13 +156,6 @@ describe('CreateReport', () => {
   });
 
   describe('Limit', () => {
-    const fillRequiredFields = async (user: ReturnType<typeof userEvent.setup>, reportName: string) => {
-      await selectReport(user, reportName);
-      await user.selectOptions(screen.getByRole('combobox', { name: 'Location' }), 'Main Store');
-      typeDate('Start date', '01/01/2026');
-      typeDate('End date', '31/01/2026');
-    };
-
     it('starts empty and sends what is typed as a number', async () => {
       const user = userEvent.setup();
       renderForm();
@@ -186,6 +196,140 @@ describe('CreateReport', () => {
 
       await waitFor(() => expect(createBatchJob).toHaveBeenCalledTimes(1));
       expect(getParameters()).toContain('param.Limit.value=4\r\n');
+    });
+  });
+
+  describe('copying a report', () => {
+    const startDate = new Date(2026, 0, 1);
+    const endDate = new Date(2026, 0, 31);
+
+    it('saves the same parameters as the report it was copied from', async () => {
+      const user = userEvent.setup();
+      renderForm({
+        reportName: 'Stock Forecast Report',
+        reportSystemName: 'STOCK_FORECAST_REPORT',
+        locationUuid: 'location-uuid',
+        location: 'Main Store',
+        childLocations: false,
+        startDate,
+        endDate,
+        limit: 6,
+      });
+
+      expect(await screen.findByRole('combobox', { name: 'Location' })).toHaveValue('location-uuid');
+      await save(user);
+
+      await waitFor(() => expect(createBatchJob).toHaveBeenCalledTimes(1));
+      expect(vi.mocked(createBatchJob).mock.calls[0][0].description).toBe('Stock Forecast Report');
+      const parameters = getParameters();
+      expect(parameters).toContain('param.report=STOCK_FORECAST_REPORT');
+      expect(parameters).toContain(`param.${ReportParameter.Location}.value=location-uuid`);
+      expect(parameters).toContain(`param.${ReportParameter.Location}.value.desc=Main Store`);
+      expect(parameters).toContain(`param.${ReportParameter.StartDate}.value=${dateParam(startDate)}`);
+      expect(parameters).toContain(`param.${ReportParameter.StartDate}.value.desc=01-Jan-2026`);
+      expect(parameters).toContain(`param.${ReportParameter.EndDate}.value=${dateParam(endDate)}`);
+      expect(parameters).toContain(`param.${ReportParameter.EndDate}.value.desc=31-Jan-2026`);
+      expect(parameters).toContain(`param.${ReportParameter.Limit}.value=6`);
+    });
+
+    it('shows the copied rank and sends it unchanged', async () => {
+      const user = userEvent.setup();
+      withReportTypes([
+        {
+          name: 'Ranked Report',
+          systemName: 'RANKED_REPORT',
+          parameters: [
+            ReportParameter.StartDate,
+            ReportParameter.EndDate,
+            ReportParameter.Location,
+            ReportParameter.MostLeastMoving,
+          ],
+        },
+      ]);
+      renderForm({
+        reportName: 'Ranked Report',
+        reportSystemName: 'RANKED_REPORT',
+        locationUuid: 'location-uuid',
+        location: 'Main Store',
+        childLocations: false,
+        startDate,
+        endDate,
+        mostLeastMoving: 'LeastMoving',
+      });
+
+      expect(await screen.findByRole('radio', { name: 'Least Moving' })).toBeChecked();
+      expect(screen.getByRole('radio', { name: 'Most moving' })).not.toBeChecked();
+      await save(user);
+
+      await waitFor(() => expect(createBatchJob).toHaveBeenCalledTimes(1));
+      expect(getParameters()).toContain(`param.${ReportParameter.MostLeastMoving}.value=LeastMoving`);
+    });
+
+    it('keeps the copied stock source and destination', async () => {
+      const user = userEvent.setup();
+      withReportTypes([
+        {
+          name: 'Movement Report',
+          systemName: 'MOVEMENT_REPORT',
+          parameters: [
+            ReportParameter.StartDate,
+            ReportParameter.EndDate,
+            ReportParameter.Location,
+            ReportParameter.StockSource,
+            ReportParameter.StockSourceDestination,
+          ],
+        },
+      ]);
+      renderForm({
+        reportName: 'Movement Report',
+        reportSystemName: 'MOVEMENT_REPORT',
+        locationUuid: 'location-uuid',
+        location: 'Main Store',
+        childLocations: false,
+        startDate,
+        endDate,
+        stockSourceUuid: 'source-uuid',
+        stockSource: 'Central Warehouse',
+        stockSourceDestinationUuid: 'destination-uuid',
+        stockSourceDestination: 'Ward Pharmacy',
+      });
+
+      await screen.findByRole('combobox', { name: 'Location' });
+      await save(user);
+
+      await waitFor(() => expect(createBatchJob).toHaveBeenCalledTimes(1));
+      const parameters = getParameters();
+      expect(parameters).toContain(`param.${ReportParameter.StockSource}.value=source-uuid`);
+      expect(parameters).toContain(`param.${ReportParameter.StockSource}.value.desc=Central Warehouse`);
+      expect(parameters).toContain(`param.${ReportParameter.StockSourceDestination}.value=destination-uuid`);
+      expect(parameters).toContain(`param.${ReportParameter.StockSourceDestination}.value.desc=Ward Pharmacy`);
+    });
+  });
+
+  describe('a new report', () => {
+    it('still sends the default grouping when "Inventory by" is left alone', async () => {
+      const user = userEvent.setup();
+      withReportTypes([
+        {
+          name: 'Stock Consumption Report',
+          systemName: 'STOCK_CONSUMPTION_REPORT',
+          parameters: [
+            ReportParameter.StartDate,
+            ReportParameter.EndDate,
+            ReportParameter.Location,
+            ReportParameter.InventoryGroupBy,
+          ],
+        },
+      ]);
+      renderForm();
+      await fillRequiredFields(user, 'Stock Consumption Report');
+
+      await save(user);
+
+      await waitFor(() => expect(createBatchJob).toHaveBeenCalledTimes(1));
+      const parameters = getParameters();
+      expect(parameters).toContain(`param.${ReportParameter.InventoryGroupBy}.value=LocationStockItemBatchNo`);
+      expect(parameters).toContain(`param.${ReportParameter.InventoryGroupBy}.value.desc=Stock Item Batch Number`);
     });
   });
 });

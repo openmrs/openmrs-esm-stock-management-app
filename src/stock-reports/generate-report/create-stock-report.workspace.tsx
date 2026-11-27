@@ -245,29 +245,34 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
     control,
     formState: { errors, defaultValues, isDirty },
     setValue,
+    watch,
   } = useForm<StockReportSchema>({
     mode: 'all',
     resolver: zodResolver(getReportSchema(displayLocation)),
     defaultValues: {
-      reportName: model?.reportName ?? '',
-      locationUuid: model?.locationUuid ?? '',
-      location: model?.location ?? '',
+      reportName: model?.reportName,
+      locationUuid: model?.locationUuid,
+      location: model?.location,
       startDate: model?.startDate,
       endDate: model?.endDate,
       date: model?.date,
-      stockItemCategoryConceptUuid: model?.stockItemCategoryConceptUuid ?? '',
-      stockItemCategory: model?.stockItemCategory ?? '',
-      inventoryGroupBy: model?.inventoryGroupBy ?? '',
-      inventoryGroupByName: model?.inventoryGroupByName ?? '',
-      maxReorderLevelRatio: model?.maxReorderLevelRatio ?? undefined,
-      stockItemUuid: model?.stockItemUuid ?? '',
-      stockItemName: model?.stockItemName ?? '',
-      patientUuid: model?.patientUuid ?? '',
-      patientName: model?.patientName ?? '',
+      stockItemCategoryConceptUuid: model?.stockItemCategoryConceptUuid,
+      stockItemCategory: model?.stockItemCategory,
+      stockSourceUuid: model?.stockSourceUuid,
+      stockSource: model?.stockSource,
+      stockSourceDestinationUuid: model?.stockSourceDestinationUuid,
+      stockSourceDestination: model?.stockSourceDestination,
+      inventoryGroupBy: model?.inventoryGroupBy,
+      inventoryGroupByName: model?.inventoryGroupByName,
+      maxReorderLevelRatio: model?.maxReorderLevelRatio,
+      stockItemUuid: model?.stockItemUuid,
+      stockItemName: model?.stockItemName,
+      patientUuid: model?.patientUuid,
+      patientName: model?.patientName,
       limit: model?.limit ?? undefined,
-      mostLeastMoving: model?.mostLeastMoving ?? 'MostMoving',
-      fullFillment: model?.fullFillment ?? ['All'],
-      childLocations: model?.childLocations ?? false,
+      mostLeastMoving: model?.mostLeastMoving,
+      fullFillment: model?.fullFillment,
+      childLocations: model?.childLocations,
     },
   });
 
@@ -555,15 +560,15 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
                 <Controller
                   control={control}
                   name="stockItemCategoryConceptUuid"
-                  render={({ field: { onChange } }) => (
+                  render={({ field: { onChange, value } }) => (
                     <ComboBox
                       id="stockReportItem"
                       size="md"
                       titleText={t('stockItemCategory', 'Stock Item Category')}
                       items={stockItemCategories}
-                      initialSelectedItem={stockItemCategories.find(
-                        (c) => c.uuid === model?.stockItemCategoryConceptUuid,
-                      )}
+                      selectedItem={stockItemCategories.find(
+                        (c) => c.uuid === value) ?? null
+                      }
                       onChange={({ selectedItem }) => {
                         onChange(selectedItem?.uuid ?? '');
                         setValue('stockItemCategory', selectedItem?.display ?? '');
@@ -723,7 +728,7 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
                 setValue('locationUuid', e.target.value, { shouldValidate: true });
                 setValue('location', selectedLocation?.name || '');
               }}
-              defaultValue={model?.locationUuid ?? ''}
+              value={watch('locationUuid') ?? ''}
               invalid={!!errors?.locationUuid?.message}
               invalidText={errors?.locationUuid?.message}
             >
@@ -756,7 +761,7 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
                   name="mostLeastMoving"
                   legendText={t('rank', 'Rank')}
                   onChange={onChange}
-                  value={value}
+                  valueSelected={value}
                 >
                   <RadioButton value="MostMoving" id="mostLeastMovingMost" labelText={t('mostMoving', 'Most moving')} />
                   <RadioButton
