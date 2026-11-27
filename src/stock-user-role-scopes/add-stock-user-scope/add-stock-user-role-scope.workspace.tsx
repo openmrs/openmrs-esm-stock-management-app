@@ -49,6 +49,7 @@ import { useHandleMutate } from '../../utils';
 import useSearchUser from '../../stock-operations/stock-operations-forms/hooks/useSearchUser';
 import { useDebounce } from '../../core/hooks/debounce-hook';
 import styles from './add-stock-user-role-scope.scss';
+import { getAllLocations, getAllOperationTypes, getSelectionState } from './selection.utils';
 import { getDatePickerLocale } from '../../core/utils/datetimeUtils';
 
 const MinDate: Date = today();
@@ -243,6 +244,28 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
     return formModel?.operationTypes?.filter((x) => x.operationTypeUuid === operationType.uuid)?.length > 0;
   };
 
+  const operationSelection = getSelectionState(
+    stockOperations?.filter((operation) => isOperationChecked(operation)).length ?? 0,
+    stockOperations?.length ?? 0,
+  );
+  const selectedLocationsCount =
+    stockLocations?.filter((location) => findCheckedLocation(location) != null).length ?? 0;
+  const locationSelection = getSelectionState(selectedLocationsCount, stockLocations?.length ?? 0);
+
+  const onAllOperationsChanged = (event: ChangeEvent<HTMLInputElement>) => {
+    setFormModel({
+      ...formModel,
+      operationTypes: event.target.checked ? getAllOperationTypes(stockOperations ?? []) : [],
+    });
+  };
+
+  const onAllLocationsChanged = (event: ChangeEvent<HTMLInputElement>) => {
+    setFormModel({
+      ...formModel,
+      locations: event.target.checked ? getAllLocations(stockLocations ?? [], formModel?.locations ?? []) : [],
+    });
+  };
+
   // Each field's error, checked against the form as it is now, so an error goes once its field is fixed
   const validationErrors: Partial<Record<ValidatedField, string>> = Object.fromEntries(
     Object.entries({
@@ -416,6 +439,18 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
           {/* The grid is inside the group so that the group's error shows below it */}
           <CheckboxGroup invalid={!!errors.operationTypes} invalidText={errors.operationTypes} legendText="">
             <div className={styles.checkboxGrid}>
+              {stockOperations?.length > 0 && (
+                <Checkbox
+                  aria-label={t('selectAllStockOperations', 'Select all stock operations')}
+                  checked={operationSelection.checked}
+                  className={styles.selectAll}
+                  indeterminate={operationSelection.indeterminate}
+                  id="chk-all-stock-operations"
+                  labelText={t('selectAll', 'Select all')}
+                  onChange={onAllOperationsChanged}
+                  value="all-stock-operations"
+                />
+              )}
               {stockOperations?.length > 0 &&
                 stockOperations.map((type) => {
                   return (
@@ -441,6 +476,18 @@ const AddStockUserRoleScope: React.FC<Workspace2DefinitionProps<AddStockUserRole
           {/* The grid is inside the group so that the group's error shows below it */}
           <CheckboxGroup invalid={!!errors.locations} invalidText={errors.locations} legendText="">
             <div className={styles.checkboxGrid}>
+              {stockLocations?.length > 0 && (
+                <Checkbox
+                  aria-label={t('selectAllLocations', 'Select all locations')}
+                  checked={locationSelection.checked}
+                  className={styles.selectAll}
+                  indeterminate={locationSelection.indeterminate}
+                  id="chk-all-stock-locations"
+                  labelText={t('selectAll', 'Select all')}
+                  onChange={onAllLocationsChanged}
+                  value="all-stock-locations"
+                />
+              )}
               {stockLocations?.length > 0 &&
                 stockLocations.map((type) => {
                   const checkedLocation = findCheckedLocation(type);
