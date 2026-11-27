@@ -2960,10 +2960,10 @@ __metadata:
     prettier: "npm:^2.8.8"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
-    react-hook-form: "npm:^7.45.4"
+    react-hook-form: "npm:^7.92.0"
     react-i18next: "npm:^16.0.0"
     react-router-dom: "npm:^6.14.1"
-    react-to-print: "npm:^2.14.13"
+    react-to-print: "npm:^3.3.0"
     rxjs: "npm:^6.6.7"
     swr: "npm:2.5.1"
     turbo: "npm:^2.5.2"
@@ -13459,12 +13459,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-hook-form@npm:^7.45.4":
-  version: 7.49.3
-  resolution: "react-hook-form@npm:7.49.3"
+"react-hook-form@npm:^7.92.0":
+  version: 7.92.0
+  resolution: "react-hook-form@npm:7.92.0"
   peerDependencies:
-    react: ^16.8.0 || ^17 || ^18
-  checksum: 10/ccd35d73f26b56c2933312c5d445552aab8c20a02ab07360808f039c9daf37a046a0afa2c2c56fac0a16b1963ae3e4ebce37136d14388002d00d6c5483e3fdb7
+    "@types/react": "*"
+    react: ^16.8.0 || ^17 || ^18 || ^19
+  peerDependenciesMeta:
+    "@types/react":
+      optional: true
+  checksum: 10/902034af23c4d1b3828c77d08f31f1762db10fcc5e04dad7064b66850dbb5bd9179cb115a83cfe5cb4f67bf2a3334026f829c83154460acff155b5ef2da2c52f
   languageName: node
   linkType: hard
 
@@ -13550,13 +13554,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-to-print@npm:^2.14.13":
-  version: 2.15.1
-  resolution: "react-to-print@npm:2.15.1"
+"react-to-print@npm:^3.3.0":
+  version: 3.3.0
+  resolution: "react-to-print@npm:3.3.0"
   peerDependencies:
-    react: ^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0
-    react-dom: ^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0
-  checksum: 10/0786fd5dd055b5b50f9a0dba99f0ccb30b9407b8e77748f5fc2557446ed0d0c65759e927cc2cdaa9e34f286838bbb230d3b0ba03d20b9754d0469fc4dac7c529
+    react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ~19
+  checksum: 10/c1d6d28cef1aedd61e1d2d3d26b3a3d02bb53ad9edad0ad473387e09a5a0b29d384fd459baff4b21d2e6681afdad87eddad29499b4be135eab4210ec54676783
   languageName: node
   linkType: hard
 

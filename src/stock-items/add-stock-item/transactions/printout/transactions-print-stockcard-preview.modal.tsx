@@ -23,7 +23,7 @@ const TransactionsStockcardPrintPreview: React.FC<TransactionsStockcardPrintPrev
   const ref = useRef<HTMLDivElement>(null);
 
   const handlePrint = useReactToPrint({
-    content: () => ref.current,
+    contentRef: ref,
   });
   return (
     <>

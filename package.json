@@ -49,8 +49,8 @@
     "dotenv": "^16.4.5",
     "file-saver": "^2.0.5",
     "lodash-es": "^4.17.21",
-    "react-hook-form": "^7.45.4",
-    "react-to-print": "^2.14.13",
+    "react-hook-form": "^7.92.0",
+    "react-to-print": "^3.3.0",
     "zod": "^3.22.2"
   },
   "peerDependencies": {
