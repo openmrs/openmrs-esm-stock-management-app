@@ -31,7 +31,7 @@ it('fetches locations with the default RefApp stock location tags', () => {
   vi.mocked(useFhirFetchAll).mockReturnValue({ data: [], isLoading: false } as never);
   renderHook(() => useStockLocationPages({}));
   expect(useFhirFetchAll).toHaveBeenCalledWith(
-    expect.stringMatching(/\/Location\?_summary=data&_tag=Main%20Store,Main%20Pharmacy,Dispensary$/),
+    expect.stringMatching(/\/Location\?_summary=data&_tag=Main%20Store,Main%20Pharmacy,Dispensary,Sub%20Store$/),
   );
 });
 
