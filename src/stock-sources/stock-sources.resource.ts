@@ -15,7 +15,7 @@ export function useStockSources(filter: StockSourceFilter) {
   const { data, error, isLoading } = useSWR<{ data: PageableResult<StockSource> }, Error>(apiUrl, openmrsFetch);
 
   return {
-    items: data?.data || <PageableResult<StockSource>>{},
+    items: data?.data || <PageableResult<StockSource>>{ results: [], totalCount: 0, links: null },
     isLoading,
     error,
   };
