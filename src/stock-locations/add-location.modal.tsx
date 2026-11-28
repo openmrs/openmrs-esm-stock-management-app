@@ -44,7 +44,13 @@ const NewLocationForm: React.FC<LocationFormProps> = ({ close, mutate }) => {
           close();
         })
         .catch((error) => {
-          const errorMessages = extractErrorMessagesFromResponse(error);
+          const errorMessages = extractErrorMessagesFromResponse(
+            error,
+            t(
+              'unexpectedErrorMessage',
+              'An unexpected error occurred. Please try again or contact support if the problem persists.',
+            ),
+          );
           showSnackbar({
             title: t('errorCreatingForm', 'Error creating location'),
             kind: 'error',

@@ -104,10 +104,20 @@ export const URL_LOCATIONS_EDIT = (id: number) =>
 export const URL_BATCH_JOB_ARTIFACT = (uuid: string, download: boolean): string =>
   `${BASE_OPENMRS_APP_URL}ws/rest/v1/stockmanagement/batchjobartifact?id=${uuid}${download ? '&download=1' : ''}`;
 
-export function extractErrorMessagesFromResponse(errorObject) {
-  const fieldErrors = errorObject?.responseBody?.error?.fieldErrors;
-  if (!fieldErrors) {
-    return [errorObject?.responseBody?.error?.message ?? errorObject?.message];
+const DEFAULT_FALLBACK_ERROR_MESSAGE =
+  'An unexpected error occurred. Please try again or contact support if the problem persists.';
+
+export function extractErrorMessagesFromResponse(errorObject, fallbackErrorMessage = DEFAULT_FALLBACK_ERROR_MESSAGE) {
+  const isUsable = (message: unknown): message is string => typeof message === 'string' && message.trim() !== '';
+  const error = errorObject?.responseBody?.error;
+  // a REST validation error always carries fieldErrors (possibly empty), and errors raised via
+  // errors.reject() land in globalErrors, so both collections must be consulted before falling back
+  const validationMessages = [
+    ...(error?.globalErrors ?? []).map((globalError) => globalError?.message),
+    ...Object.values(error?.fieldErrors ?? {}).flatMap((errors: Array<Error>) => errors.map((e) => e?.message)),
+  ].filter(isUsable);
+  if (validationMessages.length > 0) {
+    return validationMessages;
   }
-  return Object.values(fieldErrors).flatMap((errors: Array<Error>) => errors.map((error) => error.message));
+  return [[error?.message, errorObject?.message].find(isUsable) ?? fallbackErrorMessage];
 }

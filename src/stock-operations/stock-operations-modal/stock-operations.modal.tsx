@@ -114,7 +114,13 @@ const StockOperationsModal: React.FC<StockOperationsModalProps> = ({ title, requ
       },
       (err) => {
         setIsApproving(false);
-        const errorMessages = extractErrorMessagesFromResponse(err);
+        const errorMessages = extractErrorMessagesFromResponse(
+          err,
+          t(
+            'unexpectedErrorMessage',
+            'An unexpected error occurred. Please try again or contact support if the problem persists.',
+          ),
+        );
         const message = errorMessages[0].replace(/[[\]]/g, '');
         showSnackbar({
           title: isCancelling
