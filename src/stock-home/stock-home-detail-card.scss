@@ -164,6 +164,18 @@
   margin-right: 23px;
 }
 
+.iconError svg {
+  fill: var(--cds-support-error);
+}
+
+.iconInfo svg {
+  fill: var(--cds-link-primary);
+}
+
+.iconSuccess svg {
+  fill: var(--cds-support-success);
+}
+
 .colorLineYellow {
   width: 5px;
   background-color: colors.$yellow-30;

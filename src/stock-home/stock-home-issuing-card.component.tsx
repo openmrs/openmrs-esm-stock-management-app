@@ -77,7 +77,7 @@ const StockHomeIssuingCard = () => {
       {flattenedItemsToDisplay?.map((item, index) => (
         <div className={styles.card} key={index}>
           <div className={styles.colorLineGreen} />
-          <div className={styles.icon}>
+          <div className={`${styles.icon} ${styles.iconSuccess}`}>
             <DocumentExport size={40} color={'#198038'} />
           </div>
           <div className={styles.cardText}>
