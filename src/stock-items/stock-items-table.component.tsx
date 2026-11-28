@@ -166,19 +166,14 @@ const StockItemsTableComponent: React.FC<StockItemsTableProps> = () => {
       </h2>
       <DataTable rows={tableRows} headers={tableHeaders} isSortable useZebraStyles>
         {({ rows, headers, getHeaderProps, getTableProps, getRowProps }) => (
-          <TableContainer>
+          <TableContainer className={styles.tableContainer}>
             <TableToolbar
               style={{
                 position: 'static',
                 overflow: 'visible',
               }}
             >
-              <TableToolbarContent
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                }}
-              >
+              <TableToolbarContent className={styles.toolbarContent}>
                 <TableToolbarSearch
                   onChange={(e) =>
                     handleSearch(typeof e === 'string' ? e : (e as React.ChangeEvent<HTMLInputElement>).target.value)
@@ -223,7 +218,6 @@ const StockItemsTableComponent: React.FC<StockItemsTableProps> = () => {
                         </TableHeader>
                       ),
                   )}
-                  <TableHeader />
                 </TableRow>
               </TableHead>
               <TableBody>

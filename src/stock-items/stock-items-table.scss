@@ -65,12 +65,55 @@
     margin-right: -50%;
   }
 }
-
-.toolbarContent {
+.toolbarContent:global(.cds--toolbar-content) {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-}
+  block-size: auto;
+  min-block-size: layout.$spacing-09;
 
+  :global(.cds--toolbar-search-container-persistent) {
+    flex: 1 1 12rem;
+    inline-size: auto;
+    @media (max-width: 70rem) {
+      flex-basis: 100%;
+    }
+  }
+  :global(.cds--form-item) {
+    flex: 0 1 auto;
+  }
+}
+.tableContainer {
+  @media (max-width: 70rem) {
+    :global(.cds--data-table) td,
+    :global(.cds--data-table.cds--data-table--sort) th > :global(.cds--table-header-label) {
+      padding-inline: layout.$spacing-03;
+    }
+
+    :global(.cds--data-table) td {
+      overflow-wrap: anywhere;
+    }
+
+    :global(.cds--data-table) td :global(.cds--btn--ghost):not(:global(.cds--btn--icon-only)) {
+      inline-size: auto;
+      max-inline-size: 100%;
+      min-inline-size: 0;
+      padding-inline: 0;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      text-align: start;
+    }
+
+    :global(.cds--data-table) :global(.cds--table-sort) {
+      padding-inline-start: layout.$spacing-03;
+    }
+
+    :global(.cds--data-table) :global(.cds--table-sort__icon),
+    :global(.cds--data-table) :global(.cds--table-sort__icon-unsorted) {
+      margin-inline: layout.$spacing-02;
+    }
+  }
+}
 .filterContainer {
   display: flex;
   align-items: center;
