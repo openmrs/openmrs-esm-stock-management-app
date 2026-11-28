@@ -171,15 +171,12 @@ const StockItemsTableComponent: React.FC<StockItemsTableProps> = () => {
               style={{
                 position: 'static',
                 overflow: 'visible',
+                blockSize: 'auto',
               }}
             >
-              <TableToolbarContent
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                }}
-              >
+              <TableToolbarContent className={styles.toolbarContent}>
                 <TableToolbarSearch
+                  className={styles.search}
                   onChange={(e) =>
                     handleSearch(typeof e === 'string' ? e : (e as React.ChangeEvent<HTMLInputElement>).target.value)
                   }
