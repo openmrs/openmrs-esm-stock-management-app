@@ -15,3 +15,23 @@
 .toolbarMenuAction {
   max-width: none;
 }
+
+.tableOverride {
+  max-width: 100%;
+}
+
+// Scrolls only the table body horizontally so the toolbar above it
+// (search, filters, refresh, Add New Rule) always stays in view.
+.tableScrollContainer {
+  overflow-x: auto;
+}
+
+// Keeps the Edit/Delete overflow menu reachable without horizontal
+// scrolling, even while the rest of the row scrolls underneath it.
+.actionsCell {
+  // Inherits the row's own background (including zebra striping)
+  // instead of a fixed color, so the sticky cell blends in correctly.
+  background-color: inherit;
+  position: sticky;
+  right: 0;
+}
