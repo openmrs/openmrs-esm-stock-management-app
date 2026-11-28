@@ -7,8 +7,6 @@ import {
   ButtonSet,
   Checkbox,
   ComboBox,
-  DatePicker,
-  DatePickerInput,
   Form,
   FormGroup,
   InlineLoading,
@@ -23,21 +21,21 @@ import {
   type ConfigObject,
   getCoreTranslation,
   openmrsFetch,
+  OpenmrsDatePicker,
   restBaseUrl,
   showSnackbar,
   useConfig,
   useLayoutType,
-  useSession,
   Workspace2,
   type Workspace2DefinitionProps,
 } from '@openmrs/esm-framework';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { getParamDefaultLimit, isForecastReport, ReportParameter } from '../ReportType';
-import { DATE_PICKER_CONTROL_FORMAT, DATE_PICKER_FORMAT, formatForDatePicker, today } from '../../constants';
+import { today } from '../../constants';
 import { BatchJobTypeReport } from '../../core/api/types/BatchJob';
 import { createBatchJob } from '../../stock-batch/stock-batch.resource';
-import { formatDisplayDate, getDatePickerLocale } from '../../core/utils/datetimeUtils';
+import { formatDisplayDate } from '../../core/utils/datetimeUtils';
 import { useHandleMutate } from '../../utils';
 import { type Concept } from '../../core/api/types/concept/Concept';
 import { type Patient } from '../../core/api/types/identity/Patient';
@@ -83,7 +81,6 @@ export interface ReportModel {
 const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ workspaceProps, closeWorkspace }) => {
   const { model } = workspaceProps ?? {};
   const { t } = useTranslation();
-  const session = useSession();
   const handleMutate = useHandleMutate();
   const { stockItemCategoryUUID } = useConfig<ConfigObject>();
   const isTablet = useLayoutType() === 'tablet';
@@ -246,6 +243,7 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
     handleSubmit,
     control,
     formState: { errors, defaultValues, isDirty },
+    resetField,
     setValue,
   } = useForm<StockReportSchema>({
     mode: 'all',
@@ -453,15 +451,6 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
     }
   };
 
-  // Enter in a date field commits the typed date, it shouldn't also submit the form. This has to run in the
-  // capture phase because Carbon's DatePicker stops the keydown from bubbling.
-  const handleFormKeyDown = (event: React.KeyboardEvent<HTMLFormElement>) => {
-    const isDateField = ['date', 'startDate', 'endDate'].includes((event.target as HTMLElement).id);
-    if (event.key === 'Enter' && isDateField) {
-      event.preventDefault();
-    }
-  };
-
   const getReportParameter = (
     name: string,
     value: string,
@@ -474,7 +463,7 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
 
   return (
     <Workspace2 title={t('newReport', 'New Report')}>
-      <Form className={styles.container} onKeyDownCapture={handleFormKeyDown} onSubmit={handleSubmit(handleSave)}>
+      <Form className={styles.container} onSubmit={handleSubmit(handleSave)}>
         <Stack className={styles.form} gap={5}>
           <>
             <FormGroup legendText={t('reportName', 'Report name')}>
@@ -493,6 +482,18 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
                     onChange={({ selectedItem }) => {
                       onChange(selectedItem.name);
                       handleReportNameChange(selectedItem.name);
+                      // A date kept from the previous report, valid or not, could otherwise block Save
+                      // from a field the new report doesn't show.
+                      const parameters = selectedItem.parameters ?? [];
+                      if (!parameters.includes(ReportParameter.StartDate)) {
+                        resetField('startDate');
+                      }
+                      if (!parameters.includes(ReportParameter.EndDate)) {
+                        resetField('endDate');
+                      }
+                      if (!parameters.includes(ReportParameter.Date)) {
+                        resetField('date');
+                      }
                     }}
                   />
                 )}
@@ -528,23 +529,17 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
             <Controller
               control={control}
               name="startDate"
-              render={({ field: { onChange, value } }) => (
-                <DatePicker
-                  datePickerType="single"
-                  maxDate={formatForDatePicker(today())}
-                  locale={getDatePickerLocale(session?.locale)}
-                  dateFormat={DATE_PICKER_CONTROL_FORMAT}
+              render={({ field: { onChange, onBlur, value } }) => (
+                <OpenmrsDatePicker
+                  id="startDate"
                   invalid={!!errors?.startDate?.message}
+                  invalidText={errors?.startDate?.message}
+                  labelText={t('startDate', 'Start date')}
+                  maxDate={today()}
+                  onBlur={onBlur}
                   onChange={onChange}
                   value={value}
-                >
-                  <DatePickerInput
-                    id="startDate"
-                    placeholder={DATE_PICKER_FORMAT}
-                    labelText={`${t('startDate', 'Start date')} (${DATE_PICKER_FORMAT})`}
-                    invalidText={errors?.startDate?.message}
-                  />
-                </DatePicker>
+                />
               )}
             />
           )}
@@ -552,23 +547,17 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
             <Controller
               control={control}
               name="endDate"
-              render={({ field: { onChange, value } }) => (
-                <DatePicker
-                  datePickerType="single"
-                  maxDate={formatForDatePicker(today())}
-                  locale={getDatePickerLocale(session?.locale)}
-                  dateFormat={DATE_PICKER_CONTROL_FORMAT}
+              render={({ field: { onChange, onBlur, value } }) => (
+                <OpenmrsDatePicker
+                  id="endDate"
                   invalid={!!errors?.endDate?.message}
+                  invalidText={errors?.endDate?.message}
+                  labelText={t('endDate', 'End date')}
+                  maxDate={today()}
+                  onBlur={onBlur}
                   onChange={onChange}
                   value={value}
-                >
-                  <DatePickerInput
-                    id="endDate"
-                    placeholder={DATE_PICKER_FORMAT}
-                    labelText={`${t('endDate', 'End date')} (${DATE_PICKER_FORMAT})`}
-                    invalidText={errors?.endDate?.message}
-                  />
-                </DatePicker>
+                />
               )}
             />
           )}
@@ -795,23 +784,17 @@ const CreateReport: React.FC<Workspace2DefinitionProps<CreateReportProps>> = ({ 
             <Controller
               control={control}
               name="date"
-              render={({ field: { onChange, value } }) => (
-                <DatePicker
-                  datePickerType="single"
-                  maxDate={formatForDatePicker(today())}
-                  locale={getDatePickerLocale(session?.locale)}
-                  dateFormat={DATE_PICKER_CONTROL_FORMAT}
+              render={({ field: { onChange, onBlur, value } }) => (
+                <OpenmrsDatePicker
+                  id="date"
                   invalid={!!errors?.date?.message}
+                  invalidText={errors?.date?.message}
+                  labelText={t('date', 'Date')}
+                  maxDate={today()}
+                  onBlur={onBlur}
                   onChange={onChange}
                   value={value}
-                >
-                  <DatePickerInput
-                    id="date"
-                    placeholder={DATE_PICKER_FORMAT}
-                    labelText={`${t('date', 'Date')} (${DATE_PICKER_FORMAT})`}
-                    invalidText={errors?.date?.message}
-                  />
-                </DatePicker>
+                />
               )}
             />
           )}

@@ -2,9 +2,9 @@ import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { showSnackbar, useConfig } from '@openmrs/esm-framework';
+import { OpenmrsDatePicker, showSnackbar, useConfig } from '@openmrs/esm-framework';
 import { mockWorkspace2Props } from '@mocks';
-import { DATE_PICKER_FORMAT } from '../../constants';
+import { today } from '../../constants';
 import { createBatchJob } from '../../stock-batch/stock-batch.resource';
 import { useConcept, useStockTagLocations } from '../../stock-lookups/stock-lookups.resource';
 import { useReportTypes } from '../stock-reports.resource';
@@ -34,6 +34,11 @@ const reportTypes = [
     systemName: 'MOST_LEAST_MOVING_STOCK_REPORT',
     parameters: ['StartDate', 'EndDate', 'Location', 'Limit'],
   },
+  {
+    name: 'Stock Status Report',
+    systemName: 'STOCK_STATUS_REPORT',
+    parameters: ['Date', 'Location', 'InventoryGroupBy'],
+  },
 ];
 
 const renderForm = () => {
@@ -49,11 +54,10 @@ const selectReport = async (user: ReturnType<typeof userEvent.setup>, name: stri
   await screen.findByRole('combobox', { name: 'Location' });
 };
 
-const typeDate = (label: string, value: string) => {
-  const input = screen.getByRole('textbox', { name: `${label} (${DATE_PICKER_FORMAT})` });
-  fireEvent.change(input, { target: { value } });
-  // flatpickr commits a typed date on Enter
-  fireEvent.keyDown(input, { key: 'Enter', code: 'Enter', keyCode: 13 });
+// The picker mock reports the date as soon as it's set, like the real picker once a date is typed in full
+const typeDate = (label: string, isoDate: string) => {
+  const input = screen.getByLabelText(label);
+  fireEvent.change(input, { target: { value: isoDate } });
   return input;
 };
 
@@ -83,10 +87,6 @@ describe('CreateReport', () => {
       expect(await screen.findByText(/Start Date is required/)).toBeInTheDocument();
       expect(screen.getByText(/End Date is required/)).toBeInTheDocument();
       expect(screen.getByText('Location is required')).toBeInTheDocument();
-      expect(screen.getByRole('textbox', { name: `Start date (${DATE_PICKER_FORMAT})` })).toHaveAttribute(
-        'data-invalid',
-        'true',
-      );
       expect(showSnackbar).not.toHaveBeenCalled();
       expect(createBatchJob).not.toHaveBeenCalled();
     });
@@ -114,35 +114,77 @@ describe('CreateReport', () => {
     });
   });
 
-  describe('Enter in a date field', () => {
-    it('displays the expected date format in the label for date inputs', async () => {
+  describe('dates', () => {
+    it("doesn't let the pickers choose a day after today", async () => {
       const user = userEvent.setup();
       renderForm();
       await selectReport(user, 'Stock Expiry Report');
 
-      expect(screen.getByRole('textbox', { name: `Start date (${DATE_PICKER_FORMAT})` })).toBeInTheDocument();
-      expect(screen.getByRole('textbox', { name: `End date (${DATE_PICKER_FORMAT})` })).toBeInTheDocument();
+      const pickers = vi.mocked(OpenmrsDatePicker).mock.calls.map(([props]) => props);
+      for (const id of ['startDate', 'endDate']) {
+        const lastRender = pickers.filter((props) => props.id === id).at(-1);
+        expect(lastRender).toEqual(expect.objectContaining({ maxDate: today() }));
+      }
     });
 
-    it('commits the date without submitting a form that is otherwise complete', async () => {
+    it('saves the dates set in the pickers', async () => {
       const user = userEvent.setup();
-      const { closeWorkspace } = renderForm();
+      renderForm();
       await selectReport(user, 'Stock Expiry Report');
       await user.selectOptions(screen.getByRole('combobox', { name: 'Location' }), 'Main Store');
-      typeDate('Start date', '01/01/2026');
 
-      const endDate = screen.getByRole('textbox', { name: `End date (${DATE_PICKER_FORMAT})` });
-      await user.clear(endDate);
-      await user.type(endDate, '31/01/2026{Enter}');
-
-      await waitFor(() => expect(endDate).toHaveValue('31/01/2026'));
-      expect(createBatchJob).not.toHaveBeenCalled();
-      expect(closeWorkspace).not.toHaveBeenCalled();
-
+      typeDate('Start date', '2026-01-01');
+      typeDate('End date', '2026-01-31');
       await save(user);
 
       await waitFor(() => expect(createBatchJob).toHaveBeenCalledTimes(1));
+      expect(getParameters()).toContain('param.StartDate.value.desc=01-Jan-2026');
       expect(getParameters()).toContain('param.EndDate.value.desc=31-Jan-2026');
+    });
+
+    it("marks a typed date after today as invalid and doesn't save it", async () => {
+      const user = userEvent.setup();
+      renderForm();
+      await selectReport(user, 'Stock Expiry Report');
+      await user.selectOptions(screen.getByRole('combobox', { name: 'Location' }), 'Main Store');
+      typeDate('Start date', '2026-01-01');
+
+      typeDate('End date', '2999-12-31');
+
+      expect(await screen.findByText('Date must not be in the future')).toBeInTheDocument();
+      await save(user);
+      expect(createBatchJob).not.toHaveBeenCalled();
+    });
+
+    it("drops a date from the previous report that the new report doesn't show", async () => {
+      const user = userEvent.setup();
+      renderForm();
+      await selectReport(user, 'Stock Expiry Report');
+      typeDate('Start date', '2999-12-31');
+      expect(await screen.findByText('Date must not be in the future')).toBeInTheDocument();
+
+      await selectReport(user, 'Stock Status Report');
+      expect(screen.queryByLabelText('Start date')).not.toBeInTheDocument();
+      await user.selectOptions(screen.getByRole('combobox', { name: 'Location' }), 'Main Store');
+      typeDate('Date', '2026-01-01');
+      await user.selectOptions(screen.getByRole('combobox', { name: 'Inventory by' }), 'Stock Item');
+      await save(user);
+
+      await waitFor(() => expect(createBatchJob).toHaveBeenCalledTimes(1));
+      expect(getParameters()).toContain('param.report=STOCK_STATUS_REPORT');
+    });
+
+    it('keeps the dates the new report also shows', async () => {
+      const user = userEvent.setup();
+      renderForm();
+      await selectReport(user, 'Stock Expiry Report');
+      typeDate('Start date', '2026-01-01');
+      typeDate('End date', '2026-01-31');
+
+      await selectReport(user, 'Stock Forecast Report');
+
+      expect(screen.getByLabelText('Start date')).toHaveValue('01/01/2026');
+      expect(screen.getByLabelText('End date')).toHaveValue('31/01/2026');
     });
   });
 
@@ -150,8 +192,8 @@ describe('CreateReport', () => {
     const fillRequiredFields = async (user: ReturnType<typeof userEvent.setup>, reportName: string) => {
       await selectReport(user, reportName);
       await user.selectOptions(screen.getByRole('combobox', { name: 'Location' }), 'Main Store');
-      typeDate('Start date', '01/01/2026');
-      typeDate('End date', '31/01/2026');
+      typeDate('Start date', '2026-01-01');
+      typeDate('End date', '2026-01-31');
     };
 
     it('starts empty and sends what is typed as a number', async () => {
