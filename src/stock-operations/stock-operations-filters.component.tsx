@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DropdownSkeleton, MultiSelect } from '@carbon/react';
 import { getStockOperationTypes, useConcept } from '../stock-lookups/stock-lookups.resource';
@@ -18,6 +18,18 @@ const StockOperationsFilters: React.FC<StockOperationFiltersProps> = ({ conceptU
   const [isDataLoading, setIsDataLoading] = useState(false);
   const [dataItems, setDataItems] = useState([]);
 
+  const statusLabels = useMemo<Record<string, string>>(() => {
+    return {
+      NEW: t('new', 'New'),
+      SUBMITTED: t('submitted', 'Submitted'),
+      DISPATCHED: t('dispatched', 'Dispatched'),
+      RETURNED: t('returned', 'Returned'),
+      COMPLETED: t('completed', 'Completed'),
+      CANCELLED: t('cancelled', 'Cancelled'),
+      REJECTED: t('rejected', 'Rejected'),
+    };
+  }, [t]);
+
   useEffect(() => {
     setIsDataLoading(true);
     switch (filterName) {
@@ -25,7 +37,7 @@ const StockOperationsFilters: React.FC<StockOperationFiltersProps> = ({ conceptU
         setDataItems(
           StockOperationStatusTypes.map((option) => ({
             uuid: option,
-            display: option,
+            display: statusLabels[option] ?? option,
           })),
         );
         break;
@@ -52,7 +64,7 @@ const StockOperationsFilters: React.FC<StockOperationFiltersProps> = ({ conceptU
         });
     }
     setIsDataLoading(false);
-  }, [filterName, isLoading, items.answers]);
+  }, [filterName, isLoading, items.answers, statusLabels]);
 
   if (isDataLoading) {
     return <DropdownSkeleton />;
